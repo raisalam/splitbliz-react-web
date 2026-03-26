@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ChevronRight } from 'lucide-react';
 import { GroupAvatar } from './GroupAvatar';
+import { colors } from '../constants/colors';
 
 export type GroupListItemProps = {
   group: any;

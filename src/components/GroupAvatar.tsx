@@ -1,4 +1,5 @@
 import React from 'react';
+import { colors } from '../constants/colors';
 
 type GroupAvatarProps = {
   name: string;

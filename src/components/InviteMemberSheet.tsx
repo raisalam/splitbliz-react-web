@@ -3,19 +3,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Search, Check, Users } from 'lucide-react';
 import { MOCK_GROUPS, MOCK_USER_ID } from '../mock/groups';
 import { toast } from 'sonner';
+import { colors } from '../constants/colors';
 
 // Design tokens
-const purple = '#6c5ce7';
-const pageBg = '#f4f2fb';
-const sectionDivider = '#f0eeff';
-const mutedLabel = '#9490b8';
+const purple = colors.primary;
+const pageBg = colors.pageBg;
+const sectionDivider = colors.primaryFaint;
+const mutedLabel = colors.textMuted;
 
 // Unique avatar colors
-const AVATAR_COLORS = [
-  '#6c5ce7', '#00b894', '#e17055', '#0984e3', '#fdcb6e',
-  '#e84393', '#00cec9', '#d63031', '#a29bfe', '#55efc4',
-  '#636e72', '#ffeaa7', '#fab1a0', '#74b9ff', '#81ecec',
-];
+const AVATAR_COLORS = colors.avatarPalette;
 
 interface InviteMemberSheetProps {
   open: boolean;
@@ -115,7 +112,7 @@ export function InviteMemberSheet({ open, onOpenChange, groupId }: InviteMemberS
           >
             {/* Drag Handle */}
             <div className="pt-3 flex justify-center">
-              <div className="w-9 h-1 rounded-full" style={{ backgroundColor: '#e0ddf5' }} />
+              <div className="w-9 h-1 rounded-full" style={{ backgroundColor: colors.border }} />
             </div>
 
             {/* Header */}
@@ -126,7 +123,7 @@ export function InviteMemberSheet({ open, onOpenChange, groupId }: InviteMemberS
               >
                 👥
               </div>
-              <h3 className="flex-1 font-bold" style={{ fontSize: '15px', color: '#1a1625' }}>
+              <h3 className="flex-1 font-bold" style={{ fontSize: '15px', color: colors.textPrimary }}>
                 Invite members
               </h3>
               <button
@@ -183,12 +180,12 @@ export function InviteMemberSheet({ open, onOpenChange, groupId }: InviteMemberS
             {/* Search Bar */}
             <div className="px-5 pb-3">
               <div
-                className="relative rounded-[12px] transition-all"
-                style={{
-                  backgroundColor: searchFocused ? 'white' : pageBg,
-                  border: searchFocused ? `1.5px solid ${purple}` : '1.5px solid transparent',
-                }}
-              >
+                  className="relative rounded-[12px] transition-all"
+                  style={{
+                    backgroundColor: searchFocused ? 'white' : pageBg,
+                    border: searchFocused ? `1.5px solid ${purple}` : '1.5px solid transparent',
+                  }}
+                >
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: mutedLabel }} />
                 <input
                   type="text"
@@ -198,7 +195,7 @@ export function InviteMemberSheet({ open, onOpenChange, groupId }: InviteMemberS
                   onFocus={() => setSearchFocused(true)}
                   onBlur={() => setSearchFocused(false)}
                   className="w-full bg-transparent text-sm outline-none py-2.5 pl-10 pr-4"
-                  style={{ color: '#1a1625' }}
+                  style={{ color: colors.textPrimary }}
                 />
               </div>
             </div>
@@ -230,7 +227,7 @@ export function InviteMemberSheet({ open, onOpenChange, groupId }: InviteMemberS
                           {suggestion.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1625' }}>{suggestion.name}</p>
+                          <p className="text-[13px] font-semibold truncate" style={{ color: colors.textPrimary }}>{suggestion.name}</p>
                           <p className="text-[11px]" style={{ color: mutedLabel }}>From {suggestion.fromGroup}</p>
                         </div>
                         <span
@@ -257,7 +254,7 @@ export function InviteMemberSheet({ open, onOpenChange, groupId }: InviteMemberS
                         {suggestion.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0 text-left">
-                        <p className="text-[13px] font-semibold truncate" style={{ color: '#1a1625' }}>{suggestion.name}</p>
+                        <p className="text-[13px] font-semibold truncate" style={{ color: colors.textPrimary }}>{suggestion.name}</p>
                         <p className="text-[11px]" style={{ color: mutedLabel }}>From {suggestion.fromGroup}</p>
                       </div>
                       {/* Check circle */}
@@ -319,7 +316,7 @@ export function InviteMemberSheet({ open, onOpenChange, groupId }: InviteMemberS
                   className="w-full py-3.5 rounded-[14px] font-bold text-sm transition-all active:scale-[0.98]"
                   style={{
                     background: selectedIds.size > 0
-                      ? `linear-gradient(135deg, ${purple}, #a29bfe)`
+                      ? `linear-gradient(135deg, ${purple}, ${colors.primaryLight})`
                       : pageBg,
                     color: selectedIds.size > 0 ? 'white' : '#b8b4d8',
                     boxShadow: selectedIds.size > 0 ? '0 6px 20px rgba(108,92,231,0.3)' : 'none',
