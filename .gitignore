@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+.env.local
 *.log
 .DS_Store
 npm-debug.log*
@@ -12,3 +13,5 @@ coverage/
 .cache/
 .idea/
 .vscode/
+.claude/settings.json
+.claude-memory/
