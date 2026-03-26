@@ -8,6 +8,7 @@ const DEFAULTS: Record<string, string | number | boolean> = {
 export function initRemoteConfig(options?: { minFetchIntervalMs?: number; }) {
   remoteConfig.settings = {
     minimumFetchIntervalMillis: options?.minFetchIntervalMs ?? 60_000,
+    fetchTimeoutMillis: 10_000,
   };
   remoteConfig.defaultConfig = DEFAULTS;
   return fetchAndActivate(remoteConfig);
