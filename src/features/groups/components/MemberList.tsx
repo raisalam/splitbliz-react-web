@@ -36,19 +36,28 @@ export function MemberList({
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm">
-        <div className="flex flex-col">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Total owed to you</span>
-          <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-            {group?.myNetInGroup?.direction === 'CREDITOR' ? `+${currencySymbol}${group.myNetInGroup.amount}` : `${currencySymbol}0.00`}
-          </span>
-        </div>
-        <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
-        <div className="flex flex-col items-end">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">You owe</span>
-          <span className="text-lg font-bold text-rose-600 dark:text-rose-400">
-            {group?.myNetInGroup?.direction === 'I_OWE' ? `${currencySymbol}${group.myNetInGroup.amount}` : `${currencySymbol}0.00`}
-          </span>
-        </div>
+        {(() => {
+          const net = parseFloat(group?.balance?.netAmount || '0');
+          const owed = net > 0 ? net : 0;
+          const owe = net < 0 ? Math.abs(net) : 0;
+          return (
+            <>
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Total owed to you</span>
+                <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                  {owed > 0 ? `+${currencySymbol}${owed.toFixed(2)}` : `${currencySymbol}0.00`}
+                </span>
+              </div>
+              <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">You owe</span>
+                <span className="text-lg font-bold text-rose-600 dark:text-rose-400">
+                  {owe > 0 ? `${currencySymbol}${owe.toFixed(2)}` : `${currencySymbol}0.00`}
+                </span>
+              </div>
+            </>
+          );
+        })()}
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/50 shadow-sm">
