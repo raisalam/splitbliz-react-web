@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User, CheckCircle2 } from 'lucide-react';
 import { tokenStore } from '../../services/apiClient';
+import brandLogo from '../../assets/brand/logo.png';
 
 type AuthState = 'A' | 'B' | 'C';
 
@@ -82,12 +83,17 @@ export function Login() {
         className="pt-14 pb-20 px-6 relative rounded-b-[32px]"
         style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)` }}
       >
-        <button 
-          onClick={handleBack}
-          className="w-11 h-11 rounded-full flex items-center justify-center bg-white/20 mb-8 transition-transform hover:scale-105 active:scale-95 text-white"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
+        <div className="flex justify-between items-start mb-8">
+          <button 
+            onClick={handleBack}
+            className="w-11 h-11 rounded-full flex items-center justify-center bg-white/20 transition-transform hover:scale-105 active:scale-95 text-white"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <motion.div layout>
+            <img src={brandLogo} alt="Logo" className="w-12 h-12 object-contain drop-shadow-md" />
+          </motion.div>
+        </div>
         <motion.h1 layout="position" className="text-white font-extrabold mb-2" style={{ fontSize: '28px', lineHeight: '1.2' }}>
           {authState === 'A' && 'Welcome to SplitBliz ⚡'}
           {authState === 'B' && 'Welcome back 👋'}

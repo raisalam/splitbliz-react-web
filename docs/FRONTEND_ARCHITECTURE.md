@@ -2057,22 +2057,22 @@ feat: add ErrorBoundary, EmptyState, formatCurrency utility
 After all 8 steps, run through this before calling the architecture phase done:
 
 ```
-□ npm run dev starts without errors
-□ All 17 routes still load
-□ No screen has changed visually
-□ src/ folder matches the target structure from Step 2
-□ src/types/index.ts exists and has no TypeScript errors
-□ src/constants/ has colors.ts, typography.ts, spacing.ts, app.ts
-□ src/services/ has apiClient.ts + 7 service files + index.ts
-□ src/hooks/ has 7 hook files + index.ts
-□ src/app/ProtectedRoute.tsx exists
-□ 404 page is reachable at any unknown route
-□ /signup route is reachable
-□ ErrorBoundary wraps the app in main.tsx
-□ .env file exists (not committed to git — add to .gitignore)
-□ .env.example is committed to git
-□ package.json name is "splitbliz-web"
-□ No inline JSX was modified in any screen component
+☑ npm run dev starts without errors
+☑ All 17 routes still load
+☑ No screen has changed visually
+☑ src/ folder matches the target structure from Step 2
+☑ src/types/index.ts exists and has no TypeScript errors
+☑ src/constants/ has colors.ts, typography.ts, spacing.ts, app.ts
+☑ src/services/ has apiClient.ts + 7 service files + index.ts
+☑ src/hooks/ has 7 hook files + index.ts
+☑ src/app/ProtectedRoute.tsx exists
+☑ 404 page is reachable at any unknown route
+☑ /signup route is reachable
+☑ ErrorBoundary wraps the app in main.tsx
+☑ .env file exists (not committed to git — add to .gitignore)
+☑ .env.example is committed to git
+☑ package.json name is "splitbliz-web"
+☑ No inline JSX was modified in any screen component
 ```
 
 ---

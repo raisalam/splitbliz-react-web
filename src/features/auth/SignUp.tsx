@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User } from 'lucide-react';
+import brandLogo from '../../assets/brand/logo.png';
 
 export function SignUp() {
   const navigate = useNavigate();
@@ -24,12 +25,17 @@ export function SignUp() {
         className="pt-12 pb-16 px-6 relative rounded-b-[24px]"
         style={{ background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)' }}
       >
-        <button 
-          onClick={() => navigate('/welcome')}
-          className="w-10 h-10 rounded-full flex items-center justify-center bg-white/20 mb-6 transition-transform hover:scale-105 active:scale-95 text-white"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
+        <div className="flex justify-between items-start mb-6">
+          <button 
+            onClick={() => navigate('/welcome')}
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/20 transition-transform hover:scale-105 active:scale-95 text-white"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <motion.div layout>
+            <img src={brandLogo} alt="Logo" className="w-11 h-11 object-contain drop-shadow-md" />
+          </motion.div>
+        </div>
         <h1 className="text-white font-bold text-[24px] mb-1">
           Create account ✨
         </h1>

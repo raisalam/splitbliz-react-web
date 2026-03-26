@@ -2,6 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 
+import brandLogo from '../../assets/brand/logo.png';
+
 export function Splash() {
   const navigate = useNavigate();
 
@@ -20,7 +22,7 @@ export function Splash() {
           className="flex justify-center mb-4"
         >
           <div 
-            className="w-[88px] h-[88px] flex items-center justify-center text-[48px] shadow-2xl"
+            className="w-[88px] h-[88px] flex items-center justify-center shadow-2xl overflow-hidden p-2"
             style={{ 
               borderRadius: '24px', 
               backgroundColor: 'rgba(255,255,255,0.18)', 
@@ -28,7 +30,7 @@ export function Splash() {
               boxShadow: '0 8px 32px rgba(0,0,0,0.15)'
             }}
           >
-            ⚡
+            <img src={brandLogo} alt="SplitBliz" className="w-full h-full object-contain drop-shadow-md" />
           </div>
         </motion.div>
 

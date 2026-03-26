@@ -34,6 +34,7 @@ import { MOCK_GROUPS } from '../../mock/groups';
 import { GroupAvatar } from '../../components/GroupAvatar';
 import { GroupListItem } from '../../components/GroupListItem';
 import { PendingApprovalsSheet } from '../../components/PendingApprovalsSheet';
+import brandLogo from '../../assets/brand/logo.png';
 
 // Static non-settlement actions (group invites etc.)
 const MOCK_STATIC_ACTIONS = [
@@ -283,8 +284,8 @@ export function Home() {
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-              S
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm overflow-hidden bg-indigo-50 dark:bg-slate-800 p-1 ring-1 ring-indigo-100 dark:ring-slate-700">
+              <img src={brandLogo} alt="SplitBliz" className="w-full h-full object-contain drop-shadow-sm" />
             </div>
             <span className="font-semibold text-lg hidden sm:block tracking-tight">SplitBliz</span>
           </div>
