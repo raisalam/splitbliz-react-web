@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Moon, Sun, Bell, Settings, MessageSquare } from 'lucide-react';
 import { GroupAvatar } from '../../../components/GroupAvatar';
+import { GROUP_TYPE_EMOJI } from '../../../constants/app';
 
 type GroupHeaderProps = {
   group: any;
@@ -21,6 +22,8 @@ export function GroupHeader({
   onSettingsClick,
   onToggleTheme
 }: GroupHeaderProps) {
+  const emoji = group?.groupType ? GROUP_TYPE_EMOJI[group.groupType] : GROUP_TYPE_EMOJI['OTHER'];
+
   return (
     <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -33,7 +36,7 @@ export function GroupHeader({
           </button>
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div className="flex items-center gap-5">
-            <GroupAvatar name={group.name} emoji={group.emoji} size="lg" />
+            <GroupAvatar name={group?.name} emoji={emoji} size="lg" />
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <h1 className="font-semibold text-lg leading-tight">{group.name}</h1>
@@ -59,13 +62,15 @@ export function GroupHeader({
           >
             <Bell className="w-5 h-5" />
           </button>
-          <button
-            onClick={onSettingsClick}
-            className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            aria-label="Group Settings"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
+          {group?.myRole && group.myRole !== 'MEMBER' && (
+            <button
+              onClick={onSettingsClick}
+              className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              aria-label="Group Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          )}
           <button
             onClick={onToggleTheme}
             className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"

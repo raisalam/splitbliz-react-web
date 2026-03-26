@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { colors } from '../constants/colors';
+import { CachedAvatar } from './CachedAvatar';
 
 export interface PendingApproval {
   id: string;
@@ -116,7 +117,7 @@ export function PendingApprovalsSheet({ isOpen, onClose, approvals, onApprove, o
                       style={{ borderBottom: `0.5px solid ${colors.primaryFaint}` }}
                     >
                       <div className="flex items-center gap-3 pr-2">
-                        <img src={approval.user.avatarUrl} alt={approval.user.displayName} className="w-[32px] h-[32px] rounded-full object-cover shrink-0" />
+                        <CachedAvatar src={approval.user.avatarUrl} alt={approval.user.displayName} className="w-[32px] h-[32px] rounded-full object-cover shrink-0" />
                         <div className="min-w-0">
                           <p className="font-semibold text-[#1a1625] leading-tight truncate" style={{ fontSize: '11px', color: colors.textPrimary }}>{approval.user.displayName}</p>
                           <p className="mt-0.5 truncate" style={{ fontSize: '9px', color: colors.textMuted }}>Bank / UPI • {approval.time}</p>

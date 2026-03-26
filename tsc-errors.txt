@@ -1,0 +1,2 @@
+﻿src/features/ai/GroupAI.tsx(322,18): error TS2304: Cannot find name 'TrendingUp'.
+src/features/groups/GroupSettings.tsx(145,11): error TS4104: The type 'readonly ["#6c5ce7", "#00b894", "#fd79a8", "#fdcb6e", "#e17055", "#74b9ff", "#a29bfe", "#55efc4"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.

@@ -1,18 +1,30 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Users } from 'lucide-react';
 import { GroupAvatar } from './GroupAvatar';
-import { colors } from '../constants/colors';
+import { Group } from '../types';
+import { GROUP_TYPE_EMOJI } from '../constants/app';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export type GroupListItemProps = {
-  group: any;
+  group: Group;
   onClick: () => void;
   index?: number;
   hideFinancials?: boolean;
 };
 
+/** Derive balance direction from the API's netAmount string */
+function getBalanceInfo(group: Group) {
+  const net = group.balance ? Number(group.balance.netAmount) : 0;
+  if (net > 0) return { direction: 'CREDITOR' as const, amount: group.balance!.netAmount };
+  if (net < 0) return { direction: 'I_OWE' as const, amount: Math.abs(net).toFixed(2) };
+  return { direction: 'SETTLED' as const, amount: '0.00' };
+}
+
 export function GroupListItem({ group, onClick, index = 0, hideFinancials = false }: GroupListItemProps) {
-  const hasUpdates = group.unreadNotificationCount > 0 || group.myNetInGroup.direction !== 'SETTLED';
+  const { direction, amount } = getBalanceInfo(group);
+  const hasUpdates = direction !== 'SETTLED';
+  const emoji = GROUP_TYPE_EMOJI[group.groupType] ?? GROUP_TYPE_EMOJI['OTHER'];
 
   return (
     <motion.div
@@ -25,37 +37,20 @@ export function GroupListItem({ group, onClick, index = 0, hideFinancials = fals
       }`}
     >
       <div className="flex items-center gap-4">
-        <GroupAvatar name={group.name} emoji={group.emoji} size="md" hasActivity={hasUpdates} />
+        <GroupAvatar name={group.name} emoji={emoji} size="md" hasActivity={hasUpdates} />
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-slate-900 dark:text-white mb-0.5 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
               {group.name}
             </h3>
-            {group.planTierCode === 'PRO' && (
-              <span className="border border-amber-400/60 text-amber-600 dark:text-amber-400 dark:border-amber-500/40 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                Pro
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex -space-x-2">
-              {group.members.slice(0, 3).map((member: any) => (
-                <img 
-                  key={member.userPublicId} 
-                  src={member.avatarUrl} 
-                  alt={member.displayName}
-                  className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 object-cover z-10"
-                />
-              ))}
-              {group.members.length > 3 && (
-                <div className="w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-medium text-slate-600 dark:text-slate-300 z-0">
-                  +{group.members.length - 3}
-                </div>
-              )}
+            <div className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {group.memberCount} members
+              </span>
             </div>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {group.members.length} members
-            </span>
           </div>
         </div>
       </div>
@@ -64,16 +59,16 @@ export function GroupListItem({ group, onClick, index = 0, hideFinancials = fals
         <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/3 border-t border-slate-100 dark:border-slate-800 sm:border-t-0 pt-3 sm:pt-0">
           <div className="flex flex-col sm:items-end">
             <span className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">
-              {group.myNetInGroup.direction === 'SETTLED' ? 'All settled up' :
-               group.myNetInGroup.direction === 'CREDITOR' ? 'You are owed' : 'You owe'}
+              {direction === 'SETTLED' ? 'All settled up' :
+               direction === 'CREDITOR' ? 'You are owed' : 'You owe'}
             </span>
             <span className={`font-semibold ${
-              group.myNetInGroup.direction === 'SETTLED' ? 'text-slate-700 dark:text-slate-300' :
-              group.myNetInGroup.direction === 'CREDITOR' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+              direction === 'SETTLED' ? 'text-slate-700 dark:text-slate-300' :
+              direction === 'CREDITOR' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
             }`}>
-              {group.myNetInGroup.direction !== 'SETTLED' ? 
-                `${group.myNetInGroup.currencyCode === 'INR' ? '₹' : '$'}${group.myNetInGroup.amount}` : 
-                '₹0.00'
+              {direction !== 'SETTLED'
+                ? formatCurrency(amount, group.currencyCode)
+                : formatCurrency('0.00', group.currencyCode)
               }
             </span>
           </div>

@@ -1,12 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import {
-  Plus,
-  Check,
-  UserPlus,
   X,
   Wallet,
   ArrowUpRight,
@@ -17,9 +14,6 @@ import {
   Users,
   History
 } from 'lucide-react';
-import { MOCK_SETTLEMENTS } from '../../mock/settlements';
-import { approveSettlement, rejectSettlement, MOCK_USER_ID } from '../../api/groups';
-import { MOCK_GROUPS } from '../../mock/groups';
 import { GroupAvatar } from '../../components/GroupAvatar';
 import { GroupListItem } from '../../components/GroupListItem';
 import { PendingApprovalsSheet } from '../../components/PendingApprovalsSheet';
@@ -33,130 +27,90 @@ import { HomeFAB } from './components/HomeFAB';
 import { Skeleton } from '../../components/ui/skeleton';
 import { EmptyState } from '../../components/EmptyState';
 import { useUser } from '../../providers/UserContext';
-import { authService } from '../../services';
-
-// Static non-settlement actions (group invites etc.)
-const MOCK_STATIC_ACTIONS = [
-  {
-    id: 'invite-1',
-    type: 'GROUP_INVITE' as const,
-    user: { displayName: 'Sarah', avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop' },
-    groupName: 'Weekend Getaway',
-    time: '5 hours ago'
-  }
-];
-
-const MOCK_RECENT_ACTIVITY = [
-  {
-    id: 'act-1',
-    type: 'EXPENSE_ADDED',
-    description: 'You added "Flight Tickets"',
-    groupName: 'Goa Trip 2026',
-    amount: '₹4,500.00',
-    amountType: 'POSITIVE',
-    time: 'Today, 10:30 AM',
-    icon: Plus
-  },
-  {
-    id: 'act-2',
-    type: 'SETTLEMENT_COMPLETED',
-    description: 'You paid Sarah',
-    groupName: 'Apartment Rent',
-    amount: '₹450.00',
-    amountType: 'NEGATIVE',
-    time: 'Yesterday',
-    icon: Check
-  },
-  {
-    id: 'act-3',
-    type: 'GROUP_JOINED',
-    description: 'You joined the group',
-    groupName: 'Friday Dinner',
-    amount: null,
-    amountType: 'NEUTRAL',
-    time: 'Mar 1, 2026',
-    icon: UserPlus
-  }
-];
-
-// Helper to find member info from groups
-function findMemberAcrossGroups(userId: string) {
-  for (const g of MOCK_GROUPS) {
-    const m = g.members.find(m => m.userPublicId === userId);
-    if (m) return m;
-  }
-  return null;
-}
+import { authService, settlementsService, groupsService } from '../../services';
+import { extractApiError } from '../../services/apiClient';
+import { useHomeData } from '../../hooks/useGroups';
+import { useQueryClient } from '@tanstack/react-query';
+import { GROUP_TYPE_EMOJI } from '../../constants/app';
+import { formatCurrency, formatBalance } from '../../utils/formatCurrency';
+import type { Group, ActionItem } from '../../types';
 
 const MAX_VISIBLE_ACTIONS = 2;
+
+/** Derive balance direction from the API's netAmount string */
+function getNet(group: Group): number {
+  return group.balance ? Number(group.balance.netAmount) : 0;
+}
 
 export function Home() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const { user, setUser } = useUser();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'groups' | 'activity'>('groups');
-  const [staticActions, setStaticActions] = useState(MOCK_STATIC_ACTIONS);
   const [fabExpanded, setFabExpanded] = useState(false);
   const [actionSheetOrigin, setActionSheetOrigin] = useState<'expense' | 'settle' | null>(null);
   const [pendingSheetOpen, setPendingSheetOpen] = useState(false);
-  const [, forceUpdate] = useState(0); // trigger re-render after approve/reject
-  const [loading, setLoading] = useState(true);
 
-  // Build action items from real settlement store + static actions
-  const pendingSettlements = MOCK_SETTLEMENTS
-    .filter(s => s.toUserPublicId === MOCK_USER_ID && s.status === 'PENDING')
-    .map(s => {
-      const fromMember = findMemberAcrossGroups(s.fromUserPublicId);
-      const group = MOCK_GROUPS.find(g => g.publicId === s.groupPublicId);
-      return {
-        id: s.publicId,
-        type: 'SETTLEMENT' as const,
-        user: { 
-          displayName: fromMember?.displayName || 'Action Pending', 
-          avatarUrl: fromMember?.avatarUrl || `https://i.pravatar.cc/150?u=${s.fromUserPublicId}` 
-        },
-        groupName: group?.name || 'Unknown Group',
-        amount: s.amount,
-        currencyCode: s.currencyCode,
-        time: new Date(s.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-      };
-    });
+  // --- Real API data ---
+  const { data, isLoading, error } = useHomeData();
+  const groups = data?.groups ?? [];
+  const actionItems = data?.actionItemsPreview?.items ?? [];
+  const actionItemsTotalCount = data?.actionItemsPreview?.totalCount ?? 0;
+  const recentActivity = data?.recentActivity ?? [];
 
-  const allActions = [
-    ...pendingSettlements,
-    ...staticActions.map(a => ({ ...a, amount: undefined, currencyCode: undefined }))
-  ];
+  const visibleActions = actionItems.slice(0, MAX_VISIBLE_ACTIONS);
+  const hiddenCount = Math.max(0, actionItems.length - MAX_VISIBLE_ACTIONS);
 
-  const visibleActions = allActions.slice(0, MAX_VISIBLE_ACTIONS);
-  const hiddenCount = Math.max(0, allActions.length - MAX_VISIBLE_ACTIONS);
-
-  const handleAction = async (id: string, type: string, action: 'approve' | 'reject') => {
-    if (type === 'SETTLEMENT') {
-      if (action === 'approve') {
-        await approveSettlement(id);
-        toast.success('Settlement approved!');
-      } else {
-        await rejectSettlement(id);
-        toast('Settlement rejected');
+  const handleAction = async (referenceId: string, type: ActionItem['type'], action: 'approve' | 'reject') => {
+    if (type === 'SETTLEMENT_APPROVAL') {
+      try {
+        if (action === 'approve') {
+          await settlementsService.approveSettlement(referenceId);
+          toast.success('Settlement approved!');
+        } else {
+          await settlementsService.rejectSettlement(referenceId);
+          toast('Settlement rejected');
+        }
+        queryClient.invalidateQueries({ queryKey: ['home'] });
+      } catch (err) {
+        const apiErr = extractApiError(err);
+        if (apiErr?.code === 'ERR_ALREADY_PROCESSING') {
+          toast.error('Settlement is already being processed.');
+        } else {
+          toast.error(`Failed to ${action}. Please try again.`);
+        }
       }
-      forceUpdate(n => n + 1); // re-render to reflect updated MOCK_SETTLEMENTS
     } else {
-      setStaticActions(prev => prev.filter(a => a.id !== id));
-      if (action === 'approve') {
-        toast.success('You joined the group!');
-      } else {
+      // GROUP_INVITE — handle via groupsService.joinByInvite
+      const item = actionItems.find(a => a.referenceId === referenceId);
+      if (action === 'approve' && item?.inviteCode) {
+        try {
+          await groupsService.joinByInvite(item.inviteCode);
+          toast.success('You joined the group!');
+          queryClient.invalidateQueries({ queryKey: ['home'] });
+        } catch {
+          toast.error('Failed to join group.');
+        }
+      } else if (action === 'reject') {
         toast.info('Group invitation declined');
+        queryClient.invalidateQueries({ queryKey: ['home'] });
       }
     }
   };
 
   const handleApproveAll = async () => {
-    for (const action of pendingSettlements) {
-      await approveSettlement(action.id);
+    const settlements = actionItems.filter(a => a.type === 'SETTLEMENT_APPROVAL');
+    for (const item of settlements) {
+      try {
+        await settlementsService.approveSettlement(item.referenceId);
+      } catch {
+        // continue with next
+      }
     }
-    toast.success(`Approved ${pendingSettlements.length} settlements!`);
-    forceUpdate(n => n + 1);
+    toast.success(`Approved ${settlements.length} settlements!`);
+    queryClient.invalidateQueries({ queryKey: ['home'] });
   };
 
   const handleLogout = async () => {
@@ -165,16 +119,12 @@ export function Home() {
     navigate('/login');
   };
 
-  const filteredGroups = MOCK_GROUPS.filter(g => 
+  const filteredGroups = groups.filter(g =>
     g.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (loading) {
+  // --- Loading state ---
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 pb-20">
         <HomeHeader
@@ -184,11 +134,7 @@ export function Home() {
           onAvatarClick={() => navigate('/profile')}
           onLogout={handleLogout}
           brandLogo={brandLogo}
-          user={{
-            displayName: 'Rais',
-            avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop'
-          }}
-          unreadCount={1}
+          unreadCount={0}
         />
 
         <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
@@ -202,7 +148,43 @@ export function Home() {
     );
   }
 
+  // --- Error state ---
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 pb-20">
+        <HomeHeader
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onNotificationsClick={() => navigate('/notifications')}
+          onAvatarClick={() => navigate('/profile')}
+          onLogout={handleLogout}
+          brandLogo={brandLogo}
+          unreadCount={0}
+        />
+
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+          <div className="text-center py-20">
+            <p className="text-slate-500 dark:text-slate-400 mb-4">Failed to load. Please try again.</p>
+            <button
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['home'] })}
+              className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   const firstName = user?.displayName?.split(' ')[0] ?? '';
+
+  // --- Compute hero card balances from real groups ---
+  const totalOwed = groups.filter(g => getNet(g) > 0).reduce((s, g) => s + getNet(g), 0);
+  const totalOwe = groups.filter(g => getNet(g) < 0).reduce((s, g) => s + Math.abs(getNet(g)), 0);
+  const net = totalOwed - totalOwe;
+  const isPositive = net >= 0;
+  const currency = groups[0]?.currencyCode ?? 'INR';
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 pb-20">
@@ -214,7 +196,7 @@ export function Home() {
         onAvatarClick={() => navigate('/profile')}
         onLogout={handleLogout}
         brandLogo={brandLogo}
-        unreadCount={1}
+        unreadCount={actionItemsTotalCount}
       />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
@@ -222,20 +204,22 @@ export function Home() {
         {/* Stories Row — all groups, gradient ring only for active (non-settled) groups */}
         <div className="mb-8">
           <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
-            {MOCK_GROUPS.map((group, i) => {
-              const firstName = group.name.split(' ')[0].slice(0, 8);
+            {groups.map((group, i) => {
+              const shortName = group.name.split(' ')[0].slice(0, 8);
+              const emoji = GROUP_TYPE_EMOJI[group.groupType] ?? GROUP_TYPE_EMOJI['OTHER'];
+              const hasActivity = getNet(group) !== 0;
               return (
                 <motion.div 
-                  key={group.publicId}
+                  key={group.id}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.1, type: 'spring' }}
-                  onClick={() => navigate(`/group/${group.publicId}`)}
+                  onClick={() => navigate(`/group/${group.id}`)}
                   className="flex flex-col items-center gap-2 cursor-pointer snap-start shrink-0"
                 >
-                  <GroupAvatar name={group.name} emoji={group.emoji} size="sm" hasActivity={group.hasActivity} />
+                  <GroupAvatar name={group.name} emoji={emoji} size="sm" hasActivity={hasActivity} />
                   <span className="text-xs font-medium text-slate-700 dark:text-slate-300 w-16 text-center truncate">
-                    {firstName}
+                    {shortName}
                   </span>
                 </motion.div>
               );
@@ -248,7 +232,7 @@ export function Home() {
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="min-w-0">
             <h1 className="text-3xl font-bold tracking-tight mb-3">Good morning, {firstName}</h1>
             <InsightBar
-              groups={MOCK_GROUPS}
+              groups={groups}
               onNavigate={navigate}
               onSetActionSheetOrigin={setActionSheetOrigin}
             />
@@ -270,18 +254,10 @@ export function Home() {
                 <Wallet className="w-4 h-4" />
                 <span>Total Balance</span>
               </div>
-              {(() => {
-                const totalOwed = MOCK_GROUPS.filter(g => g.myNetInGroup.direction === 'CREDITOR').reduce((s, g) => s + parseFloat(g.myNetInGroup.amount), 0);
-                const totalOwe = MOCK_GROUPS.filter(g => g.myNetInGroup.direction === 'I_OWE').reduce((s, g) => s + parseFloat(g.myNetInGroup.amount), 0);
-                const net = totalOwed - totalOwe;
-                const isPositive = net >= 0;
-                return (
-                  <div className={`text-5xl font-extrabold tracking-tight flex items-center gap-3 ${isPositive ? 'text-emerald-200' : 'text-rose-200'}`}>
-                    {isPositive ? <ArrowUp className="w-7 h-7" /> : <ArrowDown className="w-7 h-7" />}
-                    {isPositive ? '+' : '-'}₹{Math.abs(net).toFixed(2)}
-                  </div>
-                );
-              })()}
+              <div className={`text-5xl font-extrabold tracking-tight flex items-center gap-3 ${isPositive ? 'text-emerald-200' : 'text-rose-200'}`}>
+                {isPositive ? <ArrowUp className="w-7 h-7" /> : <ArrowDown className="w-7 h-7" />}
+                {isPositive ? '+' : '-'}{formatCurrency(Math.abs(net).toFixed(2), currency)}
+              </div>
             </div>
             
             <div className="flex gap-6 sm:gap-10">
@@ -290,7 +266,7 @@ export function Home() {
                   <ArrowDownLeft className="w-4 h-4 text-emerald-300" />
                   You are owed
                 </div>
-                <div className="text-xl font-bold text-white">₹450.00</div>
+                <div className="text-xl font-bold text-white">{formatCurrency(totalOwed.toFixed(2), currency)}</div>
               </div>
               <div className="w-px bg-white/20"></div>
               <div className="flex flex-col gap-1">
@@ -298,15 +274,15 @@ export function Home() {
                   <ArrowUpRight className="w-4 h-4 text-rose-300" />
                   You owe
                 </div>
-                <div className="text-xl font-bold text-white">₹120.00</div>
+                <div className="text-xl font-bold text-white">{formatCurrency(totalOwe.toFixed(2), currency)}</div>
               </div>
             </div>
           </div>
         </motion.div>
 
         <QuickActions
-          groups={MOCK_GROUPS}
-          allActions={allActions}
+          groups={groups}
+          allActions={actionItems}
           visibleActions={visibleActions}
           hiddenCount={hiddenCount}
           onShowAll={() => setPendingSheetOpen(true)}
@@ -371,7 +347,7 @@ export function Home() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            {MOCK_GROUPS.length === 0 ? (
+            {groups.length === 0 ? (
               <EmptyState
                 title="No groups yet"
                 description="Create your first group to start splitting expenses."
@@ -381,10 +357,10 @@ export function Home() {
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                 {filteredGroups.map((group, index) => (
                   <GroupCard
-                    key={group.publicId}
+                    key={group.id}
                     group={group}
                     index={index}
-                    onClick={() => navigate(`/group/${group.publicId}`)}
+                    onClick={() => navigate(`/group/${group.id}`)}
                   />
                 ))}
                 
@@ -406,7 +382,7 @@ export function Home() {
 
         {/* Activity Content */}
         {activeTab === 'activity' && (
-          <RecentActivityList activities={MOCK_RECENT_ACTIVITY} />
+          <RecentActivityList activities={recentActivity} />
         )}
 
       </main>
@@ -461,16 +437,16 @@ export function Home() {
               <div className="pb-12 pt-2 overflow-y-auto custom-scrollbar">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
                   {(actionSheetOrigin === 'settle'
-                    ? MOCK_GROUPS.filter(g => g.myNetInGroup.direction === 'I_OWE')
-                    : MOCK_GROUPS
+                    ? groups.filter(g => getNet(g) < 0)
+                    : groups
                   ).map((group, index) => (
                     <GroupListItem
-                      key={group.publicId}
+                      key={group.id}
                       group={group}
                       index={index}
                       onClick={() => {
                         setActionSheetOrigin(null);
-                        navigate(`/group/${group.publicId}/${actionSheetOrigin === 'expense' ? 'add-expense' : 'settle'}`);
+                        navigate(`/group/${group.id}/${actionSheetOrigin === 'expense' ? 'add-expense' : 'settle'}`);
                       }}
                     />
                   ))}
@@ -485,9 +461,19 @@ export function Home() {
       <PendingApprovalsSheet 
         isOpen={pendingSheetOpen}
         onClose={() => setPendingSheetOpen(false)}
-        approvals={pendingSettlements as any[]}
-        onApprove={async (id) => { await handleAction(id, 'SETTLEMENT', 'approve'); }}
-        onReject={async (id) => { await handleAction(id, 'SETTLEMENT', 'reject'); }}
+        approvals={actionItems.filter(a => a.type === 'SETTLEMENT_APPROVAL').map(a => ({
+          id: a.referenceId,
+          user: {
+            displayName: a.fromUser?.displayName ?? 'Unknown',
+            avatarUrl: a.fromUser?.resolvedAvatar ?? '',
+          },
+          groupName: a.groupName,
+          amount: a.amount ?? '0.00',
+          currencyCode: a.currencyCode ?? 'INR',
+          time: new Date(a.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        }))}
+        onApprove={async (id) => { await handleAction(id, 'SETTLEMENT_APPROVAL', 'approve'); }}
+        onReject={async (id) => { await handleAction(id, 'SETTLEMENT_APPROVAL', 'reject'); }}
         onApproveAll={handleApproveAll}
       />
 

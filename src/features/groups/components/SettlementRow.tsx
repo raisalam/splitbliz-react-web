@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check, Clock, X } from 'lucide-react';
+import { formatCurrency } from '../../../utils/formatCurrency';
 
 type SettlementRowProps = {
   settlement: any;
@@ -9,8 +10,6 @@ type SettlementRowProps = {
 };
 
 export function SettlementRow({ settlement, currencyCode, currentUserId, getMemberName }: SettlementRowProps) {
-  const currencySymbol = currencyCode === 'INR' ? '₹' : '$';
-
   return (
     <div className={`flex items-start gap-4 p-4 rounded-2xl border-l-4 ${
       settlement.status === 'PENDING' ? 'border-l-amber-400 bg-amber-50/50 dark:bg-amber-500/5' :
@@ -28,7 +27,9 @@ export function SettlementRow({ settlement, currencyCode, currentUserId, getMemb
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
-          <span className="font-bold text-slate-900 dark:text-white">{currencySymbol}{parseFloat(settlement.amount).toFixed(2)}</span>
+          <span className="font-bold text-slate-900 dark:text-white">
+            {formatCurrency(settlement.amount, currencyCode)}
+          </span>
           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
             settlement.status === 'PENDING' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
             settlement.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
@@ -38,9 +39,9 @@ export function SettlementRow({ settlement, currencyCode, currentUserId, getMemb
           </span>
         </div>
         <p className="text-sm text-slate-500 mt-1">
-          {getMemberName(settlement.fromUserPublicId)} → {getMemberName(settlement.toUserPublicId)}
+          {getMemberName(settlement.fromUser?.userId || settlement.fromUserPublicId)} → {getMemberName(settlement.toUser?.userId || settlement.toUserPublicId)}
         </p>
-        {settlement.note && <p className="text-xs text-slate-400 mt-0.5">"{settlement.note}"</p>}
+        {(settlement.notes || settlement.note) && <p className="text-xs text-slate-400 mt-0.5">"{settlement.notes || settlement.note}"</p>}
         <p className="text-xs text-slate-400 mt-1">
           {new Date(settlement.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
         </p>

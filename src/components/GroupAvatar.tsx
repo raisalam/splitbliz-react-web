@@ -34,7 +34,8 @@ const colorVariants = [
 ];
 
 export function GroupAvatar({ name, emoji = '👥', size = 'md', hasActivity = false }: GroupAvatarProps) {
-  const colorIndex = stringToHashIndex(name);
+  const safeName = name || 'Unknown Group';
+  const colorIndex = stringToHashIndex(safeName);
   const colors = colorVariants[colorIndex];
 
   // Map sizes to Tailwind dimensions and font sizes

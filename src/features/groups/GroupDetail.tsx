@@ -1,21 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useUser } from '../../providers/UserContext';
+import { useGroupDetail } from '../../hooks/useGroupDetail';
 import {
   Plus, Banknote,
   Users, History, Receipt,
   X, AlertCircle, ChevronRight,
   ClipboardList
 } from 'lucide-react';
-import { 
-  getGroupById, getGroupMembers, getGroupPairwiseBalances, 
-  getGroupExpenses, getGroupSettlements, approveSettlement, rejectSettlement,
-  MOCK_USER_ID 
-} from '../../api/groups';
+import { approveSettlement, rejectSettlement } from '../../api/groups';
 import type { Settlement } from '../../mock/settlements';
 import { toast } from 'sonner';
-import { GroupAvatar } from '../../components/GroupAvatar';
 import { InviteMemberSheet } from '../../components/InviteMemberSheet';
 import { GroupHeader } from './components/GroupHeader';
 import { BalanceSummaryCard } from './components/BalanceSummaryCard';
@@ -24,23 +21,20 @@ import { MemberList } from './components/MemberList';
 import { SettlementRow } from './components/SettlementRow';
 import { Skeleton } from '../../components/ui/skeleton';
 import { EmptyState } from '../../components/EmptyState';
-
-// Smart banners merged inline into SmartActionBanner below
+import { CachedAvatar } from '../../components/CachedAvatar';
 
 export function GroupDetail() {
-  const { groupId } = useParams();
+  const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { user } = useUser();
 
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'members'>('expenses');
   const [expenseFilter, setExpenseFilter] = useState<'ALL' | 'THIS_MONTH' | 'UNSETTLED'>('ALL');
   
-  const [group, setGroup] = useState<any>(null);
-  const [members, setMembers] = useState<any[]>([]);
-  const [balances, setBalances] = useState<any[]>([]);
-  const [expenses, setExpenses] = useState<any[]>([]);
-  const [settlements, setSettlements] = useState<Settlement[]>([]);
+  // Replace direct mock fetching with React Query hook
+  const { data, isLoading: loading, error } = useGroupDetail(groupId);
+  const { group, members, expenses, balances, settlements } = data ?? {};
 
   // Bottom sheet & expand state
   const [historySheet, setHistorySheet] = useState<{ open: boolean; fromId: string; toId: string } | null>(null);
@@ -48,71 +42,34 @@ export function GroupDetail() {
   const [allMembersSheetOpen, setAllMembersSheetOpen] = useState(false);
   const [inviteSheetOpen, setInviteSheetOpen] = useState(false);
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!groupId) return;
-      try {
-        setLoading(true);
-        const [g, m, b, e, s] = await Promise.all([
-          getGroupById(groupId),
-          getGroupMembers(groupId),
-          getGroupPairwiseBalances(groupId),
-          getGroupExpenses(groupId),
-          getGroupSettlements(groupId)
-        ]);
-        setGroup(g);
-        setMembers(m);
-        setBalances(b);
-        setExpenses(e.content);
-        setSettlements(s);
-      } catch (err) {
-        console.error("Error fetching group data", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, [groupId]);
-
   // Settlement helpers
-  const getPendingAmountBetween = (fromId: string, toId: string) => {
-    return settlements
-      .filter(s => s.fromUserPublicId === fromId && s.toUserPublicId === toId && s.status === 'PENDING')
-      .reduce((sum, s) => sum + parseFloat(s.amount), 0);
-  };
-
   const getSettlementsBetween = (fromId: string, toId: string) => {
+    if (!settlements) return [];
     return settlements
-      .filter(s => 
-        (s.fromUserPublicId === fromId && s.toUserPublicId === toId) ||
-        (s.fromUserPublicId === toId && s.toUserPublicId === fromId)
+      .filter((s: any) => 
+        (s.fromUser?.userId === fromId && s.toUser?.userId === toId) ||
+        (s.fromUser?.userId === toId && s.toUser?.userId === fromId)
       )
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   };
-
-  const incomingRequests = settlements.filter(
-    s => s.toUserPublicId === MOCK_USER_ID && s.status === 'PENDING'
-  );
 
   const handleApprove = async (settlementId: string) => {
-    await approveSettlement(settlementId);
-    setSettlements(prev => prev.map(s => s.publicId === settlementId ? { ...s, status: 'APPROVED', resolvedAt: new Date().toISOString() } : s));
+    await approveSettlement(settlementId); // MOCK LEFT FOR NOW, until Write Operations step
     toast.success('Settlement approved!');
   };
 
   const handleReject = async (settlementId: string) => {
-    await rejectSettlement(settlementId);
-    setSettlements(prev => prev.map(s => s.publicId === settlementId ? { ...s, status: 'REJECTED', resolvedAt: new Date().toISOString() } : s));
+    await rejectSettlement(settlementId); // MOCK LEFT FOR NOW
     toast('Settlement rejected');
   };
 
   const getMemberName = (userId: string) => {
-    if (userId === MOCK_USER_ID) return 'You';
-    const m = members.find(m => m.userPublicId === userId);
+    if (userId === user?.id) return 'You';
+    const m = members?.find((m: any) => m.userId === userId);
     return m?.displayName || 'Unknown';
   };
 
-  const getMember = (userId: string) => members.find(m => m.userPublicId === userId);
+  const currentUserId = user?.id || '';
 
   if (loading) {
     return (
@@ -135,16 +92,16 @@ export function GroupDetail() {
     );
   }
 
-  if (!group) {
+  if (error || !group) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center text-slate-500">
-        <h2 className="text-xl font-semibold mb-2 text-slate-900 dark:text-white">Group Not Found</h2>
+        <h2 className="text-xl font-semibold mb-2 text-slate-900 dark:text-white">Group Not Found or Error</h2>
         <button onClick={() => navigate('/')} className="text-indigo-600 hover:underline">Return to Home</button>
       </div>
     );
   }
 
-  const currencySymbol = group.currencyCode === 'INR' ? '₹' : '$';
+  const currencySymbol = group.currencyCode || 'INR';
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 pb-20">
@@ -163,7 +120,7 @@ export function GroupDetail() {
         
         <BalanceSummaryCard
           group={group}
-          members={members}
+          members={members || []}
           currencySymbol={currencySymbol}
           onAiClick={() => navigate(`/group/${groupId}/ai`)}
         />
@@ -177,21 +134,21 @@ export function GroupDetail() {
                className="flex items-center cursor-pointer relative"
                onClick={() => setAllMembersSheetOpen(true)}
              >
-               {members.slice(0, 5).map((member, i) => (
-                 <img 
-                   key={member.userPublicId}
-                   src={member.avatarUrl} 
+               {(members || []).slice(0, 5).map((member: any, i: number) => (
+                 <CachedAvatar 
+                   key={member.userId}
+                   src={member.resolvedAvatar || member.avatarUrl} 
                    alt={member.displayName}
                    className="w-10 h-10 rounded-full object-cover border-2 border-slate-50 dark:border-slate-950 relative hover:-translate-y-1 transition-transform"
                    style={{ zIndex: 10 - i, marginLeft: i === 0 ? 0 : '-10px' }}
                  />
                ))}
-               {members.length > 5 && (
+               {(members || []).length > 5 && (
                  <div 
                    className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-slate-50 dark:border-slate-950 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 relative hover:-translate-y-1 transition-transform"
                    style={{ zIndex: 5, marginLeft: '-10px' }}
                  >
-                   +{members.length - 5}
+                   +{members!.length - 5}
                  </div>
                )}
              </div>
@@ -210,11 +167,11 @@ export function GroupDetail() {
 
         {/* Smart Action Banner Priority Logic */}
         {(() => {
+          const netAmount = group?.balance?.netAmount ? Number(group.balance.netAmount) : 0;
           // Priority 1 — You owe money
-          if (group?.myNetInGroup?.direction === 'I_OWE') {
-            const amount = group.myNetInGroup.amount;
-            // Best guess for {name} based on topSpender or Group Owner, typically this involves a specific pairwise balance but we'll use topSpender for the mock UI
-            const oweName = group.topSpender?.displayName || 'the group';
+          if (netAmount < 0) {
+            const amount = Math.abs(netAmount).toFixed(2);
+            const oweName = members?.[0]?.displayName || 'the group';
 
             return (
               <button
@@ -240,9 +197,9 @@ export function GroupDetail() {
           }
 
           // Priority 2 — You are owed money
-          if (group?.myNetInGroup?.direction === 'CREDITOR') {
-            const amount = group.myNetInGroup.amount;
-            const oweName = group.topSpender?.displayName || 'Someone'; // Again, simplified for mock UI
+          if (netAmount > 0) {
+            const amount = netAmount.toFixed(2);
+            const oweName = members?.[0]?.displayName || 'Someone'; 
 
             return (
               <button
@@ -350,7 +307,7 @@ export function GroupDetail() {
 
         {/* Expenses Tab */}
         {activeTab === 'expenses' && (
-          expenses.length === 0 ? (
+          (!expenses || expenses.length === 0) ? (
             <EmptyState
               title="No expenses yet"
               description="Add the first expense for this group."
@@ -358,14 +315,14 @@ export function GroupDetail() {
             />
           ) : (
             <ExpenseList
-              expenses={expenses}
-              members={members}
+              expenses={expenses || []}
+              members={members || []}
               currencySymbol={currencySymbol}
               expenseFilter={expenseFilter}
               onFilterChange={setExpenseFilter}
               onExpenseClick={(expenseId) => navigate(`/group/${groupId}/expense/${expenseId}`)}
               onAddExpense={() => navigate(`/group/${groupId}/add-expense`)}
-              currentUserId={MOCK_USER_ID}
+              currentUserId={currentUserId}
             />
           )
         )}
@@ -375,12 +332,12 @@ export function GroupDetail() {
         {/* Members Tab */}
         {activeTab === 'members' && (
           <MemberList
-            members={members}
+            members={members || []}
             group={group}
             currencySymbol={currencySymbol}
-            currentUserId={MOCK_USER_ID}
+            currentUserId={currentUserId}
             onShowHistory={() => setShowSettlementHistory(true)}
-            onSettle={(memberId, amount) => navigate(`/group/${groupId}/settle?from=${MOCK_USER_ID}&to=${memberId}&amount=${amount}&currency=${group?.currencyCode || 'INR'}`)}
+            onSettle={(memberId, amount) => navigate(`/group/${groupId}/settle?from=${currentUserId}&to=${memberId}&amount=${amount}&currency=${group?.currencyCode || 'INR'}`)}
             onRemind={(memberName) => {
               toast.success(`Reminder sent to ${memberName}!`);
             }}
@@ -407,7 +364,7 @@ export function GroupDetail() {
                 <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6" />
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                    Settlements with {getMemberName(historySheet.fromId === MOCK_USER_ID ? historySheet.toId : historySheet.fromId)}
+                    Settlements with {getMemberName(historySheet.fromId === currentUserId ? historySheet.toId : historySheet.fromId)}
                   </h3>
                   <button onClick={() => setHistorySheet(null)} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full">
                     <X className="w-5 h-5" />
@@ -428,12 +385,12 @@ export function GroupDetail() {
                   }
                   return (
                     <div className="space-y-4">
-                      {history.map((s) => (
+                      {history.map((s: any) => (
                         <SettlementRow
-                          key={s.publicId}
+                          key={s.id}
                           settlement={s}
                           currencyCode={group.currencyCode}
-                          currentUserId={MOCK_USER_ID}
+                          currentUserId={currentUserId}
                           getMemberName={getMemberName}
                         />
                       ))}
@@ -467,7 +424,7 @@ export function GroupDetail() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Users className="w-5 h-5 text-indigo-500" />
-                    All Members ({members.length})
+                    All Members ({(members || []).length})
                   </h3>
                   <button onClick={() => setAllMembersSheetOpen(false)} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                     <X className="w-5 h-5" />
@@ -476,11 +433,11 @@ export function GroupDetail() {
               </div>
 
               <div className="px-6 pb-24 pt-4 overflow-y-auto space-y-3">
-                {members.map((member: any) => {
-                  const isMe = member.userPublicId === MOCK_USER_ID;
+                {(members || []).map((member: any) => {
+                  const isMe = member.userId === currentUserId;
                   return (
-                    <div key={member.userPublicId} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
-                      <img src={member.avatarUrl} className="w-12 h-12 rounded-full object-cover" alt="" />
+                    <div key={member.userId} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
+                      <CachedAvatar src={member.resolvedAvatar || member.avatarUrl} className="w-12 h-12 rounded-full object-cover shrink-0" alt="" />
                       <div>
                         <div className="flex items-center gap-2">
                           <h4 className="font-semibold text-slate-900 dark:text-white">{member.displayName}</h4>

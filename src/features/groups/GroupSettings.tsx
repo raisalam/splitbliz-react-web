@@ -131,8 +131,6 @@ export function GroupSettings() {
           sectionDivider={sectionDivider}
           mutedLabel={mutedLabel}
         />
-
-                   </div>
         <MemberManagementSection
           visibleMembers={visibleMembers}
           totalMembers={totalMembers}

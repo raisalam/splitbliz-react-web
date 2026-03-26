@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowDownLeft, ArrowUpRight, Sparkles, Wallet } from 'lucide-react';
+import { formatCurrency } from '../../../utils/formatCurrency';
 
 type BalanceSummaryCardProps = {
   group: any;
@@ -10,6 +11,11 @@ type BalanceSummaryCardProps = {
 };
 
 export function BalanceSummaryCard({ group, members, currencySymbol, onAiClick }: BalanceSummaryCardProps) {
+  const netAmount = group?.balance?.netAmount ? Number(group.balance.netAmount) : 0;
+  const isCreditor = netAmount > 0;
+  const isDebtor = netAmount < 0;
+  const currencyCode = group?.currencyCode || 'INR';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -37,7 +43,7 @@ export function BalanceSummaryCard({ group, members, currencySymbol, onAiClick }
             <span>Group Total Spent</span>
           </div>
           <div className="text-5xl font-extrabold tracking-tight">
-            {currencySymbol}{group.financialSummary?.totalExpenseAmount || '0.00'}
+            {formatCurrency(group?.totalExpenses || '0.00', currencyCode)}
           </div>
         </div>
 
@@ -45,10 +51,10 @@ export function BalanceSummaryCard({ group, members, currencySymbol, onAiClick }
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1.5 text-indigo-100/80 text-sm">
               <ArrowDownLeft className="w-4 h-4 text-emerald-300" />
-              {group.myNetInGroup.direction === 'CREDITOR' ? 'You are owed' : 'Owed to you'}
+              {isCreditor ? 'You are owed' : 'Owed to you'}
             </div>
             <div className="text-xl font-bold text-white">
-              {group.myNetInGroup.direction === 'CREDITOR' ? `+${currencySymbol}${group.myNetInGroup.amount}` : `${currencySymbol}0.00`}
+              {isCreditor ? `+${formatCurrency(Math.abs(netAmount).toFixed(2), currencyCode)}` : formatCurrency('0.00', currencyCode)}
             </div>
           </div>
           <div className="w-px bg-white/20" />
@@ -58,16 +64,18 @@ export function BalanceSummaryCard({ group, members, currencySymbol, onAiClick }
               You owe
             </div>
             <div className="text-xl font-bold text-white">
-              {group.myNetInGroup.direction === 'I_OWE' ? `${currencySymbol}${group.myNetInGroup.amount}` : `${currencySymbol}0.00`}
+              {isDebtor ? formatCurrency(Math.abs(netAmount).toFixed(2), currencyCode) : formatCurrency('0.00', currencyCode)}
             </div>
           </div>
         </div>
       </div>
       <div className="relative z-10 mt-6 md:mt-8 pt-4 border-t border-white/10 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 text-sm text-indigo-50/90 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-          <Sparkles className="w-4 h-4 text-purple-200 shrink-0" />
-          <span className="truncate">Top Spender: {members[0]?.displayName || 'User'} • {currencySymbol}{members[0]?.paidAmount || '0'}</span>
-        </div>
+        {members.length > 0 && (
+          <div className="flex items-center gap-2 text-sm text-indigo-50/90 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+            <Sparkles className="w-4 h-4 text-purple-200 shrink-0" />
+            <span className="truncate">Top Spender: {members[0]?.displayName || 'User'} • {formatCurrency(members[0]?.balance?.paidAmount || '0.00', currencyCode)}</span>
+          </div>
+        )}
       </div>
     </motion.div>
   );

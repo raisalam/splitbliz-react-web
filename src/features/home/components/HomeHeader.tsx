@@ -22,8 +22,8 @@ export function HomeHeader({
   unreadCount
 }: HomeHeaderProps) {
   const { user } = useUser();
-  const hasUnread = unreadCount >= 0;
-  const avatarUrl = user?.avatarUrl ?? '';
+  const hasUnread = unreadCount > 0;
+  const avatarUrl = user?.resolvedAvatar ?? '';
   const avatarInitial = (user?.displayName?.charAt(0) ?? 'U').toUpperCase();
 
   return (

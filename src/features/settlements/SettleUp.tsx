@@ -10,6 +10,7 @@ import { SettlementMemberPicker } from './components/SettlementMemberPicker';
 import { SettlementAmountForm } from './components/SettlementAmountForm';
 import { SettlementConfirmSheet } from './components/SettlementConfirmSheet';
 import { Skeleton } from '../../components/ui/skeleton';
+import { CachedAvatar } from '../../components/CachedAvatar';
 
 type ActiveSheet = 'NONE' | 'AMOUNT' | 'NOTE' | 'FROM' | 'TO';
 
@@ -187,7 +188,7 @@ export function SettleUp() {
                     className="flex flex-col items-center gap-2 cursor-pointer group"
                   >
                     {fromMember?.avatarUrl ? (
-                      <img src={fromMember.avatarUrl} alt={fromName} className="w-16 h-16 rounded-full object-cover border-3 border-rose-200 dark:border-rose-800 shadow-lg group-hover:ring-2 group-hover:ring-rose-400 transition-all" />
+                      <CachedAvatar src={fromMember.avatarUrl} alt={fromName} className="w-16 h-16 rounded-full object-cover border-3 border-rose-200 dark:border-rose-800 shadow-lg group-hover:ring-2 group-hover:ring-rose-400 transition-all" />
                     ) : (
                       <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-rose-600 dark:text-rose-400 font-bold text-2xl border-3 border-rose-200 dark:border-rose-800 group-hover:ring-2 group-hover:ring-rose-400 transition-all">
                         {fromName.charAt(0)}
@@ -207,7 +208,7 @@ export function SettleUp() {
                     className="flex flex-col items-center gap-2 cursor-pointer group"
                   >
                     {toMember?.avatarUrl ? (
-                      <img src={toMember.avatarUrl} alt={toName} className="w-16 h-16 rounded-full object-cover border-3 border-emerald-200 dark:border-emerald-800 shadow-lg group-hover:ring-2 group-hover:ring-emerald-400 transition-all" />
+                      <CachedAvatar src={toMember.avatarUrl} alt={toName} className="w-16 h-16 rounded-full object-cover border-3 border-emerald-200 dark:border-emerald-800 shadow-lg group-hover:ring-2 group-hover:ring-emerald-400 transition-all" />
                     ) : (
                       <div className="w-16 h-16 rounded-full border-2 border-dashed border-emerald-300 dark:border-emerald-700 flex items-center justify-center text-emerald-500 dark:text-emerald-400 group-hover:ring-2 group-hover:ring-emerald-400 group-hover:border-emerald-400 transition-all bg-emerald-50/50 dark:bg-emerald-900/20">
                         <Plus className="w-7 h-7" />
@@ -240,7 +241,7 @@ export function SettleUp() {
                   >
                     <span className="text-slate-500 dark:text-slate-400 font-medium text-lg">From</span>
                     <div className="flex items-center gap-3">
-                      {fromMember?.avatarUrl && <img src={fromMember.avatarUrl} alt={fromName} className="w-7 h-7 rounded-full" />}
+                      {fromMember?.avatarUrl && <CachedAvatar src={fromMember.avatarUrl} alt={fromName} className="w-7 h-7 rounded-full" />}
                       <span className={`text-lg font-semibold ${selectedFromId ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{fromName}</span>
                       <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600" />
                     </div>
@@ -253,7 +254,7 @@ export function SettleUp() {
                   >
                     <span className="text-slate-500 dark:text-slate-400 font-medium text-lg">To</span>
                     <div className="flex items-center gap-3">
-                      {toMember?.avatarUrl && <img src={toMember.avatarUrl} alt={toName} className="w-7 h-7 rounded-full" />}
+                      {toMember?.avatarUrl && <CachedAvatar src={toMember.avatarUrl} alt={toName} className="w-7 h-7 rounded-full" />}
                       <span className={`text-lg font-semibold ${selectedToId ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{toName}</span>
                       <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600" />
                     </div>

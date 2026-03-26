@@ -1,14 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-
-type GroupSummary = {
-  publicId: string;
-  name: string;
-  myNetInGroup: {
-    direction: 'I_OWE' | 'CREDITOR' | 'SETTLED' | string;
-    amount: string;
-  };
-};
+import { Group } from '../../../types';
+import { formatCurrency } from '../../../utils/formatCurrency';
 
 type Insight = {
   emoji: string;
@@ -19,38 +12,46 @@ type Insight = {
 };
 
 type InsightBarProps = {
-  groups: GroupSummary[];
+  groups: Group[];
   onNavigate: (path: string) => void;
   onSetActionSheetOrigin: (value: 'expense' | 'settle' | null) => void;
 };
+
+/** Derive balance direction from the API's netAmount string */
+function getNet(group: Group): number {
+  return group.balance ? Number(group.balance.netAmount) : 0;
+}
 
 export function InsightBar({ groups, onNavigate, onSetActionSheetOrigin }: InsightBarProps) {
   const [index, setIndex] = useState(0);
 
   const insights = useMemo<Insight[]>(() => {
-    const oweGroups = groups.filter(g => g.myNetInGroup.direction === 'I_OWE');
-    const owedGroups = groups.filter(g => g.myNetInGroup.direction === 'CREDITOR');
-    const settledGroups = groups.filter(g => g.myNetInGroup.direction === 'SETTLED');
-    const totalOwe = oweGroups.reduce((sum, g) => sum + parseFloat(g.myNetInGroup.amount), 0);
-    const totalOwed = owedGroups.reduce((sum, g) => sum + parseFloat(g.myNetInGroup.amount), 0);
-    const topOwedGroup = [...owedGroups].sort((a, b) => parseFloat(b.myNetInGroup.amount) - parseFloat(a.myNetInGroup.amount))[0];
-    const topOweGroup = [...oweGroups].sort((a, b) => parseFloat(b.myNetInGroup.amount) - parseFloat(a.myNetInGroup.amount))[0];
+    const oweGroups = groups.filter(g => getNet(g) < 0);
+    const owedGroups = groups.filter(g => getNet(g) > 0);
+    const settledGroups = groups.filter(g => getNet(g) === 0);
 
+    const totalOwe = oweGroups.reduce((sum, g) => sum + Math.abs(getNet(g)), 0);
+    const totalOwed = owedGroups.reduce((sum, g) => sum + getNet(g), 0);
+
+    const topOwedGroup = [...owedGroups].sort((a, b) => getNet(b) - getNet(a))[0];
+    const topOweGroup = [...oweGroups].sort((a, b) => getNet(a) - getNet(b))[0]; // most negative first
+
+    const currency = groups[0]?.currencyCode ?? 'INR';
     const list: Insight[] = [];
 
     if (owedGroups.length > 0 && topOwedGroup) {
       list.push({
-        emoji: 'ðŸ’°',
-        text: <>You're owed <strong>â‚¹{totalOwed.toFixed(0)}</strong> across {owedGroups.length} group{owedGroups.length > 1 ? 's' : ''}. Nudge <strong>{topOwedGroup.name}</strong>?</>,
+        emoji: '💰',
+        text: <>You're owed <strong>{formatCurrency(totalOwed.toFixed(2), currency)}</strong> across {owedGroups.length} group{owedGroups.length > 1 ? 's' : ''}. Nudge <strong>{topOwedGroup.name}</strong>?</>,
         bg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
         actionLabel: 'Nudge',
-        onAction: () => onNavigate(`/group/${topOwedGroup.publicId}`),
+        onAction: () => onNavigate(`/group/${topOwedGroup.id}`),
       });
     }
     if (oweGroups.length > 0 && topOweGroup) {
       list.push({
-        emoji: 'âš¡',
-        text: <>You owe <strong>â‚¹{totalOwe.toFixed(0)}</strong> across {oweGroups.length} group{oweGroups.length > 1 ? 's' : ''}. Settle <strong>{topOweGroup.name}</strong> first?</>,
+        emoji: '⚡',
+        text: <>You owe <strong>{formatCurrency(totalOwe.toFixed(2), currency)}</strong> across {oweGroups.length} group{oweGroups.length > 1 ? 's' : ''}. Settle <strong>{topOweGroup.name}</strong> first?</>,
         bg: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400',
         actionLabel: 'Settle',
         onAction: () => onSetActionSheetOrigin('settle'),
@@ -58,7 +59,7 @@ export function InsightBar({ groups, onNavigate, onSetActionSheetOrigin }: Insig
     }
     if (settledGroups.length > 0) {
       list.push({
-        emoji: 'ðŸŽ‰',
+        emoji: '🎉',
         text: <><strong>{settledGroups.length}</strong> group{settledGroups.length > 1 ? 's' : ''} fully settled! Keep it up.</>,
         bg: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
         actionLabel: 'View',
@@ -67,7 +68,7 @@ export function InsightBar({ groups, onNavigate, onSetActionSheetOrigin }: Insig
     }
     if (list.length === 0) {
       list.push({
-        emoji: 'âœ¨',
+        emoji: '✨',
         text: <>All clear! No pending balances.</>,
         bg: 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
         actionLabel: '',
