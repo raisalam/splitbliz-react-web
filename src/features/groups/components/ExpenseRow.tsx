@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { GroupAvatar } from '../../../components/GroupAvatar';
+import { formatCurrency } from '../../../utils/formatCurrency';
 
 type ExpenseRowProps = {
   expense: any;
@@ -11,12 +12,23 @@ type ExpenseRowProps = {
   members: any[];
   currencySymbol: string;
   onClick: () => void;
+  currentUserId: string;
 };
 
-export function ExpenseRow({ expense, idx, payer, isMe, formattedDate, members, currencySymbol, onClick }: ExpenseRowProps) {
-  const totalAmount = parseFloat(expense.totalAmount || '0');
-  const myShareAmount = parseFloat(expense.yourShare || '0');
-  const netForExpense = isMe ? (totalAmount - myShareAmount) : -myShareAmount;
+export function ExpenseRow({ expense, idx, payer, isMe, formattedDate, members, currencySymbol, onClick, currentUserId }: ExpenseRowProps) {
+  const totalAmount = parseFloat(expense.amount || '0');
+  
+  // Real API gives `splits` array. Find my split
+  const mySplit = expense.splits?.find((s: any) => s.userId === currentUserId);
+  const myShareAmount = mySplit
+    ? parseFloat(mySplit.splitAmount)
+    : parseFloat(expense.yourShareTotal ?? expense.yourShare ?? '0');
+  
+  // If I paid, my net is (total - my share). If I didn't pay, my net is (-my share).
+  // This is a naive approximation for the list preview.
+  const myTotalPaid = expense.payers?.find((p: any) => p.userId === currentUserId)?.paidAmount
+    ?? (expense.youPaid ? expense.amount : '0');
+  const netForExpense = parseFloat(myTotalPaid) - myShareAmount;
 
   let shareColorClass = 'text-slate-400 dark:text-slate-500';
   if (netForExpense > 0) shareColorClass = 'text-emerald-600 dark:text-emerald-400';
@@ -46,17 +58,17 @@ export function ExpenseRow({ expense, idx, payer, isMe, formattedDate, members, 
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-white leading-tight">{expense.title}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-col sm:flex-row sm:items-center sm:gap-1.5">
-              <span>{isMe ? 'You' : payer.displayName} paid {currencySymbol}{expense.totalAmount}</span>
+              <span>{isMe ? 'You' : payer.displayName} paid {formatCurrency(expense.amount, expense.currencyCode || 'INR')}</span>
               <span className="hidden sm:inline">•</span>
               <span className={`text-[10px] uppercase font-bold tracking-wider ${shareColorClass}`}>
-                Your share: {currencySymbol}{myShareAmount.toFixed(2)}
+                Your share: {formatCurrency(myShareAmount.toFixed(2), expense.currencyCode || 'INR')}
               </span>
             </p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <div className="font-semibold text-slate-900 dark:text-white text-base">
-            {currencySymbol}{expense.totalAmount}
+            {formatCurrency(expense.amount, expense.currencyCode || 'INR')}
           </div>
           <div className="flex flex-col items-end gap-1.5 mt-1">
             <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded-full ${
