@@ -30,9 +30,20 @@ export const expensesService = {
   },
 
   async createExpense(groupId: string, data: CreateExpenseRequest): Promise<Expense> {
+    const payload = {
+      title: data.title,
+      amount: data.amount,
+      currencyCode: data.currencyCode,
+      category: data.category,
+      expenseDate: data.expenseDate,
+      splitType: data.splitType,
+      notes: data.notes,
+      payments: data.payers?.map((p) => ({ userId: p.userId, amount: p.paidAmount })) ?? [],
+      splits: data.splits?.map((s) => ({ userId: s.userId, amount: s.splitAmount })) ?? [],
+    };
     const res = await apiClient.post<{ expense: Expense }>(
       `/groups/${groupId}/expenses`,
-      data,
+      payload,
       { headers: { 'Idempotency-Key': generateIdempotencyKey() } }
     );
     return res.data.expense;
