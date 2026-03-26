@@ -1,0 +1,10 @@
+// Barrel export for all services
+export { authService } from './authService';
+export { groupsService } from './groupsService';
+export { expensesService } from './expensesService';
+export { settlementsService } from './settlementsService';
+export { activityService } from './activityService';
+export { notificationsService } from './notificationsService';
+export { engagementService } from './engagementService';
+export { systemService } from './systemService';
+export { default as apiClient, tokenStore, extractApiError, generateIdempotencyKey } from './apiClient';
