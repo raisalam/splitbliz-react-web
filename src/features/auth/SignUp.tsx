@@ -4,14 +4,44 @@ import { useNavigate } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User } from 'lucide-react';
 import brandLogo from '../../assets/brand/logo.png';
 import { colors } from '../../constants/colors';
+import { authService } from '../../services';
+import { extractApiError } from '../../services/apiClient';
+import { useUser } from '../../providers/UserContext';
 
 export function SignUp() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const { setUser } = useUser();
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/onboarding/profile');
+    setLoading(true);
+    setError(null);
+    try {
+      const user = await authService.register({
+        email,
+        password,
+        displayName,
+      });
+      setUser(user);
+      navigate('/onboarding/profile');
+    } catch (err) {
+      const apiErr = extractApiError(err);
+      if (apiErr?.code === 'ERR_PROVIDER_MISMATCH') {
+        setError('An account with this email already exists. Try logging in.');
+      } else if (apiErr?.code === 'ERR_VALIDATION') {
+        setError(apiErr.details?.fields?.[0]?.message ?? 'Please check your details.');
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleAuth = () => {
@@ -69,6 +99,8 @@ export function SignUp() {
                   type="text"
                   required
                   placeholder="e.g. Aman Sharma"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 text-[13px] font-medium text-[#1a1625] rounded-[9px] outline-none transition-all placeholder:text-[#b8b4d8]"
                   style={{ backgroundColor: colors.pageBg, border: '1.5px solid #e8e4f8' }}
                   onFocus={(e) => e.target.style.borderColor = colors.primary}
@@ -90,6 +122,8 @@ export function SignUp() {
                   type="email"
                   required
                   placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 text-[13px] font-medium text-[#1a1625] rounded-[9px] outline-none transition-all placeholder:text-[#b8b4d8]"
                   style={{ backgroundColor: colors.pageBg, border: '1.5px solid #e8e4f8' }}
                   onFocus={(e) => e.target.style.borderColor = colors.primary}
@@ -111,6 +145,8 @@ export function SignUp() {
                   type={showPassword ? "text" : "password"}
                   required
                   placeholder="Min. 8 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-10 py-3 text-[13px] font-medium text-[#1a1625] rounded-[9px] outline-none transition-all placeholder:text-[#b8b4d8]"
                   style={{ backgroundColor: colors.pageBg, border: '1.5px solid #e8e4f8' }}
                   onFocus={(e) => e.target.style.borderColor = colors.primary}
@@ -129,12 +165,18 @@ export function SignUp() {
             {/* CTA */}
             <button
               type="submit"
-              className="w-full py-3.5 rounded-[12px] text-white font-bold text-[13px] transition-transform active:scale-[0.98] shadow-md shadow-indigo-600/20"
+              disabled={loading}
+              className="w-full py-3.5 rounded-[12px] text-white font-bold text-[13px] transition-transform active:scale-[0.98] shadow-md shadow-indigo-600/20 disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight})` }}
             >
               Create account →
             </button>
           </form>
+          {error && (
+            <p className="mt-3 text-center text-[12px] font-semibold text-rose-600">
+              {error}
+            </p>
+          )}
 
           {/* Divider */}
           <div className="my-6 relative flex items-center justify-center">
