@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ChevronRight, Pencil, X, MoreHorizontal, UserPlus } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { MOCK_USER_ID } from '../../api/groups';
 import { InviteMemberSheet } from '../../components/InviteMemberSheet';
+import { GroupInfoSection } from './components/GroupInfoSection';
+import { MemberManagementSection } from './components/MemberManagementSection';
+import { DangerZoneSection } from './components/DangerZoneSection';
 
 // 7-column emoji grid (same as CreateGroup)
 const EMOJI_GRID = [
@@ -113,328 +116,53 @@ export function GroupSettings() {
 
       <main className="max-w-xl mx-auto px-4 py-5 space-y-4">
 
-        {/* Hero Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl p-5 flex items-center gap-5"
-          style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)` }}
-        >
-          {/* Icon Circle with edit badge */}
-          <div className="relative shrink-0">
-            <button
-              onClick={() => setActiveSheet('EMOJI')}
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                border: '2.5px solid rgba(255,255,255,0.45)',
-              }}
-            >
-              <span className="text-3xl" style={{ lineHeight: 1 }}>{selectedEmoji}</span>
-            </button>
-            {/* Edit badge */}
-            <div
-              className="absolute -bottom-0.5 -right-0.5 w-[22px] h-[22px] rounded-full bg-white flex items-center justify-center shadow-sm cursor-pointer"
-              onClick={() => setActiveSheet('EMOJI')}
-            >
-              <Pencil className="w-3 h-3" style={{ color: purple }} />
-            </div>
-          </div>
+        <GroupInfoSection
+          groupName={groupName}
+          selectedEmoji={selectedEmoji}
+          splitType={splitType}
+          onGroupNameChange={setGroupName}
+          onEmojiClick={() => setActiveSheet('EMOJI')}
+          onSplitTypeChange={setSplitType}
+          requireApproval={requireApproval}
+          simplifyDebts={simplifyDebts}
+          onToggleRequireApproval={() => setRequireApproval(!requireApproval)}
+          onToggleSimplifyDebts={() => setSimplifyDebts(!simplifyDebts)}
+          purple={purple}
+          pageBg={pageBg}
+          cardBorder={cardBorder}
+          sectionDivider={sectionDivider}
+          mutedLabel={mutedLabel}
+        />
 
-          {/* Group Name Input */}
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>Group name</p>
-            <input
-              type="text"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              className="w-full bg-transparent text-white outline-none pb-1"
-              style={{
-                fontSize: '18px',
-                fontWeight: 700,
-                borderBottom: '1.5px solid rgba(255,255,255,0.45)',
-              }}
-            />
-            {/* PRO badge */}
-            <div className="mt-2">
-              <span
-                className="inline-flex items-center gap-1 text-[10px] font-bold text-white px-2 py-0.5 rounded-full"
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  border: '1px solid rgba(255,255,255,0.4)',
-                }}
-              >
-                ★ PRO
-              </span>
-            </div>
-          </div>
-        </motion.div>
+                   </div>
+        <MemberManagementSection
+          visibleMembers={visibleMembers}
+          totalMembers={totalMembers}
+          showAllMembers={showAllMembers}
+          onShowAllMembers={() => setShowAllMembers(true)}
+          onInvite={() => setInviteSheetOpen(true)}
+          onMemberAction={(memberId) => {
+            setSelectedMemberId(memberId);
+            setActiveSheet('MEMBER_ACTION');
+          }}
+          getRoleBadge={getRoleBadge}
+          avatarColors={AVATAR_COLORS}
+          currentUserId={MOCK_USER_ID}
+          mutedLabel={mutedLabel}
+          purple={purple}
+          sectionDivider={sectionDivider}
+          pageBg={pageBg}
+          cardBorder={cardBorder}
+        />
 
-        {/* Preferences Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="rounded-[14px] bg-white overflow-hidden"
-          style={{ border: `0.5px solid ${cardBorder}` }}
-        >
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: mutedLabel }}>
-              Preferences
-            </p>
-          </div>
-
-          {/* Currency Row */}
-          <button className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50">
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#fff3e0' }}>
-              💱
-            </div>
-            <div className="flex-1 text-left">
-              <span className="text-sm font-semibold" style={{ color: '#1a1625' }}>Currency</span>
-              <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>All expenses in this group</p>
-            </div>
-            <div className="flex items-center gap-1.5 text-sm" style={{ color: mutedLabel }}>
-              <span className="font-medium">₹ INR</span>
-              <ChevronRight className="w-4 h-4" />
-            </div>
-          </button>
-
-          {/* Default Split Type */}
-          <div className="px-4 py-3.5" style={{ borderTop: `0.5px solid ${sectionDivider}` }}>
-            <p className="text-xs font-medium mb-2.5" style={{ color: mutedLabel }}>Default split type</p>
-            <div
-              className="flex p-[3px] rounded-[10px]"
-              style={{ backgroundColor: pageBg }}
-            >
-              {[
-                { id: 'EQUAL' as const, label: 'Equal' },
-                { id: 'PERCENTAGE' as const, label: 'Percentage' },
-                { id: 'EXACT' as const, label: 'Exact amounts' },
-              ].map(type => (
-                <button
-                  key={type.id}
-                  onClick={() => setSplitType(type.id)}
-                  className="flex-1 py-2 text-xs font-semibold rounded-[8px] transition-all"
-                  style={{
-                    backgroundColor: splitType === type.id ? 'white' : 'transparent',
-                    color: splitType === type.id ? purple : '#8a86a5',
-                    boxShadow: splitType === type.id ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  }}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Require Settlement Approval Toggle */}
-          <div
-            className="flex items-center gap-3 px-4 py-3.5"
-            style={{ borderTop: `0.5px solid ${sectionDivider}` }}
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Require settlement approval</p>
-              <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Members must confirm before marking paid</p>
-            </div>
-            <button
-              onClick={() => setRequireApproval(!requireApproval)}
-              className="w-11 h-6 rounded-full transition-colors relative shrink-0"
-              style={{ backgroundColor: requireApproval ? purple : '#d4d0e8' }}
-            >
-              <div
-                className="w-5 h-5 rounded-full bg-white shadow-sm absolute top-0.5 transition-all"
-                style={{ left: requireApproval ? '22px' : '2px' }}
-              />
-            </button>
-          </div>
-
-          {/* Simplify Debts Toggle */}
-          <div
-            className="flex items-center gap-3 px-4 py-3.5"
-            style={{ borderTop: `0.5px solid ${sectionDivider}` }}
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Simplify debts</p>
-              <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Minimize total number of transactions</p>
-            </div>
-            <button
-              onClick={() => setSimplifyDebts(!simplifyDebts)}
-              className="w-11 h-6 rounded-full transition-colors relative shrink-0"
-              style={{ backgroundColor: simplifyDebts ? purple : '#d4d0e8' }}
-            >
-              <div
-                className="w-5 h-5 rounded-full bg-white shadow-sm absolute top-0.5 transition-all"
-                style={{ left: simplifyDebts ? '22px' : '2px' }}
-              />
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Members Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-[14px] bg-white overflow-hidden"
-          style={{ border: `0.5px solid ${cardBorder}` }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: mutedLabel }}>
-              Members · {totalMembers}
-            </p>
-            <button
-              onClick={() => setInviteSheetOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95"
-              style={{ backgroundColor: '#ede9ff', color: purple }}
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              Invite
-            </button>
-          </div>
-
-          {/* Member Rows */}
-          <div>
-            {visibleMembers.map((member, idx) => {
-              const isCurrentUser = member.userPublicId === MOCK_USER_ID || member.displayName === 'Rais';
-              const isOwner = member.role === 'OWNER';
-              const badge = getRoleBadge(member.role);
-              const avatarColor = AVATAR_COLORS[idx % AVATAR_COLORS.length];
-
-              return (
-                <div
-                  key={member.userPublicId}
-                  className="flex items-center gap-3 px-4 py-3"
-                  style={{ borderTop: `0.5px solid ${sectionDivider}` }}
-                >
-                  {/* Avatar */}
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
-                    style={{ backgroundColor: avatarColor }}
-                  >
-                    {member.displayName.charAt(0).toUpperCase()}
-                  </div>
-
-                  {/* Name + Role */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-semibold truncate" style={{ color: '#1a1625' }}>
-                        {member.displayName}
-                      </span>
-                      {isCurrentUser && (
-                        <span className="text-xs" style={{ color: mutedLabel }}>(You)</span>
-                      )}
-                    </div>
-                    <p className="text-[11px]" style={{ color: mutedLabel }}>
-                      {member.role === 'OWNER' ? 'Group Owner' : member.role === 'ADMIN' ? 'Group Admin' : 'Member'}
-                    </p>
-                  </div>
-
-                  {/* Role badge */}
-                  <span
-                    className="text-[10px] font-bold uppercase px-2 py-1 rounded-md shrink-0"
-                    style={{ backgroundColor: badge.bg, color: badge.color }}
-                  >
-                    {badge.label}
-                  </span>
-
-                  {/* Action button — hidden for current user and owner */}
-                  {!isCurrentUser && !isOwner ? (
-                    <button
-                      onClick={() => {
-                        setSelectedMemberId(member.userPublicId);
-                        setActiveSheet('MEMBER_ACTION');
-                      }}
-                      className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors hover:bg-slate-100"
-                      style={{ backgroundColor: pageBg }}
-                    >
-                      <MoreHorizontal className="w-4 h-4" style={{ color: mutedLabel }} />
-                    </button>
-                  ) : (
-                    <div className="w-7" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* View All row */}
-          {!showAllMembers && totalMembers > 4 && (
-            <button
-              onClick={() => setShowAllMembers(true)}
-              className="w-full py-3 text-center text-sm font-semibold transition-colors hover:bg-slate-50/50"
-              style={{ color: purple, borderTop: `0.5px solid ${sectionDivider}` }}
-            >
-              View all {totalMembers} members ›
-            </button>
-          )}
-        </motion.div>
-
-        {/* Group Actions Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="rounded-[14px] bg-white overflow-hidden"
-          style={{ border: `0.5px solid ${cardBorder}` }}
-        >
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: mutedLabel }}>
-              Group Actions
-            </p>
-          </div>
-
-          {/* Archive Group */}
-          <button
-            className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50"
-            style={{ borderTop: `0.5px solid ${sectionDivider}` }}
-          >
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#f0f0f0' }}>
-              🗄️
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold" style={{ color: '#3d3a4a' }}>Archive group</p>
-              <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Hide from active groups. Can be restored.</p>
-            </div>
-            <ChevronRight className="w-4 h-4 shrink-0" style={{ color: mutedLabel }} />
-          </button>
-
-          {/* Leave Group */}
-          <button
-            onClick={() => setLeaveError(true)}
-            className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50"
-            style={{ borderTop: `0.5px solid ${sectionDivider}` }}
-          >
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#fff3e0' }}>
-              🚪
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold" style={{ color: '#e65100' }}>Leave group</p>
-              {leaveError ? (
-                <p className="text-[11px] mt-0.5 text-red-500 font-medium">Settle your balance first</p>
-              ) : (
-                <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>You must be fully settled to leave.</p>
-              )}
-            </div>
-            <ChevronRight className="w-4 h-4 shrink-0" style={{ color: mutedLabel }} />
-          </button>
-
-          {/* Delete Group */}
-          <button
-            onClick={() => setActiveSheet('DELETE_CONFIRM')}
-            className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-red-50/50"
-            style={{ borderTop: `0.5px solid ${sectionDivider}` }}
-          >
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#ffebee' }}>
-              🗑️
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold" style={{ color: '#e24b4a' }}>Delete group</p>
-              <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Permanently deletes all expenses. Cannot be undone.</p>
-            </div>
-            <ChevronRight className="w-4 h-4 shrink-0" style={{ color: mutedLabel }} />
-          </button>
-        </motion.div>
+        <DangerZoneSection
+          leaveError={leaveError}
+          onLeave={() => setLeaveError(true)}
+          onDelete={() => setActiveSheet('DELETE_CONFIRM')}
+          sectionDivider={sectionDivider}
+          cardBorder={cardBorder}
+          mutedLabel={mutedLabel}
+        />
 
         <div className="h-8" />
       </main>
