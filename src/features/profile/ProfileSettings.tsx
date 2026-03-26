@@ -10,6 +10,7 @@ import { NotificationToggles } from './components/NotificationToggles';
 import { PreferencesSection } from './components/PreferencesSection';
 import { AccountActionsSection } from './components/AccountActionsSection';
 import { colors } from '../../constants/colors';
+import { useUser } from '../../providers/UserContext';
 
 // 7-column emoji grid
 const EMOJI_GRID = [
@@ -29,11 +30,10 @@ type BottomSheet = 'NONE' | 'EDIT_HERO' | 'EDIT_NAME' | 'DELETE_CONFIRM';
 export function ProfileSettings() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { user, setUser } = useUser();
 
   // State
   const [activeSheet, setActiveSheet] = useState<BottomSheet>('NONE');
-  const [displayName, setDisplayName] = useState('Rais');
-  const [email, setEmail] = useState('rais@example.com');
   const [avatar, setAvatar] = useState('R'); // Default to initial
   
   // Notification Toggles
@@ -61,7 +61,9 @@ export function ProfileSettings() {
   };
 
   const handleSaveEdit = () => {
-    if (activeSheet === 'EDIT_NAME') setDisplayName(tempValue);
+    if (activeSheet === 'EDIT_NAME') {
+      setUser(user ? { ...user, displayName: tempValue } : user);
+    }
     setActiveSheet('NONE');
     toast.success('Profile updated');
   };
@@ -71,6 +73,9 @@ export function ProfileSettings() {
     toast.success('Account deleted');
     navigate('/');
   };
+
+  const displayName = user?.displayName ?? '';
+  const email = user?.email ?? '';
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: pageBg }}>

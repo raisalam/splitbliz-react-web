@@ -1,5 +1,6 @@
 import React from 'react';
 import { Bell, Moon, Sun, LogOut } from 'lucide-react';
+import { useUser } from '../../../providers/UserContext';
 
 type HomeHeaderProps = {
   theme: 'light' | 'dark';
@@ -8,10 +9,6 @@ type HomeHeaderProps = {
   onAvatarClick: () => void;
   onLogout: () => void;
   brandLogo: string;
-  user: {
-    displayName: string;
-    avatarUrl: string;
-  };
   unreadCount: number;
 };
 
@@ -22,9 +19,9 @@ export function HomeHeader({
   onAvatarClick,
   onLogout,
   brandLogo,
-  user,
   unreadCount
 }: HomeHeaderProps) {
+  const { user } = useUser();
   const hasUnread = unreadCount >= 0;
 
   return (
@@ -63,8 +60,8 @@ export function HomeHeader({
           <div className="flex items-center gap-3">
             <button onClick={onAvatarClick} className="relative rounded-full hover:ring-2 hover:ring-indigo-500/50 transition-all">
               <img
-                src={user.avatarUrl}
-                alt="User Avatar"
+                src={user?.avatarUrl ?? ''}
+                alt={user?.displayName ?? 'User Avatar'}
                 className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 object-cover"
               />
             </button>

@@ -32,6 +32,7 @@ import { RecentActivityList } from './components/RecentActivityList';
 import { HomeFAB } from './components/HomeFAB';
 import { Skeleton } from '../../components/ui/skeleton';
 import { EmptyState } from '../../components/EmptyState';
+import { useUser } from '../../providers/UserContext';
 
 // Static non-settlement actions (group invites etc.)
 const MOCK_STATIC_ACTIONS = [
@@ -91,6 +92,7 @@ const MAX_VISIBLE_ACTIONS = 2;
 export function Home() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const { user } = useUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'groups' | 'activity'>('groups');
   const [staticActions, setStaticActions] = useState(MOCK_STATIC_ACTIONS);
@@ -197,6 +199,8 @@ export function Home() {
     );
   }
 
+  const firstName = user?.displayName?.split(' ')[0] ?? '';
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 pb-20">
       
@@ -207,10 +211,6 @@ export function Home() {
         onAvatarClick={() => navigate('/profile')}
         onLogout={handleLogout}
         brandLogo={brandLogo}
-        user={{
-          displayName: 'Rais',
-          avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop'
-        }}
         unreadCount={1}
       />
 
@@ -243,7 +243,7 @@ export function Home() {
         {/* Dynamic Insight Bar */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="min-w-0">
-            <h1 className="text-3xl font-bold tracking-tight mb-3">Good morning, Rais</h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-3">Good morning, {firstName}</h1>
             <InsightBar
               groups={MOCK_GROUPS}
               onNavigate={navigate}
