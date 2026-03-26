@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router';
 import { tokenStore } from '../services/apiClient';
 
 export function ProtectedRoute() {
