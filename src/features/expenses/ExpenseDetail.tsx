@@ -83,7 +83,7 @@ export function ExpenseDetail() {
           <ArrowLeft className="w-4 h-4" style={{ color: colors.primary }} />
         </button>
         
-        <h1 className="font-semibold" style={{ fontSize: '14px', color: colors.textPrimary }}>
+        <h1 className="font-semibold text-sm" style={{ color: colors.textPrimary }}>
           Expense detail
         </h1>
 
@@ -98,10 +98,9 @@ export function ExpenseDetail() {
 
       {/* Hero Banner */}
       <div 
-        className="px-6 py-6"
+        className="p-4"
         style={{ 
-          background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight})`,
-          padding: '16px'
+          background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight})`
         }}
       >
         <div className="flex items-center gap-3">
@@ -115,7 +114,7 @@ export function ExpenseDetail() {
             {expense.categoryEmoji || '🧾'}
           </div>
           <div>
-            <h2 className="font-bold text-white leading-tight" style={{ fontSize: '16px' }}>{expense.title}</h2>
+            <h2 className="font-bold text-white text-base leading-tight">{expense.title}</h2>
             <p className="mt-0.5" style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>{group?.name || 'Group'}</p>
           </div>
         </div>
@@ -161,12 +160,12 @@ export function ExpenseDetail() {
                   <div className="w-[32px] h-[32px] rounded-full bg-slate-200" />
                 )}
                   <div>
-                    <p className="font-semibold text-[#1a1625]" style={{ fontSize: '12px' }}>{payer?.displayName || 'Unknown'}</p>
+                  <p className="font-semibold text-[#1a1625] text-xs">{payer?.displayName || 'Unknown'}</p>
                   <p className="mt-0.5" style={{ fontSize: '10px', color: colors.textMuted }}>Paid full amount</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <span className="font-bold text-[#1a1625]" style={{ fontSize: '12px' }}>
+                <span className="font-bold text-[#1a1625] text-xs">
                   {currencySymbol}{expense.totalAmount}
                 </span>
                 <span className="px-2.5 py-0.5 font-semibold" style={{ background: colors.successLight, color: colors.success, borderRadius: '20px', fontSize: '9px' }}>
@@ -321,7 +320,7 @@ export function ExpenseDetail() {
                   <div className="w-[32px] h-[3px] rounded-full" style={{ backgroundColor: colors.border }} />
                 </div>
                 <div className="text-center mb-2">
-                  <h3 className="font-bold text-[#1a1625]" style={{ fontSize: '12px', color: colors.textPrimary }}>
+                  <h3 className="font-bold text-[#1a1625] text-xs" style={{ color: colors.textPrimary }}>
                     {expense.title} · {currencySymbol}{expense.totalAmount}
                   </h3>
                 </div>
@@ -410,7 +409,7 @@ export function ExpenseDetail() {
               <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#fceaea', color: '#e24b4a' }}>
                 <Trash2 className="w-8 h-8" strokeWidth={1.5} />
               </div>
-              <h3 className="font-bold text-[#1a1625] text-center mb-2" style={{ fontSize: '18px', color: colors.textPrimary }}>
+              <h3 className="font-bold text-[#1a1625] text-lg text-center mb-2" style={{ color: colors.textPrimary }}>
                 Delete {expense.title}?
               </h3>
               <p className="text-center mb-8" style={{ fontSize: '13px', color: colors.textMuted }}>
@@ -420,8 +419,8 @@ export function ExpenseDetail() {
               <div className="grid grid-cols-2 gap-3">
                 <button 
                   onClick={() => setDeleteConfirmOpen(false)}
-                  className="py-3.5 font-bold transition-colors active:scale-95"
-                  style={{ backgroundColor: colors.pageBg, color: colors.textPrimary, borderRadius: '14px', fontSize: '14px' }}
+                  className="py-3.5 font-bold text-sm transition-colors active:scale-95"
+                  style={{ backgroundColor: colors.pageBg, color: colors.textPrimary, borderRadius: '14px' }}
                 >
                   Cancel
                 </button>
@@ -431,8 +430,8 @@ export function ExpenseDetail() {
                     setDeleteConfirmOpen(false);
                     navigate(-1);
                   }}
-                  className="py-3.5 font-bold text-white transition-colors active:scale-95 shadow-sm"
-                  style={{ backgroundColor: '#e24b4a', borderRadius: '14px', fontSize: '14px' }}
+                  className="py-3.5 font-bold text-sm text-white transition-colors active:scale-95 shadow-sm"
+                  style={{ backgroundColor: '#e24b4a', borderRadius: '14px' }}
                 >
                   Delete
                 </button>

@@ -87,7 +87,7 @@ export function ProfileSettings() {
           >
             <ArrowLeft className="w-4 h-4" style={{ color: purple }} />
           </button>
-          <span className="font-semibold" style={{ fontSize: '16px', color: colors.textPrimary }}>Profile & Settings</span>
+          <span className="font-semibold text-base" style={{ color: colors.textPrimary }}>Profile & Settings</span>
           <button
             onClick={() => navigate(-1)}
             className="px-3.5 py-1.5 rounded-[20px] text-sm font-semibold transition-all active:scale-95"
