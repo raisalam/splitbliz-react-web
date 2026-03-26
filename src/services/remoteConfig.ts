@@ -1,4 +1,4 @@
-import { fetchAndActivate, getAll, getBoolean, getNumber, getString, setLogLevel, type RemoteConfig } from 'firebase/remote-config';
+import { fetchAndActivate, getAll, getBoolean, getNumber, getString, type RemoteConfig } from 'firebase/remote-config';
 import { remoteConfig } from './firebase';
 
 const DEFAULTS: Record<string, string | number | boolean> = {
@@ -10,7 +10,6 @@ export function initRemoteConfig(options?: { minFetchIntervalMs?: number; }) {
     minimumFetchIntervalMillis: options?.minFetchIntervalMs ?? 60_000,
   };
   remoteConfig.defaultConfig = DEFAULTS;
-  setLogLevel('error');
   return fetchAndActivate(remoteConfig);
 }
 
