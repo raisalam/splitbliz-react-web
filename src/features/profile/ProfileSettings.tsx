@@ -2,8 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../providers/ThemeProvider';
-import { ArrowLeft, ChevronRight, Pencil, X, LogOut, Trash2, Lock } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { ProfileAvatarSection } from './components/ProfileAvatarSection';
+import { ProfileInfoSection } from './components/ProfileInfoSection';
+import { NotificationToggles } from './components/NotificationToggles';
+import { PreferencesSection } from './components/PreferencesSection';
+import { AccountActionsSection } from './components/AccountActionsSection';
 
 // 7-column emoji grid
 const EMOJI_GRID = [
@@ -66,29 +71,6 @@ export function ProfileSettings() {
     navigate('/');
   };
 
-  // Generic Toggle UI
-  const ToggleRow = ({ label, subtitle, checked, onChange }: { label: string, subtitle: string, checked: boolean, onChange: () => void }) => (
-    <div
-      className="flex items-center gap-3 px-4 py-3.5"
-      style={{ borderTop: `0.5px solid ${sectionDivider}` }}
-    >
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>{label}</p>
-        <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>{subtitle}</p>
-      </div>
-      <button
-        onClick={onChange}
-        className="w-11 h-6 rounded-full transition-colors relative shrink-0"
-        style={{ backgroundColor: checked ? purple : '#d0cbe8' }}
-      >
-        <div
-          className="w-5 h-5 rounded-full bg-white shadow-sm absolute top-0.5 transition-all"
-          style={{ left: checked ? '22px' : '2px' }}
-        />
-      </button>
-    </div>
-  );
-
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: pageBg }}>
       {/* Top Bar */}
@@ -116,141 +98,30 @@ export function ProfileSettings() {
       </header>
 
       <main className="max-w-xl mx-auto px-4 py-6 space-y-4">
-        {/* Hero Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl pt-6 pb-6 flex flex-col items-center relative overflow-hidden"
-          style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)` }}
-        >
-          {/* Avatar Stack */}
-          <div className="relative mb-3">
-            <button
-              onClick={() => setActiveSheet('EDIT_HERO')}
-              className="w-[72px] h-[72px] rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 text-3xl font-bold text-white bg-white/20"
-              style={{ border: '3px solid rgba(255,255,255,0.5)' }}
-            >
-              {avatar.length === 1 && avatar !== 'R' ? avatar : avatar === 'R' ? displayName.charAt(0).toUpperCase() : avatar}
-            </button>
-            <button
-              onClick={() => setActiveSheet('EDIT_HERO')}
-              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white flex items-center justify-center hover:scale-110 transition-transform"
-              style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
-            >
-              <Pencil className="w-3 h-3" style={{ color: purple }} />
-            </button>
-          </div>
+        <ProfileAvatarSection
+          displayName={displayName}
+          avatar={avatar}
+          purple={purple}
+          onEdit={() => setActiveSheet('EDIT_HERO')}
+        />
 
-          <p className="text-white font-bold mb-2.5" style={{ fontSize: '20px', lineHeight: 1 }}>{displayName}</p>
+        <AccountActionsSection
+          variant="plan"
+          purple={purple}
+          mutedLabel={mutedLabel}
+          cardBorder={cardBorder}
+          sectionDivider={sectionDivider}
+          onDeleteAccount={() => setActiveSheet('DELETE_CONFIRM')}
+        />
 
-          <button
-            onClick={() => setActiveSheet('EDIT_HERO')}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-[20px] text-xs text-white font-medium transition-colors hover:bg-white/25 active:scale-95"
-            style={{ backgroundColor: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)' }}
-          >
-            <span>✏️</span> Edit profile info
-          </button>
-        </motion.div>
-
-        {/* Subscription Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="rounded-[14px] bg-white p-4"
-          style={{ border: `0.5px solid ${cardBorder}` }}
-        >
-          {/* Header Row */}
-          <div className="flex items-start justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-[10px] flex items-center justify-center text-lg shrink-0"
-                style={{ backgroundColor: '#faeeda' }}
-              >
-                ⚡
-              </div>
-              <div>
-                <p className="font-semibold text-sm" style={{ color: '#1a1625' }}>Free Plan</p>
-                <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Basic features for personal use</p>
-              </div>
-            </div>
-            <button
-              className="px-3 py-1.5 rounded-[20px] text-xs font-bold text-white transition-transform active:scale-95"
-              style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)` }}
-            >
-              Upgrade to PRO
-            </button>
-          </div>
-
-          {/* Usage Bars */}
-          <div className="space-y-3.5">
-            {/* Bar 1 */}
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1.5">
-                <span style={{ color: '#1a1625' }}>Active groups</span>
-                <span style={{ color: purple }}>3 / 5</span>
-              </div>
-              <div className="h-[5px] rounded-full overflow-hidden" style={{ backgroundColor: '#f0eeff' }}>
-                <div className="h-full rounded-full" style={{ width: '60%', background: `linear-gradient(90deg, ${purple}, #a29bfe)` }} />
-              </div>
-            </div>
-            {/* Bar 2 */}
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1.5">
-                <span style={{ color: '#1a1625' }}>Monthly expenses</span>
-                <span style={{ color: purple }}>8 / 20</span>
-              </div>
-              <div className="h-[5px] rounded-full overflow-hidden" style={{ backgroundColor: '#f0eeff' }}>
-                <div className="h-full rounded-full" style={{ width: '40%', background: 'linear-gradient(90deg, #1d9e75, #5dcaa5)' }} />
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Profile Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-[14px] bg-white overflow-hidden"
-          style={{ border: `0.5px solid ${cardBorder}` }}
-        >
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: mutedLabel }}>
-              Profile
-            </p>
-          </div>
-
-          <button
-            onClick={() => handleOpenEdit('EDIT_NAME', displayName)}
-            className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50"
-          >
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#f0eeff' }}>
-              👤
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Display name</p>
-              <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>{displayName}</p>
-            </div>
-            <ChevronRight className="w-4 h-4 shrink-0" style={{ color: mutedLabel }} />
-          </button>
-
-          <div
-            className="w-full flex items-center gap-3 px-4 py-3.5"
-            style={{ borderTop: `0.5px solid ${sectionDivider}` }}
-          >
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#e3f2fd' }}>
-              📧
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Email address</p>
-              <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>
-                {email.replace(/(.{2})(.*)(?=@)/, (gp1, gp2, gp3) => gp1 + '*'.repeat(gp2.length))}
-              </p>
-            </div>
-            <Lock className="w-4 h-4 shrink-0" style={{ color: mutedLabel }} />
-          </div>
-        </motion.div>
+        <ProfileInfoSection
+          displayName={displayName}
+          email={email}
+          mutedLabel={mutedLabel}
+          cardBorder={cardBorder}
+          sectionDivider={sectionDivider}
+          onEditName={() => handleOpenEdit('EDIT_NAME', displayName)}
+        />
 
         {/* Connected Accounts Card */}
         <motion.div
@@ -292,121 +163,40 @@ export function ProfileSettings() {
           </div>
         </motion.div>
 
-        {/* Preferences Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="rounded-[14px] bg-white overflow-hidden"
-          style={{ border: `0.5px solid ${cardBorder}` }}
-        >
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: mutedLabel }}>
-              Preferences
-            </p>
-          </div>
+        <PreferencesSection
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          cardBorder={cardBorder}
+          sectionDivider={sectionDivider}
+          mutedLabel={mutedLabel}
+          purple={purple}
+        />
 
-          <button className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50">
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#faeeda' }}>
-              💱
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Default currency</p>
-              <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Used when creating new groups</p>
-            </div>
-            <div className="flex items-center gap-1.5 text-sm" style={{ color: mutedLabel }}>
-              <span className="font-medium">₹ INR</span>
-              <ChevronRight className="w-4 h-4" />
-            </div>
-          </button>
+        <NotificationToggles
+          pushNotifs={pushNotifs}
+          settlementReqs={settlementReqs}
+          newExpenses={newExpenses}
+          emailSummaries={emailSummaries}
+          reminders={reminders}
+          onTogglePush={() => setPushNotifs(!pushNotifs)}
+          onToggleSettlement={() => setSettlementReqs(!settlementReqs)}
+          onToggleExpenses={() => setNewExpenses(!newExpenses)}
+          onToggleSummaries={() => setEmailSummaries(!emailSummaries)}
+          onToggleReminders={() => setReminders(!reminders)}
+          cardBorder={cardBorder}
+          sectionDivider={sectionDivider}
+          mutedLabel={mutedLabel}
+          purple={purple}
+        />
 
-          <button
-            className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50"
-            style={{ borderTop: `0.5px solid ${sectionDivider}` }}
-          >
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#f0eeff' }}>
-              🌐
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Language</p>
-            </div>
-            <div className="flex items-center gap-1.5 text-sm" style={{ color: mutedLabel }}>
-              <span className="font-medium">English</span>
-              <ChevronRight className="w-4 h-4" />
-            </div>
-          </button>
-
-          <ToggleRow
-            label="Dark mode"
-            subtitle="Switch between light and dark themes"
-            checked={theme === 'dark'}
-            onChange={toggleTheme}
-          />
-        </motion.div>
-
-        {/* Notifications Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="rounded-[14px] bg-white overflow-hidden"
-          style={{ border: `0.5px solid ${cardBorder}` }}
-        >
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: mutedLabel }}>
-              Notifications
-            </p>
-          </div>
-
-          <div style={{ borderTop: `none` }}>
-            <ToggleRow label="Push notifications" subtitle="Stay updated on the go" checked={pushNotifs} onChange={() => setPushNotifs(!pushNotifs)} />
-            <ToggleRow label="Settlement requests" subtitle="When someone requests a payout" checked={settlementReqs} onChange={() => setSettlementReqs(!settlementReqs)} />
-            <ToggleRow label="New expenses" subtitle="When a member logs an expense" checked={newExpenses} onChange={() => setNewExpenses(!newExpenses)} />
-            <ToggleRow label="Email summaries" subtitle="Weekly activity reports" checked={emailSummaries} onChange={() => setEmailSummaries(!emailSummaries)} />
-            <ToggleRow label="Reminders" subtitle="Nudges for unsettled balances" checked={reminders} onChange={() => setReminders(!reminders)} />
-          </div>
-        </motion.div>
-
-        {/* Danger Zone */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="rounded-[14px] bg-white overflow-hidden mb-8"
-          style={{ border: `0.5px solid ${cardBorder}` }}
-        >
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: mutedLabel }}>
-              Account
-            </p>
-          </div>
-
-          <button className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50">
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#faeeda' }}>
-              🚪
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold" style={{ color: '#e65100' }}>Log out</p>
-              <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Sign out of this device</p>
-            </div>
-            <ChevronRight className="w-4 h-4 shrink-0" style={{ color: mutedLabel }} />
-          </button>
-
-          <button
-            onClick={() => setActiveSheet('DELETE_CONFIRM')}
-            className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-red-50/50"
-            style={{ borderTop: `0.5px solid ${sectionDivider}` }}
-          >
-            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#fceaea' }}>
-              🗑️
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold" style={{ color: '#e24b4a' }}>Delete account</p>
-              <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Permanently removes all your data</p>
-            </div>
-            <ChevronRight className="w-4 h-4 shrink-0" style={{ color: mutedLabel }} />
-          </button>
-        </motion.div>
+        <AccountActionsSection
+          variant="account"
+          purple={purple}
+          mutedLabel={mutedLabel}
+          cardBorder={cardBorder}
+          sectionDivider={sectionDivider}
+          onDeleteAccount={() => setActiveSheet('DELETE_CONFIRM')}
+        />
 
         <div className="h-6" />
       </main>
