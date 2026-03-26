@@ -147,8 +147,8 @@ export function ProfileSetup() {
         >
           <button
             onClick={handleContinue}
-            className="w-full py-4 rounded-[14px] font-bold text-white transition-all active:scale-[0.98] shadow-lg shadow-indigo-600/25"
-            style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})`, fontSize: '16px' }}
+            className="w-full py-4 rounded-[14px] font-bold text-base text-white transition-all active:scale-[0.98] shadow-lg shadow-indigo-600/25"
+            style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` }}
           >
             Continue →
           </button>

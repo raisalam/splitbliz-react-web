@@ -113,10 +113,9 @@ export function FirstGroup() {
           <button
             onClick={handleCreate}
             disabled={!selectedIntent}
-            className="w-full py-4 rounded-[14px] font-bold text-white transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none"
+            className="w-full py-4 rounded-[14px] font-bold text-white text-base transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none"
             style={{ 
               background: selectedIntent ? `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` : '#d4d0e8', 
-              fontSize: '16px',
               boxShadow: selectedIntent ? `0 8px 24px ${colors.overlay25}` : 'none'
             }}
           >

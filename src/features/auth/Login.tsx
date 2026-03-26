@@ -76,7 +76,7 @@ export function Login() {
   const muted = colors.textMuted;
 
   return (
-    <div className="min-h-screen font-sans" style={{ backgroundColor: pageBg, display: 'flex', flexDirection: 'column' }}>
+    <div className="min-h-screen font-sans flex flex-col" style={{ backgroundColor: pageBg }}>
       
       {/* Hero Header */}
       <motion.div 
