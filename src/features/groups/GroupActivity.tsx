@@ -5,6 +5,7 @@ import { ArrowLeft, Check, LogOut, Receipt, PenLine, Users } from 'lucide-react'
 import { MOCK_GROUPS } from '../../mock/groups';
 import { colors } from '../../constants/colors';
 import { Skeleton } from '../../components/ui/skeleton';
+import { EmptyState } from '../../components/EmptyState';
 
 type ActivityType = 'EXPENSE' | 'SETTLE' | 'EDIT' | 'JOIN' | 'LEAVE';
 
@@ -192,16 +193,23 @@ export function GroupActivity() {
 
       {/* Main Content */}
       <div className="pt-2">
-        {groupKeys.map(dateKey => (
-          <div key={dateKey} className="mb-2">
-            <h3 className="px-5 py-3 font-bold uppercase tracking-[0.06em] sticky top-16 bg-white z-40 border-b border-[#f0eeff]" style={{ fontSize: '11px', color: colors.textMuted }}>
-              {dateKey}
-            </h3>
-            <div className="flex flex-col bg-white">
-              {groupedEvents[dateKey].map((event, idx) => renderActivityRow(event, idx))}
+        {activities.length === 0 ? (
+          <EmptyState
+            title="No activity yet"
+            description="Activity will appear here as your group adds expenses and settlements."
+          />
+        ) : (
+          groupKeys.map(dateKey => (
+            <div key={dateKey} className="mb-2">
+              <h3 className="px-5 py-3 font-bold uppercase tracking-[0.06em] sticky top-16 bg-white z-40 border-b border-[#f0eeff]" style={{ fontSize: '11px', color: colors.textMuted }}>
+                {dateKey}
+              </h3>
+              <div className="flex flex-col bg-white">
+                {groupedEvents[dateKey].map((event, idx) => renderActivityRow(event, idx))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
     </div>

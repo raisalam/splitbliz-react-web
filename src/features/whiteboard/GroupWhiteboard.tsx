@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router';
 import { useTheme } from '../../providers/ThemeProvider';
 import { ArrowLeft, Plus, Pin, Trash2, X, Moon, Sun } from 'lucide-react';
 import { getGroupById, MOCK_USER_ID } from '../../api/groups';
+import { EmptyState } from '../../components/EmptyState';
 
 const CATEGORIES = [
   { key: 'ALL', label: 'All', emoji: '📋' },
@@ -106,6 +107,7 @@ export function GroupWhiteboard() {
     setShowAddSheet(false);
     setNewTitle(''); setNewContent(''); setNewCategory('NOTES'); setNewColorIndex(0);
   };
+  const onAddItem = () => setShowAddSheet(true);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors pb-20">
@@ -190,11 +192,11 @@ export function GroupWhiteboard() {
         </div>
 
         {filtered.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-4">📋</div>
-            <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">No notes in this category</p>
-            <p className="text-slate-400 text-sm mt-1">Tap "Add Note" to create one</p>
-          </div>
+          <EmptyState
+            title="Whiteboard is empty"
+            description="Add your first note or task."
+            action={{ label: 'Add item', onClick: onAddItem }}
+          />
         )}
       </main>
 

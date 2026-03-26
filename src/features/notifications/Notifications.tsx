@@ -5,6 +5,7 @@ import { ArrowLeft, Check, Clock, Star, Users, CreditCard } from 'lucide-react';
 import { MOCK_GROUPS } from '../../mock/groups';
 import { colors } from '../../constants/colors';
 import { Skeleton } from '../../components/ui/skeleton';
+import { EmptyState } from '../../components/EmptyState';
 
 type NotificationType = 'EXPENSE' | 'INVITE' | 'REMINDER' | 'SETTLED' | 'STREAK';
 
@@ -332,12 +333,11 @@ export function Notifications() {
         {renderSection('EARLIER', readNotifs)}
         
         {notifications.length === 0 && (
-          <div className="text-center mt-20 px-6">
-            <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#ede9ff' }}>
-              <span className="text-2xl">📭</span>
-            </div>
-            <p className="font-bold text-[#1a1625] mb-1" style={{ color: colors.textPrimary }}>No notifications</p>
-            <p style={{ fontSize: '13px', color: colors.textMuted }}>You're all caught up!</p>
+          <div className="mt-20 px-6">
+            <EmptyState
+              title="You're all caught up"
+              description="No new notifications."
+            />
           </div>
         )}
       </div>

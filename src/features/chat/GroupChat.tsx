@@ -5,6 +5,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { ArrowLeft, Send, Smile, Receipt, Banknote } from 'lucide-react';
 import { MOCK_USER_ID } from '../../api/groups';
 import { MOCK_GROUPS } from '../../mock/groups';
+import { EmptyState } from '../../components/EmptyState';
 
 interface ChatMessage {
   id: string;
@@ -123,61 +124,68 @@ export function GroupChat() {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-1 max-w-xl mx-auto w-full">
-        {messages.map((msg, idx) => {
-          const msgDate = formatDateLabel(msg.timestamp);
-          const showDateSep = msgDate !== lastDate;
-          lastDate = msgDate;
-          const isMe = msg.senderId === MOCK_USER_ID;
+        {messages.length === 0 ? (
+          <EmptyState
+            title="No messages yet"
+            description="Be the first to say something."
+          />
+        ) : (
+          messages.map((msg, idx) => {
+            const msgDate = formatDateLabel(msg.timestamp);
+            const showDateSep = msgDate !== lastDate;
+            lastDate = msgDate;
+            const isMe = msg.senderId === MOCK_USER_ID;
 
-          return (
-            <React.Fragment key={msg.id}>
-              {showDateSep && (
-                <div className="flex items-center justify-center py-3">
-                  <span className="px-3 py-1 bg-slate-200/60 dark:bg-slate-800/60 rounded-full text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                    {msgDate}
-                  </span>
-                </div>
-              )}
-
-              {msg.type === 'SYSTEM' ? (
-                <motion.div
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  className="flex items-center justify-center gap-2 py-2"
-                >
-                  <div className={`p-1 rounded-full ${msg.systemIcon === 'expense' ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
-                    {msg.systemIcon === 'expense' ? <Receipt className="w-3 h-3" /> : msg.systemIcon === 'settle' ? <Banknote className="w-3 h-3" /> : null}
+            return (
+              <React.Fragment key={msg.id}>
+                {showDateSep && (
+                  <div className="flex items-center justify-center py-3">
+                    <span className="px-3 py-1 bg-slate-200/60 dark:bg-slate-800/60 rounded-full text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                      {msgDate}
+                    </span>
                   </div>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{msg.text}</span>
-                </motion.div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  className={`flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
-                >
-                  {!isMe && (
-                    <img src={msg.senderAvatar} alt={msg.senderName} className="w-7 h-7 rounded-full self-end shrink-0" />
-                  )}
-                  <div className={`max-w-[75%] ${isMe ? 'order-first' : ''}`}>
-                    {!isMe && (
-                      <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5 ml-1">{msg.senderName}</p>
-                    )}
-                    <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                      isMe
-                        ? 'bg-indigo-600 text-white rounded-br-md'
-                        : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-bl-md'
-                    }`}>
-                      {msg.text}
+                )}
+
+                {msg.type === 'SYSTEM' ? (
+                  <motion.div
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="flex items-center justify-center gap-2 py-2"
+                  >
+                    <div className={`p-1 rounded-full ${msg.systemIcon === 'expense' ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
+                      {msg.systemIcon === 'expense' ? <Receipt className="w-3 h-3" /> : msg.systemIcon === 'settle' ? <Banknote className="w-3 h-3" /> : null}
                     </div>
-                    <p className={`text-[10px] text-slate-400 mt-0.5 ${isMe ? 'text-right mr-1' : 'ml-1'}`}>
-                      {formatTime(msg.timestamp)}
-                      {isMe && ' ✓✓'}
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </React.Fragment>
-          );
-        })}
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{msg.text}</span>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    className={`flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {!isMe && (
+                      <img src={msg.senderAvatar} alt={msg.senderName} className="w-7 h-7 rounded-full self-end shrink-0" />
+                    )}
+                    <div className={`max-w-[75%] ${isMe ? 'order-first' : ''}`}>
+                      {!isMe && (
+                        <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5 ml-1">{msg.senderName}</p>
+                      )}
+                      <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                        isMe
+                          ? 'bg-indigo-600 text-white rounded-br-md'
+                          : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-bl-md'
+                      }`}>
+                        {msg.text}
+                      </div>
+                      <p className={`text-[10px] text-slate-400 mt-0.5 ${isMe ? 'text-right mr-1' : 'ml-1'}`}>
+                        {formatTime(msg.timestamp)}
+                        {isMe && ' ✓✓'}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </React.Fragment>
+            );
+          })
+        )}
       </div>
 
       {/* Input Bar */}

@@ -23,6 +23,7 @@ import { ExpenseList } from './components/ExpenseList';
 import { MemberList } from './components/MemberList';
 import { SettlementRow } from './components/SettlementRow';
 import { Skeleton } from '../../components/ui/skeleton';
+import { EmptyState } from '../../components/EmptyState';
 
 // Smart banners merged inline into SmartActionBanner below
 
@@ -349,16 +350,24 @@ export function GroupDetail() {
 
         {/* Expenses Tab */}
         {activeTab === 'expenses' && (
-          <ExpenseList
-            expenses={expenses}
-            members={members}
-            currencySymbol={currencySymbol}
-            expenseFilter={expenseFilter}
-            onFilterChange={setExpenseFilter}
-            onExpenseClick={(expenseId) => navigate(`/group/${groupId}/expense/${expenseId}`)}
-            onAddExpense={() => navigate(`/group/${groupId}/add-expense`)}
-            currentUserId={MOCK_USER_ID}
-          />
+          expenses.length === 0 ? (
+            <EmptyState
+              title="No expenses yet"
+              description="Add the first expense for this group."
+              action={{ label: 'Add expense', onClick: () => navigate(`/group/${groupId}/add-expense`) }}
+            />
+          ) : (
+            <ExpenseList
+              expenses={expenses}
+              members={members}
+              currencySymbol={currencySymbol}
+              expenseFilter={expenseFilter}
+              onFilterChange={setExpenseFilter}
+              onExpenseClick={(expenseId) => navigate(`/group/${groupId}/expense/${expenseId}`)}
+              onAddExpense={() => navigate(`/group/${groupId}/add-expense`)}
+              currentUserId={MOCK_USER_ID}
+            />
+          )
         )}
 
 
@@ -411,10 +420,10 @@ export function GroupDetail() {
                   const history = getSettlementsBetween(historySheet.fromId, historySheet.toId);
                   if (history.length === 0) {
                     return (
-                      <div className="text-center py-10 text-slate-400">
-                        <History className="w-8 h-8 mx-auto mb-2" />
-                        <p>No settlement history yet</p>
-                      </div>
+                      <EmptyState
+                        title="All settled up"
+                        description="No pending settlements in this group."
+                      />
                     );
                   }
                   return (
