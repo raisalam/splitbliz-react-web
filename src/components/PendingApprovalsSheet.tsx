@@ -93,8 +93,8 @@ export function PendingApprovalsSheet({ isOpen, onClose, approvals, onApprove, o
 
             {/* Total Bar */}
             <div className="px-6 py-3 flex justify-between items-center z-[71]" style={{ backgroundColor: colors.pageBg, borderBottom: `0.5px solid ${colors.primaryFaint}` }}>
-              <span className="font-bold text-[#3d3a4a]" style={{ fontSize: '12px' }}>Total amount</span>
-              <span className="font-bold text-[#1a1625]" style={{ fontSize: '12px', color: colors.textPrimary }}>{currencySymbol}{formattedTotal}</span>
+              <span className="font-bold text-[#3d3a4a] text-xs">Total amount</span>
+              <span className="font-bold text-[#1a1625] text-xs" style={{ color: colors.textPrimary }}>{currencySymbol}{formattedTotal}</span>
             </div>
 
             {/* List */}
@@ -102,7 +102,7 @@ export function PendingApprovalsSheet({ isOpen, onClose, approvals, onApprove, o
               {approvals.length === 0 ? (
                 <div className="text-center py-10">
                   <span className="text-3xl mb-2 text-[#9490b8] block" style={{ color: colors.textMuted }}>🎉</span>
-                  <p className="font-bold text-[#3d3a4a]" style={{ fontSize: '14px' }}>All caught up!</p>
+                  <p className="font-bold text-[#3d3a4a] text-sm">All caught up!</p>
                 </div>
               ) : (
                 <AnimatePresence>
@@ -125,7 +125,7 @@ export function PendingApprovalsSheet({ isOpen, onClose, approvals, onApprove, o
                       </div>
 
                       <div className="flex flex-col items-end gap-2 shrink-0">
-                        <span className="font-bold text-[#1a1625]" style={{ fontSize: '12px', color: colors.textPrimary }}>{currencySymbol}{approval.amount}</span>
+                        <span className="font-bold text-[#1a1625] text-xs" style={{ color: colors.textPrimary }}>{currencySymbol}{approval.amount}</span>
                         
                         {rejectConfirmId === approval.id ? (
                           <div className="flex gap-2">
@@ -182,15 +182,15 @@ export function PendingApprovalsSheet({ isOpen, onClose, approvals, onApprove, o
                     <div className="grid grid-cols-2 gap-3">
                       <button 
                         onClick={() => setShowApproveAllConfirm(false)}
-                        className="py-3 font-bold text-[#3d3a4a] transition-colors active:scale-95"
-                        style={{ backgroundColor: colors.pageBg, borderRadius: '12px', fontSize: '14px' }}
+                        className="py-3 font-bold text-[#3d3a4a] text-sm rounded-xl transition-colors active:scale-95"
+                        style={{ backgroundColor: colors.pageBg }}
                       >
                         Cancel
                       </button>
                       <button 
                         onClick={handleApproveAllConfirm}
-                        className="py-3 font-bold text-white transition-colors active:scale-95 shadow-sm"
-                        style={{ backgroundColor: colors.success, borderRadius: '12px', fontSize: '14px' }}
+                        className="py-3 font-bold text-sm text-white rounded-xl transition-colors active:scale-95 shadow-sm"
+                        style={{ backgroundColor: colors.success }}
                       >
                         Yes, approve all
                       </button>

@@ -217,8 +217,7 @@ export function InviteMemberSheet({ open, onOpenChange, groupId }: InviteMemberS
                     return (
                       <div
                         key={suggestion.id}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-                        style={{ opacity: 0.5 }}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl opacity-50"
                       >
                         <div
                           className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"

@@ -18,12 +18,13 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ textAlign: 'center', padding: '80px 24px' }}>
+        <div className="text-center" style={{ padding: '80px 24px' }}>
           <h2>Something went wrong.</h2>
           <p style={{ color: '#9490b8' }}>{this.state.error?.message}</p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            style={{ color: '#6c5ce7', background: 'none', border: 'none', cursor: 'pointer' }}
+            className="bg-transparent border-0 cursor-pointer"
+            style={{ color: '#6c5ce7' }}
           >
             Try again
           </button>

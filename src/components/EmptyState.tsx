@@ -7,22 +7,18 @@ interface EmptyStateProps {
 
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
-    <div style={{ textAlign: 'center', padding: '60px 24px' }}>
-      <p style={{ fontWeight: 600, fontSize: '16px', margin: '0 0 8px' }}>{title}</p>
+    <div className="text-center" style={{ padding: '60px 24px' }}>
+      <p className="font-semibold text-base mb-2">{title}</p>
       {description && (
-        <p style={{ color: '#9490b8', fontSize: '14px', margin: '0 0 20px' }}>{description}</p>
+        <p className="text-sm mb-5" style={{ color: '#9490b8' }}>{description}</p>
       )}
       {action && (
         <button
           onClick={action.onClick}
+          className="text-sm text-white border-0 rounded-lg cursor-pointer"
           style={{
             background: '#6c5ce7',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
             padding: '10px 20px',
-            cursor: 'pointer',
-            fontSize: '14px',
           }}
         >
           {action.label}
