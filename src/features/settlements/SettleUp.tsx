@@ -3,14 +3,17 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { useTheme } from '../../providers/ThemeProvider';
 import { ArrowLeft, ArrowRight, X, ChevronRight, Plus, Banknote, CreditCard, Smartphone, Building2 } from 'lucide-react';
-import { getGroupById, getGroupMembers, requestSettlement, MOCK_USER_ID } from '../../api/groups';
-import { MOCK_PAIR_BALANCES } from '../../mock/balances';
+import { MOCK_USER_ID } from '../../api/groups';
 import { toast } from 'sonner';
 import { SettlementMemberPicker } from './components/SettlementMemberPicker';
 import { SettlementAmountForm } from './components/SettlementAmountForm';
 import { SettlementConfirmSheet } from './components/SettlementConfirmSheet';
 import { Skeleton } from '../../components/ui/skeleton';
 import { CachedAvatar } from '../../components/CachedAvatar';
+import { settlementsService, groupsService } from '../../services';
+import { extractApiError } from '../../services/apiClient';
+import { useQueryClient } from '@tanstack/react-query';
+import { useUser } from '../../providers/UserContext';
 
 type ActiveSheet = 'NONE' | 'AMOUNT' | 'NOTE' | 'FROM' | 'TO';
 
@@ -19,6 +22,8 @@ export function SettleUp() {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const [searchParams] = useSearchParams();
+  const { user } = useUser();
+  const queryClient = useQueryClient();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -28,10 +33,10 @@ export function SettleUp() {
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>('NONE');
 
   // Smart defaults: from = current user, to/amount from query params or empty
-  const [selectedFromId, setSelectedFromId] = useState(searchParams.get('from') || MOCK_USER_ID);
+  const currentUserId = user?.id ?? MOCK_USER_ID;
+  const [selectedFromId, setSelectedFromId] = useState(searchParams.get('from') || currentUserId);
   const [selectedToId, setSelectedToId] = useState(searchParams.get('to') || '');
   const initialAmount = searchParams.get('amount') || '0';
-  const currency = searchParams.get('currency') || 'INR';
 
   const [amountStr, setAmountStr] = useState(initialAmount);
   const [note, setNote] = useState('');
@@ -46,12 +51,9 @@ export function SettleUp() {
       if (!groupId) return;
       try {
         setLoading(true);
-        const [g, m] = await Promise.all([
-          getGroupById(groupId),
-          getGroupMembers(groupId)
-        ]);
-        setGroup(g);
-        setMembers(m);
+        const detail = await groupsService.getGroupDetail(groupId);
+        setGroup(detail.group);
+        setMembers(detail.members);
       } catch (err) {
         toast.error("Group not found");
         navigate('/');
@@ -64,8 +66,10 @@ export function SettleUp() {
 
   const fromMember = members.find(m => m.userPublicId === selectedFromId);
   const toMember = members.find(m => m.userPublicId === selectedToId);
-  const fromName = selectedFromId === MOCK_USER_ID ? 'You' : fromMember?.displayName || 'Select sender';
-  const toName = selectedToId ? (selectedToId === MOCK_USER_ID ? 'You' : toMember?.displayName || 'Unknown') : 'Select recipient';
+  const fromName = selectedFromId === currentUserId ? 'You' : fromMember?.displayName || 'Select sender';
+  const toName = selectedToId ? (selectedToId === currentUserId ? 'You' : toMember?.displayName || 'Unknown') : 'Select recipient';
+  const currencyCode = group?.currencyCode || 'INR';
+  const currency = currencyCode;
   const currencySymbol = currency === 'INR' ? '₹' : '$';
 
   const canSubmit = numAmount > 0 && selectedFromId && selectedToId && selectedFromId !== selectedToId;
@@ -74,15 +78,27 @@ export function SettleUp() {
     if (!groupId || !canSubmit) return;
     setSubmitting(true);
     try {
-      await requestSettlement(groupId, {
-        payeeUserPublicId: selectedToId,
+      await settlementsService.createSettlement(groupId, {
+        toUserId: selectedToId,
         amount: numAmount.toFixed(2),
-        currencyCode: currency,
-        note: note || undefined
+        currencyCode: currencyCode,
+        paymentMethod: paymentMethod || undefined,
+        notes: note || undefined
       });
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['home'] });
       setSuccess(true);
     } catch (err) {
-      toast.error('Settlement failed. Please try again.');
+      const apiErr = extractApiError(err);
+      if (apiErr?.code === 'ERR_PENDING_SETTLEMENT') {
+        toast.error('A pending settlement already exists with this person. Resolve it first.');
+      } else if (apiErr?.code === 'ERR_SETTLEMENT_EXCEEDS_DEBT') {
+        toast.error('Amount cannot exceed what is owed.');
+      } else if (apiErr?.code === 'ERR_SELF_SETTLEMENT') {
+        toast.error('You cannot settle with yourself.');
+      } else {
+        toast.error('Failed to send settlement. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -109,29 +125,16 @@ export function SettleUp() {
   // Other members (for pickers — exclude the already-selected member)
   const fromPickerMembers = members.filter(m => m.userPublicId !== selectedToId);
   
-  // For 'To' picker: only show members with an outstanding balance
-  const pairBalances = groupId ? (MOCK_PAIR_BALANCES[groupId] || []) : [];
-  const toPickerMembers = members.filter(m => {
-    if (m.userPublicId === selectedFromId) return false;
-    // Check if this member has a balance with the current user
-    return pairBalances.some((b: any) =>
-      (b.userLowPublicId === m.userPublicId || b.userHighPublicId === m.userPublicId)
-    );
-  });
+  const toPickerMembers = members.filter(m => m.userPublicId !== selectedFromId);
   
   // Helper to get the balance amount between current user and a specific member
   const getBalanceWithMember = (memberId: string): { amount: number; direction: 'owe' | 'owed' } => {
-    const balance = pairBalances.find((b: any) =>
-      (b.userLowPublicId === memberId || b.userHighPublicId === memberId)
-    );
-    if (!balance) return { amount: 0, direction: 'owe' };
-    const netAmount = parseFloat(balance.netAmount);
-    // If MOCK_USER_ID is userHighPublicId: negative netAmount means user owes, positive means user is owed
-    if (balance.userHighPublicId === MOCK_USER_ID) {
-      return { amount: Math.abs(netAmount), direction: netAmount < 0 ? 'owe' : 'owed' };
-    } else {
-      return { amount: Math.abs(netAmount), direction: netAmount > 0 ? 'owed' : 'owe' };
-    }
+    const member = members.find(m => m.userPublicId === memberId);
+    const netAmount = parseFloat(member?.balance?.netAmount || '0');
+    if (netAmount === 0) return { amount: 0, direction: 'owe' };
+    return netAmount < 0
+      ? { amount: Math.abs(netAmount), direction: 'owe' }
+      : { amount: netAmount, direction: 'owed' };
   };
 
   const paymentMethods = [
@@ -388,7 +391,7 @@ export function SettleUp() {
                     members={activeSheet === 'FROM' ? fromPickerMembers : toPickerMembers}
                     mode={activeSheet === 'FROM' ? 'FROM' : 'TO'}
                     selectedUserId={activeSheet === 'FROM' ? selectedFromId : selectedToId}
-                    currentUserId={MOCK_USER_ID}
+                    currentUserId={currentUserId}
                     currencySymbol={currencySymbol}
                     getBalanceWithMember={getBalanceWithMember}
                     onSelect={(memberId, balanceInfo) => {

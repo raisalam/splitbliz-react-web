@@ -65,12 +65,18 @@ export function Home() {
 
   const handleAction = async (referenceId: string, type: ActionItem['type'], action: 'approve' | 'reject') => {
     if (type === 'SETTLEMENT_APPROVAL') {
+      const item = actionItems.find(a => a.referenceId === referenceId);
+      const groupId = item?.groupId;
+      if (!groupId) {
+        toast.error('Missing group for settlement.');
+        return;
+      }
       try {
         if (action === 'approve') {
-          await settlementsService.approveSettlement(referenceId);
+          await settlementsService.approveSettlement(groupId, referenceId);
           toast.success('Settlement approved!');
         } else {
-          await settlementsService.rejectSettlement(referenceId);
+          await settlementsService.rejectSettlement(groupId, referenceId);
           toast('Settlement rejected');
         }
         queryClient.invalidateQueries({ queryKey: ['home'] });
@@ -104,7 +110,7 @@ export function Home() {
     const settlements = actionItems.filter(a => a.type === 'SETTLEMENT_APPROVAL');
     for (const item of settlements) {
       try {
-        await settlementsService.approveSettlement(item.referenceId);
+        await settlementsService.approveSettlement(item.groupId, item.referenceId);
       } catch {
         // continue with next
       }

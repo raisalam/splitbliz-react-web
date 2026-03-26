@@ -26,24 +26,24 @@ export const settlementsService = {
     return res.data.settlement;
   },
 
-  async approveSettlement(settlementId: string): Promise<Settlement> {
+  async approveSettlement(groupId: string, settlementId: string): Promise<Settlement> {
     const res = await apiClient.post<{ settlement: Settlement; correlationId: string }>(
-      `/settlements/${settlementId}/approve`
+      `/groups/${groupId}/settlements/${settlementId}/approve`
     );
     return res.data.settlement;
   },
 
-  async rejectSettlement(settlementId: string, reason?: string): Promise<Settlement> {
+  async rejectSettlement(groupId: string, settlementId: string, reason?: string): Promise<Settlement> {
     const res = await apiClient.post<{ settlement: Settlement }>(
-      `/settlements/${settlementId}/reject`,
+      `/groups/${groupId}/settlements/${settlementId}/reject`,
       { reason }
     );
     return res.data.settlement;
   },
 
-  async cancelSettlement(settlementId: string): Promise<Settlement> {
+  async cancelSettlement(groupId: string, settlementId: string): Promise<Settlement> {
     const res = await apiClient.post<{ settlement: Settlement }>(
-      `/settlements/${settlementId}/cancel`
+      `/groups/${groupId}/settlements/${settlementId}/cancel`
     );
     return res.data.settlement;
   },
