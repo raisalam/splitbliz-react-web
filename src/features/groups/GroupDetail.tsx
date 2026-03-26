@@ -34,7 +34,7 @@ export function GroupDetail() {
   
   // Replace direct mock fetching with React Query hook
   const { data, isLoading: loading, error } = useGroupDetail(groupId);
-  const { group, members, expenses, balances, settlements } = data ?? {};
+  const { group, members, expenses, balances, settlements, quickInsight } = data ?? {};
 
   // Bottom sheet & expand state
   const [historySheet, setHistorySheet] = useState<{ open: boolean; fromId: string; toId: string } | null>(null);
@@ -70,6 +70,13 @@ export function GroupDetail() {
   };
 
   const currentUserId = user?.id || '';
+  const otherMembers = (members || []).filter((m: any) => m.userPublicId !== currentUserId);
+  const topOwesYou = otherMembers
+    .filter((m: any) => parseFloat(m.balance?.netAmount || '0') > 0)
+    .sort((a: any, b: any) => parseFloat(b.balance?.netAmount || '0') - parseFloat(a.balance?.netAmount || '0'));
+  const topYouOwe = otherMembers
+    .filter((m: any) => parseFloat(m.balance?.netAmount || '0') < 0)
+    .sort((a: any, b: any) => parseFloat(a.balance?.netAmount || '0') - parseFloat(b.balance?.netAmount || '0'));
 
   if (loading) {
     return (
@@ -171,7 +178,12 @@ export function GroupDetail() {
           // Priority 1 — You owe money
           if (netAmount < 0) {
             const amount = Math.abs(netAmount).toFixed(2);
-            const oweName = members?.[0]?.displayName || 'the group';
+            const topOwed = topYouOwe[0];
+            const topAmount = topOwed?.balance?.netAmount ? Math.abs(parseFloat(topOwed.balance.netAmount)).toFixed(2) : amount;
+            const oweName = topOwed?.displayName || 'the group';
+            const bannerTitle = topOwed
+              ? `You owe ${currencySymbol}${topAmount} to ${oweName}`
+              : `You owe ${currencySymbol}${amount} to ${oweName}`;
 
             return (
               <button
@@ -184,7 +196,7 @@ export function GroupDetail() {
                   </div>
                   <div>
                     <p className="font-semibold text-rose-900 dark:text-rose-100">
-                      You owe {currencySymbol}{amount} to {oweName}
+                      {bannerTitle}
                     </p>
                     <p className="text-xs text-rose-700/80 dark:text-rose-400 mt-0.5">
                       Settle now
@@ -199,11 +211,15 @@ export function GroupDetail() {
           // Priority 2 — You are owed money
           if (netAmount > 0) {
             const amount = netAmount.toFixed(2);
-            const oweName = members?.[0]?.displayName || 'Someone'; 
+            const bannerTitle = quickInsight?.type === 'YOU_ARE_OWED'
+              ? quickInsight.title
+              : (topOwesYou[0]?.displayName
+                ? `${topOwesYou[0].displayName} owes you ${currencySymbol}${topOwesYou[0].balance?.netAmount ?? amount}`
+                : `You are owed ${currencySymbol}${amount}`);
 
             return (
               <button
-                onClick={() => toast.success('Reminder sent to all debtors!')}
+                onClick={() => toast.success('Reminder sent!')}
                 className="w-full flex items-center justify-between bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-3 sm:p-4 rounded-2xl mb-6 text-left hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
@@ -212,7 +228,7 @@ export function GroupDetail() {
                   </div>
                   <div>
                     <p className="font-semibold text-emerald-900 dark:text-emerald-100">
-                      {oweName} owes you {currencySymbol}{amount}
+                      {bannerTitle}
                     </p>
                     <p className="text-xs text-emerald-700/80 dark:text-emerald-400 mt-0.5">
                       Send a reminder?

@@ -473,6 +473,16 @@ export interface GroupDetailData {
   expenses: Expense[];
   balances: PairwiseBalance[];
   settlements: Settlement[];
+  quickInsight?: {
+    type: 'YOU_ARE_OWED' | 'YOU_OWE' | 'ALL_SETTLED' | string;
+    title: string;
+    subtitle?: string;
+    cta?: {
+      label: string;
+      action: string;
+      meta?: Record<string, string>;
+    };
+  };
   pagination: {
     expenses: PaginationResponse;
     settlements: PaginationResponse;

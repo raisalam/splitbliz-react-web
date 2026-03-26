@@ -176,6 +176,7 @@ export const groupsService = {
 
     return {
       group,
+      quickInsight: raw.quickInsight,
       members,
       expenses,
       balances: safeArray(raw.balances),
