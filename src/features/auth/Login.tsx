@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User, CheckCircle2 } from 'lucide-react';
+import { tokenStore } from '../../services/apiClient';
 
 type AuthState = 'A' | 'B' | 'C';
 
@@ -41,6 +42,11 @@ export function Login() {
     e.preventDefault();
     // Assuming new user flow for demo purposes of displaying intent picker, otherwise going to Home
     navigate('/onboarding/profile'); 
+  };
+
+  const handleDevLogin = () => {
+    tokenStore.set('dev-token');
+    navigate('/');
   };
 
   const handleBack = () => {
@@ -362,6 +368,21 @@ export function Login() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Dev-only login */}
+          <div className="mt-6 text-center">
+            <p className="text-[11px] font-semibold" style={{ color: muted }}>
+              Dev-only: temporary test login (remove after backend is live)
+            </p>
+            <button
+              type="button"
+              onClick={handleDevLogin}
+              className="mt-2 text-[13px] font-bold hover:underline"
+              style={{ color: purple }}
+            >
+              Continue with Dev Login
+            </button>
+          </div>
 
         </motion.div>
       </div>
