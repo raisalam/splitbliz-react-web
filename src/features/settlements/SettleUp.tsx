@@ -2,10 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { useTheme } from '../../providers/ThemeProvider';
-import { ArrowLeft, ArrowRight, Check, X, ChevronRight, StickyNote, Users, Plus, Banknote, CreditCard, Smartphone, Building2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X, ChevronRight, Plus, Banknote, CreditCard, Smartphone, Building2 } from 'lucide-react';
 import { getGroupById, getGroupMembers, requestSettlement, MOCK_USER_ID } from '../../api/groups';
 import { MOCK_PAIR_BALANCES } from '../../mock/balances';
 import { toast } from 'sonner';
+import { SettlementMemberPicker } from './components/SettlementMemberPicker';
+import { SettlementAmountForm } from './components/SettlementAmountForm';
+import { SettlementConfirmSheet } from './components/SettlementConfirmSheet';
 
 type ActiveSheet = 'NONE' | 'AMOUNT' | 'NOTE' | 'FROM' | 'TO';
 
@@ -147,38 +150,12 @@ export function SettleUp() {
 
           {/* Success State */}
           {success && (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex flex-col items-center justify-center flex-1 py-20 space-y-8"
-            >
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', damping: 12, stiffness: 200, delay: 0.15 }}
-                className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center"
-              >
-                <Check className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
-              </motion.div>
-
-              <div className="text-center space-y-2">
-                <h2 className="text-3xl font-black text-slate-900 dark:text-white">Request Sent</h2>
-                <p className="text-lg text-slate-500 dark:text-slate-400">
-                  {currencySymbol}{numAmount.toFixed(2)} sent to <span className="font-semibold text-slate-900 dark:text-white">{toName}</span> for approval
-                </p>
-              </div>
-
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                onClick={() => navigate(`/group/${groupId}`)}
-                className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-8 py-3.5 rounded-full font-bold text-lg hover:opacity-90 transition-opacity"
-              >
-                Back to Group
-              </motion.button>
-            </motion.div>
+            <SettlementConfirmSheet
+              currencySymbol={currencySymbol}
+              numAmount={numAmount}
+              toName={toName}
+              onBack={() => navigate(`/group/${groupId}`)}
+            />
           )}
 
           {/* Settlement Form */}
@@ -271,39 +248,14 @@ export function SettleUp() {
                     </div>
                   </div>
 
-                  {/* Amount */}
-                  <div onClick={() => setActiveSheet('AMOUNT')} className="flex items-center justify-between p-4 px-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <span className="text-slate-500 dark:text-slate-400 font-medium text-lg">Amount</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-semibold text-slate-900 dark:text-white">{currencySymbol}{numAmount.toFixed(2)}</span>
-                      <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600" />
-                    </div>
-                  </div>
-
-                  {/* Via (Payment Method) */}
-                  <div className="flex items-center justify-between p-4 px-5">
-                    <span className="text-slate-500 dark:text-slate-400 font-medium text-lg">Via</span>
-                    <div className="flex items-center gap-2">
-                      {paymentMethods.map(pm => {
-                        const Icon = pm.icon;
-                        const isActive = paymentMethod === pm.id;
-                        return (
-                          <button
-                            key={pm.id}
-                            onClick={() => setPaymentMethod(pm.id)}
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                              isActive
-                                ? 'bg-indigo-600 text-white shadow-sm'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                            }`}
-                          >
-                            <Icon className="w-3.5 h-3.5" />
-                            {pm.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <SettlementAmountForm
+                    currencySymbol={currencySymbol}
+                    numAmount={numAmount}
+                    paymentMethods={paymentMethods}
+                    paymentMethod={paymentMethod}
+                    onAmountClick={() => setActiveSheet('AMOUNT')}
+                    onPaymentMethodChange={setPaymentMethod}
+                  />
 
                   {/* Note */}
                   <div onClick={() => { setActiveSheet('NOTE'); setTimeout(() => noteInputRef.current?.focus(), 100); }} className="flex items-center justify-between p-4 px-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
@@ -420,71 +372,25 @@ export function SettleUp() {
 
                 {/* Member Picker for From / To */}
                 {(activeSheet === 'FROM' || activeSheet === 'TO') && (
-                  <div className="space-y-2 py-2">
-                    {(activeSheet === 'FROM' ? fromPickerMembers : toPickerMembers).map((member: any) => {
-                      const isSelected = activeSheet === 'FROM' 
-                        ? member.userPublicId === selectedFromId 
-                        : member.userPublicId === selectedToId;
-                      const displayName = member.userPublicId === MOCK_USER_ID ? `${member.displayName} (You)` : member.displayName;
-                      
-                      // For 'TO' sheet, show balance info
-                      const balanceInfo = activeSheet === 'TO' ? getBalanceWithMember(member.userPublicId) : null;
-                      const borderColor = balanceInfo 
-                        ? (balanceInfo.direction === 'owe' ? 'border-l-rose-500' : 'border-l-emerald-500')
-                        : '';
-                      
-                      return (
-                        <button
-                          key={member.userPublicId}
-                          onClick={() => {
-                            if (activeSheet === 'FROM') {
-                              setSelectedFromId(member.userPublicId);
-                            } else {
-                              setSelectedToId(member.userPublicId);
-                              // Pre-fill amount with outstanding debt
-                              if (balanceInfo && balanceInfo.amount > 0) {
-                                setAmountStr(balanceInfo.amount.toFixed(2));
-                              }
-                            }
-                            setActiveSheet('NONE');
-                          }}
-                          className={`w-full flex items-center gap-4 p-3.5 rounded-2xl transition-all active:scale-[0.98] ${
-                            activeSheet === 'TO' ? `border-l-4 ${borderColor}` : ''
-                          } ${
-                            isSelected 
-                              ? 'bg-indigo-50 dark:bg-indigo-500/10 border-2 border-indigo-500' 
-                              : `bg-slate-50 dark:bg-slate-800/50 ${activeSheet === 'TO' ? '' : 'border-2 border-transparent'} hover:bg-slate-100 dark:hover:bg-slate-800`
-                          }`}
-                        >
-                          <img 
-                            src={member.avatarUrl} 
-                            alt={displayName} 
-                            className="w-10 h-10 rounded-full object-cover" 
-                          />
-                          <div className="flex-1 text-left">
-                            <p className="font-semibold text-sm text-slate-900 dark:text-white">{displayName}</p>
-                            {member.role === 'OWNER' && (
-                              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase">Owner</span>
-                            )}
-                          </div>
-                          {activeSheet === 'TO' && balanceInfo && balanceInfo.amount > 0 && (
-                            <span className={`text-sm font-bold ${
-                              balanceInfo.direction === 'owe' 
-                                ? 'text-rose-600 dark:text-rose-400' 
-                                : 'text-emerald-600 dark:text-emerald-400'
-                            }`}>
-                              {balanceInfo.direction === 'owe' ? 'You owe' : 'Owes you'} {currencySymbol}{balanceInfo.amount.toFixed(2)}
-                            </span>
-                          )}
-                          {isSelected && (
-                            <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
-                              <Check className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <SettlementMemberPicker
+                    members={activeSheet === 'FROM' ? fromPickerMembers : toPickerMembers}
+                    mode={activeSheet === 'FROM' ? 'FROM' : 'TO'}
+                    selectedUserId={activeSheet === 'FROM' ? selectedFromId : selectedToId}
+                    currentUserId={MOCK_USER_ID}
+                    currencySymbol={currencySymbol}
+                    getBalanceWithMember={getBalanceWithMember}
+                    onSelect={(memberId, balanceInfo) => {
+                      if (activeSheet === 'FROM') {
+                        setSelectedFromId(memberId);
+                      } else {
+                        setSelectedToId(memberId);
+                        if (balanceInfo && balanceInfo.amount > 0) {
+                          setAmountStr(balanceInfo.amount.toFixed(2));
+                        }
+                      }
+                      setActiveSheet('NONE');
+                    }}
+                  />
                 )}
               </div>
             </motion.div>
