@@ -1,22 +1,22 @@
 import { createBrowserRouter } from "react-router";
-import { Root } from "./components/Root";
-import { Home } from "./components/Home";
-import { Splash } from "./components/Splash";
-import { Login } from "./components/Login";
-import { ProfileSetup } from "./components/ProfileSetup";
-import { FirstGroup } from "./components/FirstGroup";
-import { GroupDetail } from "./components/GroupDetail";
-import { AddExpense } from "./components/AddExpense";
-import { SettleUp } from "./components/SettleUp";
-import { ProfileSettings } from "./components/ProfileSettings";
-import { GroupSettings } from "./components/GroupSettings";
-import { CreateGroup } from "./components/CreateGroup";
-import { GroupWhiteboard } from "./components/GroupWhiteboard";
-import { GroupChat } from "./components/GroupChat";
-import { GroupAI } from "./components/GroupAI";
-import { Notifications } from "./components/Notifications";
-import { GroupActivity } from "./components/GroupActivity";
-import { ExpenseDetail } from "./components/ExpenseDetail";
+import { Root } from "./Root";
+import { Home } from "../features/home/Home";
+import { Splash } from "../features/auth/Splash";
+import { Login } from "../features/auth/Login";
+import { ProfileSetup } from "../features/auth/ProfileSetup";
+import { FirstGroup } from "../features/auth/FirstGroup";
+import { GroupDetail } from "../features/groups/GroupDetail";
+import { AddExpense } from "../features/expenses/AddExpense";
+import { SettleUp } from "../features/settlements/SettleUp";
+import { ProfileSettings } from "../features/profile/ProfileSettings";
+import { GroupSettings } from "../features/groups/GroupSettings";
+import { CreateGroup } from "../features/groups/CreateGroup";
+import { GroupWhiteboard } from "../features/whiteboard/GroupWhiteboard";
+import { GroupChat } from "../features/chat/GroupChat";
+import { GroupAI } from "../features/ai/GroupAI";
+import { Notifications } from "../features/notifications/Notifications";
+import { GroupActivity } from "../features/groups/GroupActivity";
+import { ExpenseDetail } from "../features/expenses/ExpenseDetail";
 
 export const router = createBrowserRouter([
   {
