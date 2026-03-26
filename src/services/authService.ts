@@ -18,6 +18,11 @@ import {
 
 export const authService = {
 
+  async checkEmail(email: string): Promise<boolean> {
+    const res = await apiClient.post<{ exists: boolean }>('/auth/checkEmail', { email });
+    return res.data.exists;
+  },
+
   async loginEmail(data: LoginRequest): Promise<UserFull> {
     const res = await apiClient.post<{ user: UserFull; accessToken: string }>(
       '/auth/login', data

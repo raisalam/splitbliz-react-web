@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User, CheckCircle2 } from 'lucide-react';
 import { tokenStore } from '../../services/apiClient';
 import brandLogo from '../../assets/brand/logo.png';
@@ -25,15 +25,22 @@ export function Login() {
 
   const isValidEmail = email.includes('@') && email.includes('.');
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidEmail) return;
     setError(null);
-    
-    if (email.toLowerCase() === 'existing@example.com' || email.toLowerCase() === 'rais@example.com') {
-      setAuthState('B');
-    } else {
-      setAuthState('C');
+    setLoading(true);
+    try {
+      const exists = await authService.checkEmail(email);
+      if (exists) {
+        setAuthState('B');
+      } else {
+        navigate('/signup');
+      }
+    } catch (err) {
+      setError('Unable to check email. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
