@@ -1,4 +1,5 @@
 import React from 'react';
+import { colors } from '../../../constants/colors';
 
 type GroupFeaturesSectionProps = {
   requireApproval: boolean;
@@ -26,7 +27,7 @@ export function GroupFeaturesSection({
         style={{ borderTop: `0.5px solid ${sectionDivider}` }}
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Require settlement approval</p>
+          <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Require settlement approval</p>
           <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Members must confirm before marking paid</p>
         </div>
         <button
@@ -46,7 +47,7 @@ export function GroupFeaturesSection({
         style={{ borderTop: `0.5px solid ${sectionDivider}` }}
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Simplify debts</p>
+          <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Simplify debts</p>
           <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Minimize total number of transactions</p>
         </div>
         <button

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronRight, Lock } from 'lucide-react';
+import { colors } from '../../../constants/colors';
 
 type ProfileInfoSectionProps = {
   displayName: string;
@@ -33,11 +34,11 @@ export function ProfileInfoSection({
         onClick={onEditName}
         className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50"
       >
-        <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#f0eeff' }}>
+        <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: colors.primaryFaint }}>
           👤
         </div>
         <div className="flex-1 text-left">
-          <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Display name</p>
+          <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Display name</p>
           <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>{displayName}</p>
         </div>
         <ChevronRight className="w-4 h-4 shrink-0" style={{ color: mutedLabel }} />
@@ -51,7 +52,7 @@ export function ProfileInfoSection({
           📧
         </div>
         <div className="flex-1 text-left">
-          <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Email address</p>
+          <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Email address</p>
           <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>
             {email.replace(/(.{2})(.*)(?=@)/, (gp1, gp2, gp3) => gp1 + '*'.repeat(gp2.length))}
           </p>

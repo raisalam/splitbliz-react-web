@@ -1,4 +1,5 @@
 import React from 'react';
+import { colors } from '../../../constants/colors';
 import { MoreHorizontal, UserPlus } from 'lucide-react';
 
 type MemberManagementSectionProps = {
@@ -75,7 +76,7 @@ export function MemberManagementSection({
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-semibold truncate" style={{ color: '#1a1625' }}>
+                  <span className="text-sm font-semibold truncate" style={{ color: colors.textPrimary }}>
                     {member.displayName}
                   </span>
                   {isCurrentUser && (

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
+import { colors } from '../../constants/colors';
 
 import brandLogo from '../../assets/brand/logo.png';
 
@@ -10,7 +11,7 @@ export function Splash() {
   return (
     <div 
       className="min-h-screen flex flex-col justify-between p-8 relative overflow-hidden"
-      style={{ background: 'linear-gradient(160deg, #4a3bb5, #6c5ce7, #a29bfe)' }}
+      style={{ background: `linear-gradient(160deg, ${colors.primary}, ${colors.primary}, ${colors.primaryLight})` }}
     >
       <div className="flex-1 flex flex-col justify-center relative z-10 py-12 gap-8">
         
@@ -25,7 +26,7 @@ export function Splash() {
             className="w-[88px] h-[88px] flex items-center justify-center shadow-2xl overflow-hidden p-2"
             style={{ 
               borderRadius: '24px', 
-              backgroundColor: 'rgba(255,255,255,0.18)', 
+              backgroundColor: colors.white18, 
               border: '2px solid rgba(255,255,255,0.35)',
               boxShadow: '0 8px 32px rgba(0,0,0,0.15)'
             }}
@@ -89,7 +90,7 @@ export function Splash() {
           <button
             onClick={() => navigate('/login')}
             className="w-full py-4 rounded-[16px] bg-white transition-transform active:scale-[0.98] shadow-2xl font-extrabold text-[16px]"
-            style={{ color: '#6c5ce7' }}
+            style={{ color: colors.primary }}
           >
             Get started →
           </button>

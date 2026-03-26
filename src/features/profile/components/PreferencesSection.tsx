@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
+import { colors } from '../../../constants/colors';
 
 type ToggleRowProps = {
   label: string;
@@ -18,7 +19,7 @@ function ToggleRow({ label, subtitle, checked, onChange, sectionDivider, mutedLa
       style={{ borderTop: `0.5px solid ${sectionDivider}` }}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>{label}</p>
+        <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>{label}</p>
         <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>{subtitle}</p>
       </div>
       <button
@@ -68,7 +69,7 @@ export function PreferencesSection({
           💱
         </div>
         <div className="flex-1 text-left">
-          <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Default currency</p>
+          <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Default currency</p>
           <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Used when creating new groups</p>
         </div>
         <div className="flex items-center gap-1.5 text-sm" style={{ color: mutedLabel }}>
@@ -81,11 +82,11 @@ export function PreferencesSection({
         className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50"
         style={{ borderTop: `0.5px solid ${sectionDivider}` }}
       >
-        <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#f0eeff' }}>
+        <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: colors.primaryFaint }}>
           🌐
         </div>
         <div className="flex-1 text-left">
-          <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Language</p>
+          <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Language</p>
         </div>
         <div className="flex items-center gap-1.5 text-sm" style={{ color: mutedLabel }}>
           <span className="font-medium">English</span>

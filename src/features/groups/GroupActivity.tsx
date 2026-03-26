@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Check, LogOut, Receipt, PenLine, Users } from 'lucide-react';
 import { MOCK_GROUPS } from '../../mock/groups';
+import { colors } from '../../constants/colors';
 
 type ActivityType = 'EXPENSE' | 'SETTLE' | 'EDIT' | 'JOIN' | 'LEAVE';
 
@@ -78,7 +79,7 @@ export function GroupActivity() {
   const getIconProps = (type: ActivityType) => {
     switch (type) {
       case 'EXPENSE': return { icon: <Receipt className="w-[18px] h-[18px] text-[#6c5ce7]" />, bg: '#ede9ff' };
-      case 'SETTLE': return { icon: <Check className="w-[18px] h-[18px] text-[#0f6e56]" strokeWidth={3} />, bg: '#e1f5ee' };
+      case 'SETTLE': return { icon: <Check className="w-[18px] h-[18px] text-[#0f6e56]" strokeWidth={3} />, bg: colors.successLight };
       case 'EDIT': return { icon: <PenLine className="w-[18px] h-[18px] text-[#e28a11]" />, bg: '#faeeda' };
       case 'JOIN': return { icon: <Users className="w-[18px] h-[18px] text-[#2c74c9]" />, bg: '#e6f1fb' };
       case 'LEAVE': return { icon: <LogOut className="w-[18px] h-[18px] text-[#e24b4a]" />, bg: '#fceaea' };
@@ -95,7 +96,7 @@ export function GroupActivity() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.05 }}
         className="flex gap-4 px-5 py-4 cursor-default"
-        style={{ borderBottom: '0.5px solid #f0eeff' }}
+        style={{ borderBottom: `0.5px solid ${colors.primaryFaint}` }}
       >
         <div 
           className="w-[32px] h-[32px] flex items-center justify-center shrink-0"
@@ -142,11 +143,11 @@ export function GroupActivity() {
         <button 
           onClick={() => navigate(`/group/${group.publicId}`)}
           className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors hover:bg-[#e0ddf5] mr-3"
-          style={{ backgroundColor: '#f0eeff' }}
+          style={{ backgroundColor: colors.primaryFaint }}
         >
           <ArrowLeft className="w-4 h-4" style={{ color: '#3d3a4a' }} />
         </button>
-        <h1 className="font-semibold" style={{ fontSize: '14px', color: '#1a1625' }}>
+        <h1 className="font-semibold" style={{ fontSize: '14px', color: colors.textPrimary }}>
           Activity
         </h1>
       </header>
@@ -155,7 +156,7 @@ export function GroupActivity() {
       <div className="pt-2">
         {groupKeys.map(dateKey => (
           <div key={dateKey} className="mb-2">
-            <h3 className="px-5 py-3 font-bold uppercase tracking-[0.06em] sticky top-16 bg-white z-40 border-b border-[#f0eeff]" style={{ fontSize: '11px', color: '#9490b8' }}>
+            <h3 className="px-5 py-3 font-bold uppercase tracking-[0.06em] sticky top-16 bg-white z-40 border-b border-[#f0eeff]" style={{ fontSize: '11px', color: colors.textMuted }}>
               {dateKey}
             </h3>
             <div className="flex flex-col bg-white">

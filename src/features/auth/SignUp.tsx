@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User } from 'lucide-react';
 import brandLogo from '../../assets/brand/logo.png';
+import { colors } from '../../constants/colors';
 
 export function SignUp() {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ export function SignUp() {
       {/* Hero Header */}
       <div 
         className="pt-12 pb-16 px-6 relative rounded-b-[24px]"
-        style={{ background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)' }}
+        style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight})` }}
       >
         <div className="flex justify-between items-start mb-6">
           <button 
@@ -69,8 +70,8 @@ export function SignUp() {
                   required
                   placeholder="e.g. Aman Sharma"
                   className="w-full pl-10 pr-4 py-3 text-[13px] font-medium text-[#1a1625] rounded-[9px] outline-none transition-all placeholder:text-[#b8b4d8]"
-                  style={{ backgroundColor: '#f4f2fb', border: '1.5px solid #e8e4f8' }}
-                  onFocus={(e) => e.target.style.borderColor = '#6c5ce7'}
+                  style={{ backgroundColor: colors.pageBg, border: '1.5px solid #e8e4f8' }}
+                  onFocus={(e) => e.target.style.borderColor = colors.primary}
                   onBlur={(e) => e.target.style.borderColor = '#e8e4f8'}
                 />
               </div>
@@ -90,8 +91,8 @@ export function SignUp() {
                   required
                   placeholder="name@example.com"
                   className="w-full pl-10 pr-4 py-3 text-[13px] font-medium text-[#1a1625] rounded-[9px] outline-none transition-all placeholder:text-[#b8b4d8]"
-                  style={{ backgroundColor: '#f4f2fb', border: '1.5px solid #e8e4f8' }}
-                  onFocus={(e) => e.target.style.borderColor = '#6c5ce7'}
+                  style={{ backgroundColor: colors.pageBg, border: '1.5px solid #e8e4f8' }}
+                  onFocus={(e) => e.target.style.borderColor = colors.primary}
                   onBlur={(e) => e.target.style.borderColor = '#e8e4f8'}
                 />
               </div>
@@ -111,8 +112,8 @@ export function SignUp() {
                   required
                   placeholder="Min. 8 characters"
                   className="w-full pl-10 pr-10 py-3 text-[13px] font-medium text-[#1a1625] rounded-[9px] outline-none transition-all placeholder:text-[#b8b4d8]"
-                  style={{ backgroundColor: '#f4f2fb', border: '1.5px solid #e8e4f8' }}
-                  onFocus={(e) => e.target.style.borderColor = '#6c5ce7'}
+                  style={{ backgroundColor: colors.pageBg, border: '1.5px solid #e8e4f8' }}
+                  onFocus={(e) => e.target.style.borderColor = colors.primary}
                   onBlur={(e) => e.target.style.borderColor = '#e8e4f8'}
                 />
                 <button
@@ -129,7 +130,7 @@ export function SignUp() {
             <button
               type="submit"
               className="w-full py-3.5 rounded-[12px] text-white font-bold text-[13px] transition-transform active:scale-[0.98] shadow-md shadow-indigo-600/20"
-              style={{ background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)' }}
+              style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight})` }}
             >
               Create account →
             </button>

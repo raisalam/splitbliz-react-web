@@ -1,4 +1,5 @@
 import React from 'react';
+import { colors } from '../../../constants/colors';
 
 type ToggleRowProps = {
   label: string;
@@ -17,7 +18,7 @@ function ToggleRow({ label, subtitle, checked, onChange, sectionDivider, mutedLa
       style={{ borderTop: `0.5px solid ${sectionDivider}` }}
     >
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>{label}</p>
+        <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>{label}</p>
         <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>{subtitle}</p>
       </div>
       <button

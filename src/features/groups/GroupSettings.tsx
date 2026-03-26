@@ -7,6 +7,7 @@ import { InviteMemberSheet } from '../../components/InviteMemberSheet';
 import { GroupInfoSection } from './components/GroupInfoSection';
 import { MemberManagementSection } from './components/MemberManagementSection';
 import { DangerZoneSection } from './components/DangerZoneSection';
+import { colors } from '../../constants/colors';
 
 // 7-column emoji grid (same as CreateGroup)
 const EMOJI_GRID = [
@@ -42,10 +43,7 @@ const MOCK_GROUP = {
 };
 
 // Unique avatar colors per member index
-const AVATAR_COLORS = [
-  '#6c5ce7', '#00b894', '#e17055', '#0984e3', '#fdcb6e',
-  '#e84393', '#00cec9', '#d63031', '#a29bfe', '#55efc4',
-];
+const AVATAR_COLORS = colors.avatarPalette;
 
 type BottomSheet = 'NONE' | 'EMOJI' | 'MEMBER_ACTION' | 'DELETE_CONFIRM';
 
@@ -65,12 +63,12 @@ export function GroupSettings() {
   const [inviteSheetOpen, setInviteSheetOpen] = useState(false);
 
   // Design tokens from spec
-  const purple = '#6c5ce7';
-  const pageBg = '#f4f2fb';
+  const purple = colors.primary;
+  const pageBg = colors.pageBg;
   const cardBorder = '#e8e4f8';
-  const sectionDivider = '#f0eeff';
-  const mutedLabel = '#9490b8';
-  const headerBorder = '#e0ddf5';
+  const sectionDivider = colors.primaryFaint;
+  const mutedLabel = colors.textMuted;
+  const headerBorder = colors.border;
 
   const visibleMembers = showAllMembers ? MOCK_GROUP.members : MOCK_GROUP.members.slice(0, 4);
   const totalMembers = MOCK_GROUP.members.length;
@@ -80,9 +78,9 @@ export function GroupSettings() {
       case 'OWNER':
         return { bg: '#ede9ff', color: purple, label: 'Owner' };
       case 'ADMIN':
-        return { bg: '#e1f5ee', color: '#0f6e56', label: 'Admin' };
+        return { bg: colors.successLight, color: colors.success, label: 'Admin' };
       default:
-        return { bg: '#f4f2fb', color: '#9490b8', label: 'Member' };
+        return { bg: colors.pageBg, color: colors.textMuted, label: 'Member' };
     }
   };
 
@@ -100,11 +98,11 @@ export function GroupSettings() {
           <button
             onClick={() => navigate(-1)}
             className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-            style={{ backgroundColor: '#f0eeff' }}
+            style={{ backgroundColor: colors.primaryFaint }}
           >
             <ArrowLeft className="w-4 h-4" style={{ color: purple }} />
           </button>
-          <span className="font-semibold" style={{ fontSize: '16px', color: '#1a1625' }}>Group settings</span>
+          <span className="font-semibold" style={{ fontSize: '16px', color: colors.textPrimary }}>Group settings</span>
           <button
             className="px-3.5 py-1.5 rounded-[20px] text-sm font-semibold transition-all active:scale-95"
             style={{ backgroundColor: '#ede9ff', color: purple }}
@@ -187,7 +185,7 @@ export function GroupSettings() {
               <div className="pt-4 pb-3 px-6 flex flex-col items-center" style={{ borderBottom: `0.5px solid ${sectionDivider}` }}>
                 <div className="w-10 h-1.5 rounded-full mb-4" style={{ backgroundColor: '#e0dced' }} />
                 <div className="flex items-center justify-between w-full">
-                  <h3 className="text-lg font-bold" style={{ color: '#1a1625' }}>
+                  <h3 className="text-lg font-bold" style={{ color: colors.textPrimary }}>
                     {activeSheet === 'EMOJI' && 'Pick an icon'}
                     {activeSheet === 'MEMBER_ACTION' && (selectedMember?.displayName || 'Member')}
                     {activeSheet === 'DELETE_CONFIRM' && 'Delete group?'}
@@ -232,7 +230,7 @@ export function GroupSettings() {
                   <button
                     onClick={() => setActiveSheet('NONE')}
                     className="w-full text-left px-4 py-3.5 rounded-xl flex items-center gap-3 transition-colors hover:bg-slate-50"
-                    style={{ color: '#1a1625' }}
+                    style={{ color: colors.textPrimary }}
                   >
                     <span className="text-lg">👑</span>
                     <div>
@@ -258,7 +256,7 @@ export function GroupSettings() {
               {activeSheet === 'DELETE_CONFIRM' && (
                 <div className="px-5 py-5">
                   <p className="text-sm mb-6" style={{ color: mutedLabel }}>
-                    This will permanently delete <strong style={{ color: '#1a1625' }}>{groupName}</strong> and all its expenses. This action cannot be undone.
+                    This will permanently delete <strong style={{ color: colors.textPrimary }}>{groupName}</strong> and all its expenses. This action cannot be undone.
                   </p>
                   <div className="space-y-2">
                     <button

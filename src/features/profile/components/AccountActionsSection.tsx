@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
+import { colors } from '../../../constants/colors';
 
 type AccountActionsSectionProps = {
   variant: 'plan' | 'account';
@@ -34,13 +35,13 @@ export function AccountActionsSection({
                 ⚡
               </div>
               <div>
-                <p className="font-semibold text-sm" style={{ color: '#1a1625' }}>Free Plan</p>
+                <p className="font-semibold text-sm" style={{ color: colors.textPrimary }}>Free Plan</p>
                 <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Basic features for personal use</p>
               </div>
             </div>
             <button
               className="px-3 py-1.5 rounded-[20px] text-xs font-bold text-white transition-transform active:scale-95"
-              style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)` }}
+              style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` }}
             >
               Upgrade to PRO
             </button>
@@ -49,19 +50,19 @@ export function AccountActionsSection({
           <div className="space-y-3.5">
             <div>
               <div className="flex justify-between text-xs font-semibold mb-1.5">
-                <span style={{ color: '#1a1625' }}>Active groups</span>
+                <span style={{ color: colors.textPrimary }}>Active groups</span>
                 <span style={{ color: purple }}>3 / 5</span>
               </div>
-              <div className="h-[5px] rounded-full overflow-hidden" style={{ backgroundColor: '#f0eeff' }}>
-                <div className="h-full rounded-full" style={{ width: '60%', background: `linear-gradient(90deg, ${purple}, #a29bfe)` }} />
+              <div className="h-[5px] rounded-full overflow-hidden" style={{ backgroundColor: colors.primaryFaint }}>
+                <div className="h-full rounded-full" style={{ width: '60%', background: `linear-gradient(90deg, ${purple}, ${colors.primaryLight})` }} />
               </div>
             </div>
             <div>
               <div className="flex justify-between text-xs font-semibold mb-1.5">
-                <span style={{ color: '#1a1625' }}>Monthly expenses</span>
+                <span style={{ color: colors.textPrimary }}>Monthly expenses</span>
                 <span style={{ color: purple }}>8 / 20</span>
               </div>
-              <div className="h-[5px] rounded-full overflow-hidden" style={{ backgroundColor: '#f0eeff' }}>
+              <div className="h-[5px] rounded-full overflow-hidden" style={{ backgroundColor: colors.primaryFaint }}>
                 <div className="h-full rounded-full" style={{ width: '40%', background: 'linear-gradient(90deg, #1d9e75, #5dcaa5)' }} />
               </div>
             </div>

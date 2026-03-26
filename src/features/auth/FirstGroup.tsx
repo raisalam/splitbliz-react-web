@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, createSearchParams } from 'react-router';
+import { colors } from '../../constants/colors';
 
 // 6 Intents for Screen 4
 const INTENTS = [
@@ -32,10 +33,10 @@ export function FirstGroup() {
     });
   };
 
-  const purple = '#6c5ce7';
-  const pageBg = '#f4f2fb';
+  const purple = colors.primary;
+  const pageBg = colors.pageBg;
   const cardBorder = '#e8e4f8';
-  const muted = '#9490b8';
+  const muted = colors.textMuted;
 
   return (
     <div className="min-h-screen font-sans relative flex flex-col" style={{ backgroundColor: pageBg }}>
@@ -43,7 +44,7 @@ export function FirstGroup() {
       {/* Mini Progress Header */}
       <div 
         className="px-6 py-5 flex items-center justify-between shadow-sm z-10"
-        style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)` }}
+        style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` }}
       >
         <span className="text-white font-bold tracking-wide" style={{ fontSize: '15px' }}>
           Step 2 of 2
@@ -63,7 +64,7 @@ export function FirstGroup() {
           transition={{ duration: 0.4 }}
           className="text-center mb-8"
         >
-          <h2 className="font-extrabold mb-3" style={{ fontSize: '28px', color: '#1a1625', lineHeight: '1.2' }}>
+          <h2 className="font-extrabold mb-3" style={{ fontSize: '28px', color: colors.textPrimary, lineHeight: '1.2' }}>
             What are you splitting?
           </h2>
           <p className="font-medium px-4" style={{ fontSize: '15px', color: muted, lineHeight: '1.4' }}>
@@ -88,7 +89,7 @@ export function FirstGroup() {
                 style={{
                   backgroundColor: isSelected ? '#ede9ff' : '#fff',
                   border: isSelected ? `2px solid ${purple}` : `1.5px solid ${cardBorder}`,
-                  boxShadow: isSelected ? '0 4px 12px rgba(108,92,231,0.1)' : '0 2px 4px rgba(0,0,0,0.02)'
+                  boxShadow: isSelected ? `0 4px 12px ${colors.overlay10}` : '0 2px 4px rgba(0,0,0,0.02)'
                 }}
               >
                 <span className="text-[32px] mb-3 leading-none transition-transform duration-300" style={{ transform: isSelected ? 'scale(1.15)' : 'scale(1)' }}>
@@ -114,9 +115,9 @@ export function FirstGroup() {
             disabled={!selectedIntent}
             className="w-full py-4 rounded-[14px] font-bold text-white transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none"
             style={{ 
-              background: selectedIntent ? `linear-gradient(135deg, ${purple}, #a29bfe)` : '#d4d0e8', 
+              background: selectedIntent ? `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` : '#d4d0e8', 
               fontSize: '16px',
-              boxShadow: selectedIntent ? '0 8px 24px rgba(108,92,231,0.25)' : 'none'
+              boxShadow: selectedIntent ? `0 8px 24px ${colors.overlay25}` : 'none'
             }}
           >
             Set up this group →

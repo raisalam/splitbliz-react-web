@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Pencil } from 'lucide-react';
+import { colors } from '../../../constants/colors';
 
 type ProfileAvatarSectionProps = {
   displayName: string;
@@ -20,7 +21,7 @@ export function ProfileAvatarSection({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-2xl pt-6 pb-6 flex flex-col items-center relative overflow-hidden"
-      style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)` }}
+      style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` }}
     >
       <div className="relative mb-3">
         <button
@@ -44,7 +45,7 @@ export function ProfileAvatarSection({
       <button
         onClick={onEdit}
         className="flex items-center gap-1.5 px-3 py-1 rounded-[20px] text-xs text-white font-medium transition-colors hover:bg-white/25 active:scale-95"
-        style={{ backgroundColor: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)' }}
+        style={{ backgroundColor: colors.white18, border: '1px solid rgba(255,255,255,0.3)' }}
       >
         <span>✏️</span> Edit profile info
       </button>

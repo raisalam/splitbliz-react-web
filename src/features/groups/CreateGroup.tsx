@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Check, X, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { MOCK_USER_ID } from '../../api/groups';
+import { colors } from '../../constants/colors';
 
 // 35+ emojis for the picker grid
 const EMOJI_GRID = [
@@ -70,11 +71,11 @@ export function CreateGroup() {
   };
 
   // Colors from the spec
-  const purple = '#6c5ce7';
-  const pageBg = '#f4f2fb';
+  const purple = colors.primary;
+  const pageBg = colors.pageBg;
   const cardBorder = '#e8e4f8';
-  const sectionDivider = '#f0eeff';
-  const mutedLabel = '#9490b8';
+  const sectionDivider = colors.primaryFaint;
+  const mutedLabel = colors.textMuted;
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: pageBg }}>
@@ -89,7 +90,7 @@ export function CreateGroup() {
           >
             <ArrowLeft className="w-4.5 h-4.5" style={{ color: purple }} />
           </button>
-          <h1 className="font-bold text-lg" style={{ color: '#1a1625' }}>Create group</h1>
+          <h1 className="font-bold text-lg" style={{ color: colors.textPrimary }}>Create group</h1>
         </div>
       </header>
 
@@ -100,7 +101,7 @@ export function CreateGroup() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           className="rounded-2xl p-5 flex items-center gap-5"
-          style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)` }}
+          style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` }}
         >
           {/* Emoji Icon Picker */}
           <button
@@ -181,13 +182,13 @@ export function CreateGroup() {
                 {/* Avatar circle */}
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
-                  style={{ backgroundColor: member.isAdmin ? purple : '#a29bfe' }}
+                  style={{ backgroundColor: member.isAdmin ? purple : colors.primaryLight }}
                 >
                   {member.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm truncate" style={{ color: '#1a1625' }}>
+                    <span className="font-semibold text-sm truncate" style={{ color: colors.textPrimary }}>
                       {member.name}
                     </span>
                     {member.isAdmin && (
@@ -225,7 +226,7 @@ export function CreateGroup() {
                 onKeyDown={(e) => { if (e.key === 'Enter') addMember(); }}
                 placeholder="Enter name or phone / email…"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400 py-1"
-                style={{ color: '#1a1625' }}
+                style={{ color: colors.textPrimary }}
               />
             </div>
             <button
@@ -258,7 +259,7 @@ export function CreateGroup() {
             <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#e8f5e9' }}>
               💰
             </div>
-            <span className="flex-1 text-left text-sm font-semibold" style={{ color: '#1a1625' }}>Currency</span>
+            <span className="flex-1 text-left text-sm font-semibold" style={{ color: colors.textPrimary }}>Currency</span>
             <div className="flex items-center gap-1.5 text-sm" style={{ color: mutedLabel }}>
               <span className="font-medium">₹ INR</span>
               <ChevronRight className="w-4 h-4" />
@@ -273,7 +274,7 @@ export function CreateGroup() {
             <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#e3f2fd' }}>
               ⚖️
             </div>
-            <span className="flex-1 text-left text-sm font-semibold" style={{ color: '#1a1625' }}>Default split</span>
+            <span className="flex-1 text-left text-sm font-semibold" style={{ color: colors.textPrimary }}>Default split</span>
             <div className="flex items-center gap-1.5 text-sm" style={{ color: mutedLabel }}>
               <span className="font-medium">Equal</span>
               <ChevronRight className="w-4 h-4" />
@@ -289,7 +290,7 @@ export function CreateGroup() {
               🔒
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Require settlement approval</p>
+              <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Require settlement approval</p>
               <p className="text-xs mt-0.5" style={{ color: mutedLabel }}>Settlements need admin approval before being applied</p>
             </div>
             <button
@@ -313,7 +314,7 @@ export function CreateGroup() {
               🔄
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Simplify debts</p>
+              <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Simplify debts</p>
               <p className="text-xs mt-0.5" style={{ color: mutedLabel }}>Automatically combine multiple debts between members</p>
             </div>
             <button
@@ -341,7 +342,7 @@ export function CreateGroup() {
             onClick={handleCreate}
             className="w-full flex items-center justify-center gap-2 py-4 rounded-[14px] font-bold text-base text-white transition-all active:scale-[0.98] shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
-              background: groupName.trim() ? `linear-gradient(135deg, ${purple}, #a29bfe)` : '#d4d0e8',
+              background: groupName.trim() ? `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` : '#d4d0e8',
               boxShadow: groupName.trim() ? '0 8px 24px rgba(108,92,231,0.3)' : 'none',
             }}
           >
@@ -372,11 +373,11 @@ export function CreateGroup() {
               <div className="pt-4 pb-3 px-6 flex flex-col items-center" style={{ borderBottom: `0.5px solid ${sectionDivider}` }}>
                 <div className="w-10 h-1.5 rounded-full mb-4" style={{ backgroundColor: '#e0dced' }} />
                 <div className="flex items-center justify-between w-full">
-                  <h3 className="text-lg font-bold" style={{ color: '#1a1625' }}>Pick an icon</h3>
+                  <h3 className="text-lg font-bold" style={{ color: colors.textPrimary }}>Pick an icon</h3>
                   <button
                     onClick={() => setEmojiSheetOpen(false)}
                     className="p-2 rounded-full transition-colors"
-                    style={{ backgroundColor: '#f4f2fb' }}
+                    style={{ backgroundColor: colors.pageBg }}
                   >
                     <X className="w-4 h-4" style={{ color: mutedLabel }} />
                   </button>

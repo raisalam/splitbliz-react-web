@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { ArrowLeft, Check, Clock, Star, Users, CreditCard } from 'lucide-react';
 import { MOCK_GROUPS } from '../../mock/groups';
+import { colors } from '../../constants/colors';
 
 type NotificationType = 'EXPENSE' | 'INVITE' | 'REMINDER' | 'SETTLED' | 'STREAK';
 
@@ -138,7 +139,7 @@ export function Notifications() {
         </div>
         <div 
           className="absolute -bottom-0.5 -right-0.5 w-[16px] h-[16px] rounded-full flex items-center justify-center border-2 border-white"
-          style={{ backgroundColor: n.type === 'SETTLED' ? '#0f6e56' : '#f4f2fb' }}
+          style={{ backgroundColor: n.type === 'SETTLED' ? colors.success : colors.pageBg }}
         >
           {renderBadge(n.type)}
         </div>
@@ -152,7 +153,7 @@ export function Notifications() {
         return (
           <>
             <p className="text-[14px] leading-[1.3] text-[#3d3a4a]">
-              <span className="font-bold text-[#1a1625]">{n.memberName}</span> added {n.expenseName} in <span style={{ color: '#6c5ce7', fontWeight: 600 }}>{n.groupName}</span>
+              <span className="font-bold text-[#1a1625]">{n.memberName}</span> added {n.expenseName} in <span style={{ color: colors.primary, fontWeight: 600 }}>{n.groupName}</span>
             </p>
             <p className="mt-1" style={{ fontSize: '9px', color: '#b8b4d8', fontWeight: 600 }}>
               Your share: {n.amount}  ·  {n.timeLabel}
@@ -163,13 +164,13 @@ export function Notifications() {
         return (
           <>
             <p className="text-[14px] leading-[1.3] text-[#3d3a4a]">
-              <span className="font-bold text-[#1a1625]">{n.memberName}</span> invited you to join <span style={{ color: '#6c5ce7', fontWeight: 600 }}>{n.groupName}</span>
+              <span className="font-bold text-[#1a1625]">{n.memberName}</span> invited you to join <span style={{ color: colors.primary, fontWeight: 600 }}>{n.groupName}</span>
             </p>
             <div className="flex gap-2 mt-2">
               <button 
                 onClick={(e) => handleInviteAction(e, n.id, true)}
                 className="px-4 py-1.5 font-bold transition-all active:scale-95"
-                style={{ backgroundColor: '#e1f5ee', color: '#0f6e56', borderRadius: '6px', fontSize: '10px' }}
+                style={{ backgroundColor: colors.successLight, color: colors.success, borderRadius: '6px', fontSize: '10px' }}
               >
                 Accept
               </button>
@@ -187,7 +188,7 @@ export function Notifications() {
         return (
           <>
             <p className="text-[14px] leading-[1.3] text-[#3d3a4a]">
-              You still owe <span className="font-bold text-[#1a1625]">{n.amount}</span> in <span style={{ color: '#6c5ce7', fontWeight: 600 }}>{n.groupName}</span>
+              You still owe <span className="font-bold text-[#1a1625]">{n.amount}</span> in <span style={{ color: colors.primary, fontWeight: 600 }}>{n.groupName}</span>
             </p>
             <p className="mt-1" style={{ fontSize: '9px', color: '#b8b4d8', fontWeight: 600 }}>
               Reminder  ·  {n.timeLabel}
@@ -198,7 +199,7 @@ export function Notifications() {
         return (
           <>
             <p className="text-[14px] leading-[1.3] text-[#3d3a4a]">
-              <span className="font-bold text-[#1a1625]">{n.memberName}</span> settled up <span className="font-bold text-[#1a1625]">{n.amount}</span> in <span style={{ color: '#6c5ce7', fontWeight: 600 }}>{n.groupName}</span>
+              <span className="font-bold text-[#1a1625]">{n.memberName}</span> settled up <span className="font-bold text-[#1a1625]">{n.amount}</span> in <span style={{ color: colors.primary, fontWeight: 600 }}>{n.groupName}</span>
             </p>
             <p className="mt-1" style={{ fontSize: '9px', color: '#b8b4d8', fontWeight: 600 }}>
               Settled  ·  {n.timeLabel}
@@ -223,7 +224,7 @@ export function Notifications() {
     if (items.length === 0) return null;
     return (
       <div className="mb-6">
-        <h3 className="px-5 mb-2 font-bold uppercase tracking-[0.06em]" style={{ fontSize: '11px', color: '#9490b8' }}>
+        <h3 className="px-5 mb-2 font-bold uppercase tracking-[0.06em]" style={{ fontSize: '11px', color: colors.textMuted }}>
           {title}
         </h3>
         <div className="flex flex-col">
@@ -238,11 +239,11 @@ export function Notifications() {
                 className="flex gap-3 px-5 py-4 cursor-pointer relative"
                 style={{ 
                   backgroundColor: n.read ? '#ffffff' : '#faf9ff',
-                  borderTop: '0.5px solid #f0eeff'
+                  borderTop: `0.5px solid ${colors.primaryFaint}`
                 }}
               >
                 {!n.read && (
-                  <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ backgroundColor: '#6c5ce7', borderRadius: '0 2px 2px 0' }} />
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ backgroundColor: colors.primary, borderRadius: '0 2px 2px 0' }} />
                 )}
                 {renderAvatarContent(n)}
                 <div className="flex-1 pt-0.5">
@@ -257,7 +258,7 @@ export function Notifications() {
   };
 
   return (
-    <div className="min-h-screen font-sans pb-10" style={{ backgroundColor: '#f4f2fb' }}>
+    <div className="min-h-screen font-sans pb-10" style={{ backgroundColor: colors.pageBg }}>
       
       {/* Sticky White Header */}
       <header className="sticky top-0 z-50 bg-white shadow-sm flex items-center justify-between px-4 h-16">
@@ -265,11 +266,11 @@ export function Notifications() {
           <button 
             onClick={() => navigate('/')}
             className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors hover:bg-[#e0ddf5]"
-            style={{ backgroundColor: '#f0eeff' }}
+            style={{ backgroundColor: colors.primaryFaint }}
           >
             <ArrowLeft className="w-4 h-4" style={{ color: '#3d3a4a' }} />
           </button>
-          <h1 className="font-semibold" style={{ fontSize: '14px', color: '#1a1625' }}>
+          <h1 className="font-semibold" style={{ fontSize: '14px', color: colors.textPrimary }}>
             Notifications
           </h1>
         </div>
@@ -278,7 +279,7 @@ export function Notifications() {
           <button 
             onClick={markAllRead}
             className="font-semibold transition-colors hover:opacity-80"
-            style={{ fontSize: '10px', color: '#6c5ce7' }}
+            style={{ fontSize: '10px', color: colors.primary }}
           >
             Mark all read
           </button>
@@ -295,8 +296,8 @@ export function Notifications() {
             <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: '#ede9ff' }}>
               <span className="text-2xl">📭</span>
             </div>
-            <p className="font-bold text-[#1a1625] mb-1">No notifications</p>
-            <p style={{ fontSize: '13px', color: '#9490b8' }}>You're all caught up!</p>
+            <p className="font-bold text-[#1a1625] mb-1" style={{ color: colors.textPrimary }}>No notifications</p>
+            <p style={{ fontSize: '13px', color: colors.textMuted }}>You're all caught up!</p>
           </div>
         )}
       </div>

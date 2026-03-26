@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User, CheckCircle2 } from 'lucide-react';
 import { tokenStore } from '../../services/apiClient';
 import brandLogo from '../../assets/brand/logo.png';
+import { colors } from '../../constants/colors';
 
 type AuthState = 'A' | 'B' | 'C';
 
@@ -69,10 +70,10 @@ export function Login() {
   };
   const strength = getPasswordStrength();
 
-  const purple = '#6c5ce7';
-  const pageBg = '#f4f2fb';
+  const purple = colors.primary;
+  const pageBg = colors.pageBg;
   const cardBorder = '#e8e4f8';
-  const muted = '#9490b8';
+  const muted = colors.textMuted;
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: pageBg, display: 'flex', flexDirection: 'column' }}>
@@ -81,7 +82,7 @@ export function Login() {
       <motion.div 
         layout
         className="pt-14 pb-20 px-6 relative rounded-b-[32px]"
-        style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)` }}
+        style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` }}
       >
         <div className="flex justify-between items-start mb-8">
           <button 
@@ -166,7 +167,7 @@ export function Login() {
                   Email address
                 </label>
                 {authState === 'B' && (
-                   <span className="px-2.5 py-1 flex items-center gap-1" style={{ background: '#e1f5ee', color: '#0f6e56', fontSize: '11px', fontWeight: 700, borderRadius: '20px' }}>
+                   <span className="px-2.5 py-1 flex items-center gap-1" style={{ background: colors.successLight, color: colors.success, fontSize: '11px', fontWeight: 700, borderRadius: '20px' }}>
                      <CheckCircle2 className="w-3 h-3" /> Account found
                    </span>
                 )}
@@ -285,13 +286,13 @@ export function Login() {
                   (authState === 'C' && (password.length < 8 || name.trim().length === 0))
                 }
                 className="w-full py-4 rounded-[14px] font-bold transition-all shadow-md active:scale-[0.98]"
-                style={{ 
-                  fontSize: '15px',
-                  background: (
-                    (authState === 'A' && isValidEmail) || 
-                    (authState === 'B' && password.length >= 1) ||
-                    (authState === 'C' && password.length >= 8 && name.trim().length > 0)
-                  ) ? `linear-gradient(135deg, ${purple}, #a29bfe)` : '#e8e4f8',
+                  style={{ 
+                    fontSize: '15px',
+                    background: (
+                      (authState === 'A' && isValidEmail) || 
+                      (authState === 'B' && password.length >= 1) ||
+                      (authState === 'C' && password.length >= 8 && name.trim().length > 0)
+                  ) ? `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` : '#e8e4f8',
                   color: (
                     (authState === 'A' && isValidEmail) || 
                     (authState === 'B' && password.length >= 1) ||
@@ -301,7 +302,7 @@ export function Login() {
                     (authState === 'A' && isValidEmail) || 
                     (authState === 'B' && password.length >= 1) ||
                     (authState === 'C' && password.length >= 8 && name.trim().length > 0)
-                  ) ? '0 6px 16px rgba(108,92,231,0.25)' : 'none'
+                  ) ? `0 6px 16px ${colors.overlay25}` : 'none'
                 }}
               >
                 {authState === 'A' && 'Continue →'}

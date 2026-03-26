@@ -9,6 +9,7 @@ import { ProfileInfoSection } from './components/ProfileInfoSection';
 import { NotificationToggles } from './components/NotificationToggles';
 import { PreferencesSection } from './components/PreferencesSection';
 import { AccountActionsSection } from './components/AccountActionsSection';
+import { colors } from '../../constants/colors';
 
 // 7-column emoji grid
 const EMOJI_GRID = [
@@ -46,12 +47,12 @@ export function ProfileSettings() {
   const [tempValue, setTempValue] = useState('');
 
   // Design tokens
-  const purple = '#6c5ce7';
-  const pageBg = '#f4f2fb';
+  const purple = colors.primary;
+  const pageBg = colors.pageBg;
   const cardBorder = '#e8e4f8';
-  const sectionDivider = '#f0eeff';
-  const mutedLabel = '#9490b8';
-  const headerBorder = '#e0ddf5';
+  const sectionDivider = colors.primaryFaint;
+  const mutedLabel = colors.textMuted;
+  const headerBorder = colors.border;
 
   // Handlers
   const handleOpenEdit = (sheet: BottomSheet, initialValue: string = '') => {
@@ -82,11 +83,11 @@ export function ProfileSettings() {
           <button
             onClick={() => navigate(-1)}
             className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-            style={{ backgroundColor: '#f0eeff' }}
+            style={{ backgroundColor: colors.primaryFaint }}
           >
             <ArrowLeft className="w-4 h-4" style={{ color: purple }} />
           </button>
-          <span className="font-semibold" style={{ fontSize: '16px', color: '#1a1625' }}>Profile & Settings</span>
+          <span className="font-semibold" style={{ fontSize: '16px', color: colors.textPrimary }}>Profile & Settings</span>
           <button
             onClick={() => navigate(-1)}
             className="px-3.5 py-1.5 rounded-[20px] text-sm font-semibold transition-all active:scale-95"
@@ -142,7 +143,7 @@ export function ProfileSettings() {
               G
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Google</p>
+              <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Google</p>
               <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>{email}</p>
             </div>
             <button className="text-xs font-semibold" style={{ color: '#e24b4a' }}>Disconnect</button>
@@ -156,7 +157,7 @@ export function ProfileSettings() {
               📱
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-semibold" style={{ color: '#1a1625' }}>Phone number</p>
+              <p className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Phone number</p>
               <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Not connected</p>
             </div>
             <button className="text-xs font-semibold" style={{ color: purple }}>Connect</button>
@@ -222,7 +223,7 @@ export function ProfileSettings() {
                     <div className="w-9 h-1 rounded-full bg-slate-200" />
                   </div>
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-bold" style={{ color: '#1a1625' }}>
+                    <h3 className="text-lg font-bold" style={{ color: colors.textPrimary }}>
                       Edit profile
                     </h3>
                     <button onClick={() => setActiveSheet('NONE')} className="p-2 rounded-full bg-slate-100">
@@ -235,7 +236,7 @@ export function ProfileSettings() {
                     onChange={(e) => setTempValue(e.target.value)}
                     autoFocus
                     className="w-full text-lg font-semibold bg-transparent border-b-2 py-3 outline-none"
-                    style={{ borderBottomColor: purple, color: '#1a1625' }}
+                    style={{ borderBottomColor: purple, color: colors.textPrimary }}
                     placeholder="Enter value"
                   />
                   <div className="mt-8 flex gap-3">
@@ -264,7 +265,7 @@ export function ProfileSettings() {
                     <div className="w-9 h-1 rounded-full bg-slate-200" />
                   </div>
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-bold" style={{ color: '#1a1625' }}>
+                    <h3 className="text-lg font-bold" style={{ color: colors.textPrimary }}>
                       Pick an icon
                     </h3>
                     <button onClick={() => setActiveSheet('NONE')} className="p-2 rounded-full bg-slate-100">

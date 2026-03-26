@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, MoreHorizontal, FileText, Edit2, Share, Copy, Trash2, X, Plus } from 'lucide-react';
 import { getGroupById, getGroupMembers, getGroupExpenses, MOCK_USER_ID } from '../../api/groups';
+import { colors } from '../../constants/colors';
 
 export function ExpenseDetail() {
   const { groupId, expenseId } = useParams();
@@ -70,28 +71,28 @@ export function ExpenseDetail() {
   const hiddenCount = Math.max(0, expense.participants.length - 4);
 
   return (
-    <div className="min-h-screen font-sans pb-10 flex flex-col" style={{ backgroundColor: '#f4f2fb' }}>
+    <div className="min-h-screen font-sans pb-10 flex flex-col" style={{ backgroundColor: colors.pageBg }}>
       
       {/* Top Bar */}
-      <header className="sticky top-0 z-40 bg-white flex items-center justify-between px-4 h-16" style={{ borderBottom: '0.5px solid #e0ddf5' }}>
+      <header className="sticky top-0 z-40 bg-white flex items-center justify-between px-4 h-16" style={{ borderBottom: `0.5px solid ${colors.border}` }}>
         <button 
           onClick={() => navigate(-1)} // Preserves scroll on previous page
           className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors"
-          style={{ backgroundColor: '#f0eeff' }}
+          style={{ backgroundColor: colors.primaryFaint }}
         >
-          <ArrowLeft className="w-4 h-4" style={{ color: '#6c5ce7' }} />
+          <ArrowLeft className="w-4 h-4" style={{ color: colors.primary }} />
         </button>
         
-        <h1 className="font-semibold" style={{ fontSize: '14px', color: '#1a1625' }}>
+        <h1 className="font-semibold" style={{ fontSize: '14px', color: colors.textPrimary }}>
           Expense detail
         </h1>
 
         <button 
           onClick={() => setActionsSheetOpen(true)}
           className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors"
-          style={{ backgroundColor: '#f4f2fb' }}
+          style={{ backgroundColor: colors.pageBg }}
         >
-          <MoreHorizontal className="w-4 h-4" style={{ color: '#9490b8' }} />
+          <MoreHorizontal className="w-4 h-4" style={{ color: colors.textMuted }} />
         </button>
       </header>
 
@@ -99,7 +100,7 @@ export function ExpenseDetail() {
       <div 
         className="px-6 py-6"
         style={{ 
-          background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)',
+          background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight})`,
           padding: '16px'
         }}
       >
@@ -107,7 +108,7 @@ export function ExpenseDetail() {
           <div 
             className="w-[44px] h-[44px] rounded-full flex items-center justify-center text-xl shrink-0"
             style={{ 
-              background: 'rgba(255,255,255,0.2)', 
+              background: colors.white20, 
               border: '2px solid rgba(255,255,255,0.35)' 
             }}
           >
@@ -126,17 +127,17 @@ export function ExpenseDetail() {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <div className="px-3 py-1 flex items-center gap-1.5" style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px' }}>
+          <div className="px-3 py-1 flex items-center gap-1.5" style={{ background: colors.white18, border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px' }}>
             <span className="text-white font-medium" style={{ fontSize: '9px' }}>
               {expense.splitType === 'EQUAL' ? '⚖️ Equal split' : '✏️ Custom split'}
             </span>
           </div>
-          <div className="px-3 py-1 flex items-center gap-1.5" style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px' }}>
+          <div className="px-3 py-1 flex items-center gap-1.5" style={{ background: colors.white18, border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px' }}>
             <span className="text-white font-medium" style={{ fontSize: '9px' }}>
               📅 {formattedDate}
             </span>
           </div>
-          <div className="px-3 py-1 flex items-center gap-1.5" style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px' }}>
+          <div className="px-3 py-1 flex items-center gap-1.5" style={{ background: colors.white18, border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px' }}>
             <span className="text-white font-medium capitalize" style={{ fontSize: '9px' }}>
               {expense.categoryEmoji} {expense.category?.toLowerCase() || 'Expense'}
             </span>
@@ -148,7 +149,7 @@ export function ExpenseDetail() {
         
         {/* Paid By Card */}
         <div>
-          <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: '#9490b8', letterSpacing: '0.06em', marginLeft: '8px' }}>
+          <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: colors.textMuted, letterSpacing: '0.06em', marginLeft: '8px' }}>
             PAID BY
           </h3>
           <div className="bg-white p-4" style={{ border: '0.5px solid #e8e4f8', borderRadius: '14px' }}>
@@ -159,16 +160,16 @@ export function ExpenseDetail() {
                 ) : (
                   <div className="w-[32px] h-[32px] rounded-full bg-slate-200" />
                 )}
-                <div>
-                  <p className="font-semibold text-[#1a1625]" style={{ fontSize: '12px' }}>{payer?.displayName || 'Unknown'}</p>
-                  <p className="mt-0.5" style={{ fontSize: '10px', color: '#9490b8' }}>Paid full amount</p>
+                  <div>
+                    <p className="font-semibold text-[#1a1625]" style={{ fontSize: '12px' }}>{payer?.displayName || 'Unknown'}</p>
+                  <p className="mt-0.5" style={{ fontSize: '10px', color: colors.textMuted }}>Paid full amount</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
                 <span className="font-bold text-[#1a1625]" style={{ fontSize: '12px' }}>
                   {currencySymbol}{expense.totalAmount}
                 </span>
-                <span className="px-2.5 py-0.5 font-semibold" style={{ background: '#e1f5ee', color: '#0f6e56', borderRadius: '20px', fontSize: '9px' }}>
+                <span className="px-2.5 py-0.5 font-semibold" style={{ background: colors.successLight, color: colors.success, borderRadius: '20px', fontSize: '9px' }}>
                   Paid
                 </span>
               </div>
@@ -178,7 +179,7 @@ export function ExpenseDetail() {
 
         {/* Split Between Card */}
         <div>
-          <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: '#9490b8', letterSpacing: '0.06em', marginLeft: '8px' }}>
+          <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: colors.textMuted, letterSpacing: '0.06em', marginLeft: '8px' }}>
             SPLIT BETWEEN · {expense.participants?.length || 0} MEMBERS
           </h3>
           <div className="bg-white p-4" style={{ border: '0.5px solid #e8e4f8', borderRadius: '14px' }}>
@@ -193,18 +194,18 @@ export function ExpenseDetail() {
                 let badgeStyle = {};
                 let badgeText = '';
                 if (status === 'SETTLED') {
-                  badgeStyle = { background: '#e1f5ee', color: '#0f6e56' };
+                  badgeStyle = { background: colors.successLight, color: colors.success };
                   badgeText = 'Settled';
                 } else if (status === 'OWES') {
                   badgeStyle = { background: '#fceaea', color: '#e24b4a' };
                   badgeText = 'Owes';
                 } else {
-                  badgeStyle = { background: '#ede9ff', color: '#6c5ce7' };
+                  badgeStyle = { background: '#ede9ff', color: colors.primary };
                   badgeText = 'Pending';
                 }
 
                 // Random pastel colors for simple avatar
-                const pastelColors = ['#e6f1fb', '#fceaea', '#faeeda', '#e1f5ee', '#ede9ff'];
+                const pastelColors = ['#e6f1fb', '#fceaea', '#faeeda', colors.successLight, '#ede9ff'];
                 const letter = (m?.displayName || '?')[0].toUpperCase();
                 const avatarColor = pastelColors[p.userPublicId.charCodeAt(p.userPublicId.length - 1) % pastelColors.length];
 
@@ -219,8 +220,8 @@ export function ExpenseDetail() {
                       </div>
                       <p className="font-medium text-[#1a1625]" style={{ fontSize: '11px' }}>
                         {m?.displayName || 'Unknown'}
-                        {isMe && <span className="ml-1" style={{ color: '#9490b8' }}>(you)</span>}
-                        {isPayer && !isMe && <span className="ml-1" style={{ color: '#9490b8' }}>(paid)</span>}
+                        {isMe && <span className="ml-1" style={{ color: colors.textMuted }}>(you)</span>}
+                        {isPayer && !isMe && <span className="ml-1" style={{ color: colors.textMuted }}>(paid)</span>}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -240,7 +241,7 @@ export function ExpenseDetail() {
               <button 
                 onClick={() => setShowAllMembers(true)}
                 className="w-full mt-4 pt-4 border-t"
-                style={{ borderTopColor: '#e0ddf5', fontSize: '10px', fontWeight: 600, color: '#6c5ce7' }}
+                style={{ borderTopColor: colors.border, fontSize: '10px', fontWeight: 600, color: colors.primary }}
               >
                 View all {expense.participants.length} members ›
               </button>
@@ -251,7 +252,7 @@ export function ExpenseDetail() {
         {/* Notes Card */}
         {expense.note && (
           <div>
-            <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: '#9490b8', letterSpacing: '0.06em', marginLeft: '8px' }}>
+            <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: colors.textMuted, letterSpacing: '0.06em', marginLeft: '8px' }}>
               NOTES
             </h3>
             <div className="bg-white p-4" style={{ border: '0.5px solid #e8e4f8', borderRadius: '14px' }}>
@@ -265,7 +266,7 @@ export function ExpenseDetail() {
         {/* Receipt Card */}
         {(expense.receiptUrl || !expense.note) && (
           <div>
-            <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: '#9490b8', letterSpacing: '0.06em', marginLeft: '8px' }}>
+            <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: colors.textMuted, letterSpacing: '0.06em', marginLeft: '8px' }}>
               RECEIPT
             </h3>
             <div className="bg-white" style={{ border: '0.5px solid #e8e4f8', borderRadius: '14px' }}>
@@ -278,7 +279,7 @@ export function ExpenseDetail() {
                     <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: '#ede9ff' }}>
                       🧾
                     </div>
-                    <span className="font-semibold" style={{ fontSize: '11px', color: '#6c5ce7' }}>
+                    <span className="font-semibold" style={{ fontSize: '11px', color: colors.primary }}>
                       View attached receipt
                     </span>
                   </div>
@@ -286,10 +287,10 @@ export function ExpenseDetail() {
                 </button>
               ) : (
                 <div className="p-4 flex items-center gap-3 opacity-60">
-                  <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-[#9490b8]" style={{ backgroundColor: '#f4f2fb' }}>
+                  <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-[#9490b8]" style={{ backgroundColor: colors.pageBg }}>
                     <Plus className="w-4 h-4" />
                   </div>
-                  <span className="font-medium" style={{ fontSize: '11px', color: '#9490b8' }}>
+                  <span className="font-medium" style={{ fontSize: '11px', color: colors.textMuted }}>
                     Add note or receipt
                   </span>
                 </div>
@@ -317,10 +318,10 @@ export function ExpenseDetail() {
             >
               <div className="pt-4 pb-4 px-6 relative bg-white" style={{ borderRadius: '24px 24px 0 0' }}>
                 <div className="flex justify-center mb-4">
-                  <div className="w-[32px] h-[3px] rounded-full" style={{ backgroundColor: '#e0ddf5' }} />
+                  <div className="w-[32px] h-[3px] rounded-full" style={{ backgroundColor: colors.border }} />
                 </div>
                 <div className="text-center mb-2">
-                  <h3 className="font-bold text-[#1a1625]" style={{ fontSize: '12px' }}>
+                  <h3 className="font-bold text-[#1a1625]" style={{ fontSize: '12px', color: colors.textPrimary }}>
                     {expense.title} · {currencySymbol}{expense.totalAmount}
                   </h3>
                 </div>
@@ -339,7 +340,7 @@ export function ExpenseDetail() {
                     <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: '#ede9ff' }}>
                       ✏️
                     </div>
-                    <span className="font-semibold text-[#1a1625]" style={{ fontSize: '13px' }}>Edit expense</span>
+                    <span className="font-semibold text-[#1a1625]" style={{ fontSize: '13px', color: colors.textPrimary }}>Edit expense</span>
                   </button>
                 )}
                 
@@ -353,7 +354,7 @@ export function ExpenseDetail() {
                   <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: '#e6f1fb' }}>
                     📤
                   </div>
-                  <span className="font-semibold text-[#1a1625]" style={{ fontSize: '13px' }}>Share breakdown</span>
+                  <span className="font-semibold text-[#1a1625]" style={{ fontSize: '13px', color: colors.textPrimary }}>Share breakdown</span>
                 </button>
 
                 {isCreatorOrAdmin && (
@@ -368,7 +369,7 @@ export function ExpenseDetail() {
                       <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: '#faeeda' }}>
                         📋
                       </div>
-                      <span className="font-semibold text-[#1a1625]" style={{ fontSize: '13px' }}>Duplicate expense</span>
+                      <span className="font-semibold text-[#1a1625]" style={{ fontSize: '13px', color: colors.textPrimary }}>Duplicate expense</span>
                     </button>
 
                     <button 
@@ -409,10 +410,10 @@ export function ExpenseDetail() {
               <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#fceaea', color: '#e24b4a' }}>
                 <Trash2 className="w-8 h-8" strokeWidth={1.5} />
               </div>
-              <h3 className="font-bold text-[#1a1625] text-center mb-2" style={{ fontSize: '18px' }}>
+              <h3 className="font-bold text-[#1a1625] text-center mb-2" style={{ fontSize: '18px', color: colors.textPrimary }}>
                 Delete {expense.title}?
               </h3>
-              <p className="text-center mb-8" style={{ fontSize: '13px', color: '#9490b8' }}>
+              <p className="text-center mb-8" style={{ fontSize: '13px', color: colors.textMuted }}>
                 This cannot be undone. Balances will be recalculated.
               </p>
               
@@ -420,7 +421,7 @@ export function ExpenseDetail() {
                 <button 
                   onClick={() => setDeleteConfirmOpen(false)}
                   className="py-3.5 font-bold transition-colors active:scale-95"
-                  style={{ backgroundColor: '#f4f2fb', color: '#1a1625', borderRadius: '14px', fontSize: '14px' }}
+                  style={{ backgroundColor: colors.pageBg, color: colors.textPrimary, borderRadius: '14px', fontSize: '14px' }}
                 >
                   Cancel
                 </button>

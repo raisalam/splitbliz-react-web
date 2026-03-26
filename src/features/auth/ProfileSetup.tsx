@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { Pencil, X } from 'lucide-react';
+import { colors } from '../../constants/colors';
 
 const EMOJI_GRID = [
   '✈️', '🏠', '🍕', '⚽', '🎉', '💼', '💑', '📂',
@@ -28,10 +29,10 @@ export function ProfileSetup() {
     navigate('/onboarding/group');
   };
 
-  const purple = '#6c5ce7';
-  const pageBg = '#f4f2fb';
+  const purple = colors.primary;
+  const pageBg = colors.pageBg;
   const cardBorder = '#e8e4f8';
-  const muted = '#9490b8';
+  const muted = colors.textMuted;
 
   return (
     <div className="min-h-screen font-sans relative flex flex-col" style={{ backgroundColor: pageBg }}>
@@ -39,7 +40,7 @@ export function ProfileSetup() {
       {/* Mini Progress Header */}
       <div 
         className="px-6 py-5 flex items-center justify-between shadow-sm z-10"
-        style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)` }}
+        style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` }}
       >
         <span className="text-white font-bold tracking-wide" style={{ fontSize: '15px' }}>
           Step 1 of 2
@@ -59,7 +60,7 @@ export function ProfileSetup() {
           transition={{ duration: 0.4 }}
           className="text-center mb-10"
         >
-          <h2 className="font-extrabold mb-3" style={{ fontSize: '28px', color: '#1a1625', lineHeight: '1.2' }}>
+          <h2 className="font-extrabold mb-3" style={{ fontSize: '28px', color: colors.textPrimary, lineHeight: '1.2' }}>
             Set up your profile
           </h2>
           <p className="font-medium px-4" style={{ fontSize: '15px', color: muted, lineHeight: '1.4' }}>
@@ -82,7 +83,7 @@ export function ProfileSetup() {
                 width: '100px',
                 height: '100px',
                 backgroundColor: '#ede9ff', 
-                border: '3px dashed #a29bfe',
+                border: `3px dashed ${colors.primaryLight}`,
               }}
             >
               <span style={{ fontSize: '50px', lineHeight: 1 }}>{avatar}</span>
@@ -147,7 +148,7 @@ export function ProfileSetup() {
           <button
             onClick={handleContinue}
             className="w-full py-4 rounded-[14px] font-bold text-white transition-all active:scale-[0.98] shadow-lg shadow-indigo-600/25"
-            style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)`, fontSize: '16px' }}
+            style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})`, fontSize: '16px' }}
           >
             Continue →
           </button>
@@ -176,12 +177,12 @@ export function ProfileSetup() {
               className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-[28px] shadow-2xl overflow-hidden flex flex-col"
               style={{ maxHeight: '80vh' }}
             >
-              <div className="px-6 py-5" style={{ borderBottom: '1px solid #f0eeff' }}>
+              <div className="px-6 py-5" style={{ borderBottom: `1px solid ${colors.primaryFaint}` }}>
                 <div className="flex justify-center mb-5">
                   <div className="w-12 h-1.5 rounded-full" style={{ backgroundColor: '#e0dced' }} />
                 </div>
                 <div className="flex justify-between items-center">
-                  <h3 className="text-[20px] font-extrabold" style={{ color: '#1a1625' }}>
+                  <h3 className="text-[20px] font-extrabold" style={{ color: colors.textPrimary }}>
                     Pick an icon
                   </h3>
                   <button onClick={() => setShowEmojiSheet(false)} className="p-2.5 rounded-full transition-colors bg-[#f4f2fb] hover:bg-[#ede9ff]">

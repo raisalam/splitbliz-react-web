@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ChevronRight, Pencil } from 'lucide-react';
 import { GroupFeaturesSection } from './GroupFeaturesSection';
+import { colors } from '../../../constants/colors';
 
 type GroupInfoSectionProps = {
   groupName: string;
@@ -44,7 +45,7 @@ export function GroupInfoSection({
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         className="rounded-2xl p-5 flex items-center gap-5"
-        style={{ background: `linear-gradient(135deg, ${purple}, #a29bfe)` }}
+        style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` }}
       >
         <div className="relative shrink-0">
           <button
@@ -110,7 +111,7 @@ export function GroupInfoSection({
             💱
           </div>
           <div className="flex-1 text-left">
-            <span className="text-sm font-semibold" style={{ color: '#1a1625' }}>Currency</span>
+            <span className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Currency</span>
             <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>All expenses in this group</p>
           </div>
           <div className="flex items-center gap-1.5 text-sm" style={{ color: mutedLabel }}>
