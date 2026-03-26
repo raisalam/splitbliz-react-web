@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useNavigate } from 'react-router';
@@ -30,6 +30,7 @@ import { QuickActions } from './components/QuickActions';
 import { GroupCard } from './components/GroupCard';
 import { RecentActivityList } from './components/RecentActivityList';
 import { HomeFAB } from './components/HomeFAB';
+import { Skeleton } from '../../components/ui/skeleton';
 
 // Static non-settlement actions (group invites etc.)
 const MOCK_STATIC_ACTIONS = [
@@ -96,6 +97,7 @@ export function Home() {
   const [actionSheetOrigin, setActionSheetOrigin] = useState<'expense' | 'settle' | null>(null);
   const [pendingSheetOpen, setPendingSheetOpen] = useState(false);
   const [, forceUpdate] = useState(0); // trigger re-render after approve/reject
+  const [loading, setLoading] = useState(true);
 
   // Build action items from real settlement store + static actions
   const pendingSettlements = MOCK_SETTLEMENTS
@@ -160,6 +162,39 @@ export function Home() {
   const filteredGroups = MOCK_GROUPS.filter(g => 
     g.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 pb-20">
+        <HomeHeader
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onNotificationsClick={() => navigate('/notifications')}
+          onAvatarClick={() => navigate('/profile')}
+          onLogout={handleLogout}
+          brandLogo={brandLogo}
+          user={{
+            displayName: 'Rais',
+            avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop'
+          }}
+          unreadCount={1}
+        />
+
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+          <div className="space-y-4">
+            <Skeleton className="h-20 w-full rounded-2xl" />
+            <Skeleton className="h-20 w-full rounded-2xl" />
+            <Skeleton className="h-20 w-full rounded-2xl" />
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 pb-20">

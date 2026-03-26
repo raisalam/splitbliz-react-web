@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, MoreHorizontal, FileText, Edit2, Share, Copy, Trash2, X, Plus } from 'lucide-react';
 import { getGroupById, getGroupMembers, getGroupExpenses, MOCK_USER_ID } from '../../api/groups';
 import { colors } from '../../constants/colors';
+import { Skeleton } from '../../components/ui/skeleton';
 
 export function ExpenseDetail() {
   const { groupId, expenseId } = useParams();
@@ -42,7 +43,25 @@ export function ExpenseDetail() {
   }, [groupId, expenseId]);
 
   if (loading || !expense) {
-    return <div className="min-h-screen bg-[#f4f2fb]" />;
+    return (
+      <div className="min-h-screen font-sans pb-10 flex flex-col" style={{ backgroundColor: colors.pageBg }}>
+        <div className="px-4 py-6 space-y-4">
+          <Skeleton className="h-6 w-2/3 rounded-lg" />
+          <Skeleton className="h-8 w-1/3 rounded-lg" />
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div key={idx} className="flex items-center gap-3 p-4">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const currencySymbol = expense.currencyCode === 'INR' ? '₹' : '$';

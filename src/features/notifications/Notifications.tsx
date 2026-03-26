@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { ArrowLeft, Check, Clock, Star, Users, CreditCard } from 'lucide-react';
 import { MOCK_GROUPS } from '../../mock/groups';
 import { colors } from '../../constants/colors';
+import { Skeleton } from '../../components/ui/skeleton';
 
 type NotificationType = 'EXPENSE' | 'INVITE' | 'REMINDER' | 'SETTLED' | 'STREAK';
 
@@ -83,6 +84,12 @@ const MOCK_NOTIFICATIONS: AppNotification[] = [
 export function Notifications() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(t);
+  }, []);
 
   const markAllRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -256,6 +263,39 @@ export function Notifications() {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen font-sans pb-10" style={{ backgroundColor: colors.pageBg }}>
+        <header className="sticky top-0 z-50 bg-white shadow-sm flex items-center justify-between px-4 h-16">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate('/')}
+              className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors hover:bg-[#e0ddf5]"
+              style={{ backgroundColor: colors.primaryFaint }}
+            >
+              <ArrowLeft className="w-4 h-4" style={{ color: '#3d3a4a' }} />
+            </button>
+            <h1 className="font-semibold text-sm" style={{ color: colors.textPrimary }}>
+              Notifications
+            </h1>
+          </div>
+        </header>
+
+        <div className="pt-6">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div key={idx} className="flex items-center gap-3 p-4">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen font-sans pb-10" style={{ backgroundColor: colors.pageBg }}>

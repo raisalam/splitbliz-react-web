@@ -22,6 +22,7 @@ import { BalanceSummaryCard } from './components/BalanceSummaryCard';
 import { ExpenseList } from './components/ExpenseList';
 import { MemberList } from './components/MemberList';
 import { SettlementRow } from './components/SettlementRow';
+import { Skeleton } from '../../components/ui/skeleton';
 
 // Smart banners merged inline into SmartActionBanner below
 
@@ -114,8 +115,21 @@ export function GroupDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+          <Skeleton className="h-20 w-full rounded-2xl" />
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800/50 overflow-hidden">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="flex items-center gap-3 p-4">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

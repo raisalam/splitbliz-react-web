@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Check, LogOut, Receipt, PenLine, Users } from 'lucide-react';
 import { MOCK_GROUPS } from '../../mock/groups';
 import { colors } from '../../constants/colors';
+import { Skeleton } from '../../components/ui/skeleton';
 
 type ActivityType = 'EXPENSE' | 'SETTLE' | 'EDIT' | 'JOIN' | 'LEAVE';
 
@@ -73,8 +74,45 @@ export function GroupActivity() {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const [activities] = useState(MOCK_ACTIVITY);
+  const [loading, setLoading] = useState(true);
 
   const group = MOCK_GROUPS.find(g => g.publicId === groupId) || MOCK_GROUPS[0];
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white font-sans pb-10">
+        <header className="sticky top-0 z-50 bg-white shadow-sm flex items-center px-4 h-16">
+          <button 
+            onClick={() => navigate(`/group/${group.publicId}`)}
+            className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors hover:bg-[#e0ddf5] mr-3"
+            style={{ backgroundColor: colors.primaryFaint }}
+          >
+            <ArrowLeft className="w-4 h-4" style={{ color: '#3d3a4a' }} />
+          </button>
+          <h1 className="font-semibold text-sm" style={{ color: colors.textPrimary }}>
+            Activity
+          </h1>
+        </header>
+
+        <div className="pt-2">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div key={idx} className="flex items-center gap-3 p-4">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const getIconProps = (type: ActivityType) => {
     switch (type) {

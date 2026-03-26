@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { SettlementMemberPicker } from './components/SettlementMemberPicker';
 import { SettlementAmountForm } from './components/SettlementAmountForm';
 import { SettlementConfirmSheet } from './components/SettlementConfirmSheet';
+import { Skeleton } from '../../components/ui/skeleton';
 
 type ActiveSheet = 'NONE' | 'AMOUNT' | 'NOTE' | 'FROM' | 'TO';
 
@@ -88,8 +89,18 @@ export function SettleUp() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-white dark:bg-slate-950">
+        <div className="max-w-xl mx-auto px-4 sm:px-6 py-6 space-y-2">
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <div key={idx} className="flex items-center gap-3 p-4">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
