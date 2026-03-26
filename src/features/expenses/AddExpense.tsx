@@ -7,8 +7,12 @@ import {
   Info
 } from 'lucide-react';
 import {
-  getGroupById, getGroupMembers, createExpense, MOCK_USER_ID
+  getGroupById, getGroupMembers, MOCK_USER_ID
 } from '../../api/groups';
+import { expensesService } from '../../services';
+import { extractApiError } from '../../services/apiClient';
+import { useQueryClient } from '@tanstack/react-query';
+import { useUser } from '../../providers/UserContext';
 import { toast } from 'sonner';
 import {
   SplitType, validatePayers, computeSplits, calculateBalances, computeSettlements
@@ -24,6 +28,8 @@ export function AddExpense() {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { user } = useUser();
+  const queryClient = useQueryClient();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +52,8 @@ export function AddExpense() {
 
   const descInputRef = useRef<HTMLInputElement>(null);
   const amtInputRef = useRef<HTMLInputElement>(null);
+  const currentUserId = user?.id ?? MOCK_USER_ID;
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -80,9 +88,9 @@ export function AddExpense() {
   // Auto-fill Current User as 100% payer when moving to Step 2 for the first time
   useEffect(() => {
     if (currentStep === 2 && Object.keys(payers).length === 0 && numAmount > 0) {
-      setPayers({ [MOCK_USER_ID]: numAmount.toString() });
+      setPayers({ [currentUserId]: numAmount.toString() });
     }
-  }, [currentStep, numAmount, payers]);
+  }, [currentStep, numAmount, payers, currentUserId]);
 
   // Sync default payer when total amount changes if only 1 payer exists
   useEffect(() => {
@@ -99,7 +107,7 @@ export function AddExpense() {
       const next = { ...prev };
       if (next[userId] !== undefined) {
         delete next[userId];
-        if (Object.keys(next).length === 0) next[MOCK_USER_ID] = amountStr; // Fallback
+        if (Object.keys(next).length === 0) next[currentUserId] = amountStr; // Fallback
       } else {
         next[userId] = '';
       }
@@ -201,27 +209,73 @@ export function AddExpense() {
   const handleCreateExpense = async () => {
     if (!groupId || !calculations.isReady) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
-      const contractPayers = Object.entries(calculations.numericPayers!).map(([id, amt]) => ({
-        userPublicId: id, amount: amt.toFixed(2)
+      const total = parseFloat(amountStr);
+      if (!Number.isFinite(total) || total <= 0) {
+        const msg = 'Amount must be greater than zero.';
+        setSubmitError(msg);
+        toast.error(msg);
+        return;
+      }
+
+      const splitTotal = Object.values(calculations.numericSplits || {}).reduce((sum, val) => sum + (val || 0), 0);
+      if (Math.abs(splitTotal - total) > 0.01) {
+        const msg = 'Split amounts must equal the total.';
+        setSubmitError(msg);
+        toast.error(msg);
+        return;
+      }
+
+      const formattedAmount = total.toFixed(2);
+      const memberById = new Map(members.map(m => [m.userPublicId ?? m.userId, m.userId ?? m.userPublicId]));
+
+      const payers = Object.entries(calculations.numericPayers!).map(([id, amt]) => ({
+        userId: memberById.get(id) ?? id,
+        paidAmount: amt.toFixed(2)
       }));
-      const contractParticipants = Object.entries(calculations.numericSplits!).map(([id, amt]) => ({
-        userPublicId: id, shareAmount: amt.toFixed(2)
+      const splits = Object.entries(calculations.numericSplits!).map(([id, amt]) => ({
+        userId: memberById.get(id) ?? id,
+        splitAmount: amt.toFixed(2)
       }));
 
-      await createExpense(groupId, {
+      const categoryKey = selectedCategory.includes('Travel') ? 'TRAVEL'
+        : selectedCategory.includes('Food') ? 'FOOD'
+        : selectedCategory.includes('Rent') ? 'ACCOMMODATION'
+        : selectedCategory.includes('Fun') ? 'ENTERTAINMENT'
+        : selectedCategory.includes('Shopping') ? 'SHOPPING'
+        : selectedCategory.includes('Utilities') ? 'UTILITIES'
+        : 'OTHER';
+
+      await expensesService.createExpense(groupId, {
         title: description,
-        totalAmount: numAmount.toFixed(2),
+        amount: formattedAmount,
         currencyCode: group?.currencyCode || 'INR',
+        category: categoryKey,
+        expenseDate: new Date().toISOString().slice(0, 10),
         splitType,
-        payers: contractPayers,
-        participants: contractParticipants
+        payers,
+        splits,
       });
 
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['home'] });
       toast.success('Expense added successfully!');
       navigate(`/group/${groupId}`);
     } catch (err) {
-      toast.error('Failed to add expense.');
+      const apiErr = extractApiError(err);
+      let msg = 'Failed to create expense. Please try again.';
+      if (apiErr?.code === 'ERR_SPLIT_MISMATCH') {
+        msg = 'Split amounts do not add up to the total.';
+      } else if (apiErr?.code === 'ERR_PAYMENT_SUM_MISMATCH') {
+        msg = 'Payer amounts do not add up to the total.';
+      } else if (apiErr?.code === 'ERR_INVALID_AMOUNT') {
+        msg = 'Amount must be greater than zero.';
+      } else if (apiErr?.code === 'ERR_PAYER_NOT_SPLITTER') {
+        msg = 'Every payer must also be in the split.';
+      }
+      setSubmitError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -233,7 +287,7 @@ export function AddExpense() {
     if (pKeys.length === 0) return 'Someone';
     if (pKeys.length === 1) {
       const m = members.find(m => m.userPublicId === pKeys[0]);
-      return m?.userPublicId === MOCK_USER_ID ? 'You' : m?.displayName;
+      return m?.userPublicId === currentUserId ? 'You' : m?.displayName;
     }
     return `${pKeys.length} people`;
   };
@@ -243,7 +297,7 @@ export function AddExpense() {
     if (selectedMemberIds.size === 1) {
       const mId = Array.from(selectedMemberIds)[0];
       const m = members.find(m => m.userPublicId === mId);
-      return m?.userPublicId === MOCK_USER_ID ? 'just you' : `just ${m?.displayName}`;
+      return m?.userPublicId === currentUserId ? 'just you' : `just ${m?.displayName}`;
     }
     return `${selectedMemberIds.size} members`;
   };
@@ -367,8 +421,8 @@ export function AddExpense() {
                     {calculations.settlements.map((s, idx) => {
                       const fromM = members.find(m => m.userPublicId === s.fromUser);
                       const toM = members.find(m => m.userPublicId === s.toUser);
-                      const fromName = fromM?.userPublicId === MOCK_USER_ID ? 'You' : fromM?.displayName;
-                      const toName = toM?.userPublicId === MOCK_USER_ID ? 'You' : toM?.displayName;
+                      const fromName = fromM?.userPublicId === currentUserId ? 'You' : fromM?.displayName;
+                      const toName = toM?.userPublicId === currentUserId ? 'You' : toM?.displayName;
                       return (
                         <li key={idx} className="flex items-center text-[15px] border-l-2 border-slate-200 dark:border-slate-700 pl-3 gap-2">
                           {fromM?.avatarUrl && <img src={fromM.avatarUrl} className="w-6 h-6 rounded-full object-cover shrink-0" alt="" />}
@@ -398,6 +452,11 @@ export function AddExpense() {
                   {submitting ? 'Saving' : 'Save'} {submitting ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin ml-1" /> : <ChevronRight className="w-5 h-5 ml-1" />}
                 </button>
               </div>
+              {submitError && (
+                <p className="mt-4 text-sm font-semibold text-rose-500">
+                  {submitError}
+                </p>
+              )}
             </motion.div>
           )}
 
@@ -449,7 +508,7 @@ export function AddExpense() {
                     selectedMemberIds={selectedMemberIds}
                     numAmount={numAmount}
                     currencyCode={group?.currencyCode || 'INR'}
-                    currentUserId={MOCK_USER_ID}
+                    currentUserId={currentUserId}
                     onTogglePayer={togglePayer}
                     onPayerAmountChange={(userId, value) => setPayers(prev => ({ ...prev, [userId]: value }))}
                     payerValidation={calculations.payerValidation}
@@ -504,7 +563,7 @@ export function AddExpense() {
                           </div>
                           <img src={member.avatarUrl} alt={member.displayName} className={`w-10 h-10 rounded-full object-cover transition-opacity ${!isSelected && 'opacity-40 grayscale'}`} />
                           <span className={`font-semibold text-base flex-1 ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
-                            {member.displayName} {member.userPublicId === MOCK_USER_ID && '(You)'}
+                            {member.displayName} {member.userPublicId === currentUserId && '(You)'}
                           </span>
                           {isSelected && numAmount > 0 && (
                             <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
