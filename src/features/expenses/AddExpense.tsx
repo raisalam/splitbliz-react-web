@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router';
 import { useTheme } from '../../providers/ThemeProvider';
 import {
-  ArrowLeft, Check, Percent, Calculator, IndianRupee, Banknote, X, ChevronRight, Edit2, Users,
+  ArrowLeft, Check, X, ChevronRight,
   Info
 } from 'lucide-react';
 import {
@@ -13,6 +13,9 @@ import { toast } from 'sonner';
 import {
   SplitType, validatePayers, computeSplits, calculateBalances, computeSettlements
 } from '../../utils/expenseCalculator';
+import { ExpenseBasicForm } from './components/ExpenseBasicForm';
+import { ExpenseSplitForm } from './components/ExpenseSplitForm';
+import { PayerSelector } from './components/PayerSelector';
 
 // --- Overlay Types ---
 type ActiveSheet = 'NONE' | 'PAYERS' | 'SPLIT_TYPE' | 'MEMBERS' | 'AMOUNT' | 'DESCRIPTION';
@@ -274,54 +277,15 @@ export function AddExpense() {
         <AnimatePresence mode="wait">
 
           {currentStep === 1 && (
-            <motion.div
-              key="step1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="flex flex-col items-center flex-1 justify-center space-y-8"
-            >
-              {/* Subtle gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-b from-indigo-50 via-white to-white dark:from-indigo-950/30 dark:via-slate-950 dark:to-slate-950 pointer-events-none" />
-              
-              <div className="relative z-10 flex flex-col items-center space-y-8 w-full">
-                <h2 className="text-slate-400 font-medium tracking-wide uppercase text-sm">Enter Amount</h2>
-                <div className="flex items-center justify-center text-7xl font-bold tracking-tighter text-slate-900 dark:text-white">
-                  <span className="text-slate-400/60 mr-2 text-5xl font-medium">{group?.currencyCode === 'INR' ? '₹' : '$'}</span>
-                  <input
-                    autoFocus type="number" value={amountStr} onChange={(e) => setAmountStr(e.target.value)}
-                    placeholder="0" className="bg-transparent border-none outline-none focus:ring-0 p-0 text-center w-full max-w-[250px] font-bold caret-indigo-500 placeholder:text-slate-200 dark:placeholder:text-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    onKeyDown={(e) => { if (e.key === 'Enter' && numAmount > 0) setCurrentStep(2) }}
-                  />
-                </div>
-
-                {/* Category Picker Chips */}
-                <div className="w-full overflow-x-auto hide-scrollbar -mx-2">
-                  <div className="flex gap-2 px-2 pb-2 w-max">
-                    {['✈️ Travel', '🍽️ Food', '🏠 Rent', '🎉 Fun', '🛒 Shopping', '💡 Utilities', '📦 Other'].map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
-                          selectedCategory === cat
-                            ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/25'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Full Width Next Button */}
-                <motion.button
-                  initial={{ opacity: 0 }} animate={{ opacity: numAmount > 0 ? 1 : 0 }}
-                  disabled={numAmount <= 0} onClick={() => setCurrentStep(2)}
-                  className="w-full max-w-sm bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 hover:from-indigo-600 hover:via-purple-600 hover:to-indigo-700 text-white rounded-2xl py-4 shadow-xl shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 font-bold text-lg active:scale-[0.98]"
-                >
-                  Continue
-                  <ArrowLeft className="w-5 h-5 rotate-180" />
-                </motion.button>
-              </div>
-            </motion.div>
+            <ExpenseBasicForm
+              amountStr={amountStr}
+              numAmount={numAmount}
+              currencyCode={group?.currencyCode || 'INR'}
+              selectedCategory={selectedCategory}
+              onAmountChange={setAmountStr}
+              onSelectCategory={setSelectedCategory}
+              onNext={() => setCurrentStep(2)}
+            />
           )}
 
           {currentStep === 2 && (
@@ -479,114 +443,33 @@ export function AddExpense() {
 
                 {/* SHEET: PAYERS */}
                 {activeSheet === 'PAYERS' && (
-                  <div className="space-y-3">
-                    {members.map(member => {
-                      const isPayer = payers[member.userPublicId] !== undefined;
-                      const payerVal = payers[member.userPublicId] || '';
-                      const equalShare = selectedMemberIds.size > 0 ? (numAmount / selectedMemberIds.size) : 0;
-                      return (
-                        <div key={member.userPublicId} className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${isPayer ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10 dark:border-indigo-500' : 'border-slate-100 dark:border-slate-800'}`}>
-                          <div onClick={() => togglePayer(member.userPublicId)} className="flex items-center gap-3 cursor-pointer flex-1">
-                            <img src={member.avatarUrl} alt={member.displayName} className={`w-10 h-10 rounded-full object-cover transition-opacity ${!isPayer && 'opacity-40 grayscale'}`} />
-                            <div>
-                              <span className={`font-semibold text-base block ${isPayer ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
-                                {member.displayName} {member.userPublicId === MOCK_USER_ID && '(You)'}
-                              </span>
-                              <span className="text-xs text-slate-400 dark:text-slate-500">
-                                Equal share: ₹{equalShare.toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                          {isPayer && (
-                            <div className="relative w-28">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">₹</span>
-                              <input type="number" value={payerVal} onChange={(e) => setPayers(prev => ({ ...prev, [member.userPublicId]: e.target.value }))} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl py-2.5 pl-7 pr-3 text-right font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="0" />
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                    {/* Multiple people paid option */}
-                    <div className="flex items-center gap-3 p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
-                      <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                        <Users className="w-5 h-5" />
-                      </div>
-                      <span className="font-medium">Multiple people paid</span>
-                    </div>
-                    {!calculations.payerValidation.isValid && (
-                      <div className="flex items-start gap-2 text-rose-500 bg-rose-50 dark:bg-rose-500/10 p-4 rounded-xl text-sm font-medium">
-                        <Info className="w-5 h-5 shrink-0" />
-                        Diff: {group?.currencyCode === 'INR' ? '₹' : '$'}{Math.abs(numAmount - Object.values(calculations.numericPayers).reduce((a, b) => a + b, 0)).toFixed(2)} off from the total.
-                      </div>
-                    )}
-                  </div>
+                  <PayerSelector
+                    members={members}
+                    payers={payers}
+                    selectedMemberIds={selectedMemberIds}
+                    numAmount={numAmount}
+                    currencyCode={group?.currencyCode || 'INR'}
+                    currentUserId={MOCK_USER_ID}
+                    onTogglePayer={togglePayer}
+                    onPayerAmountChange={(userId, value) => setPayers(prev => ({ ...prev, [userId]: value }))}
+                    payerValidation={calculations.payerValidation}
+                    numericPayers={calculations.numericPayers}
+                  />
                 )}
 
                 {/* SHEET: SPLIT TYPE */}
                 {activeSheet === 'SPLIT_TYPE' && (
-                  <div className="flex flex-col">
-                    <div className="grid grid-cols-3 gap-3 mb-8">
-                      {[{ id: 'EQUAL', label: '=', title: 'Equal' }, { id: 'PERCENTAGE', label: '%', title: 'Percent' }, { id: 'FIXED', label: '123', title: 'Fixed' }].map((type) => (
-                        <button
-                          key={type.id} onClick={() => handleSplitTypeChange(type.id as SplitType)}
-                          className={`py-4 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all ${splitType === type.id ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400 shadow-sm' : 'border-slate-100 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
-                        >
-                          <span className="text-2xl font-black opacity-80">{type.label}</span>
-                          <span className="text-sm font-bold">{type.title}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {splitType !== 'EQUAL' && (
-                      <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <h4 className="font-semibold text-slate-900 dark:text-white mb-2">Adjust Shares</h4>
-                        {members.filter(m => selectedMemberIds.has(m.userPublicId)).map(member => (
-                          <div key={member.userPublicId} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl">
-                            <div className="flex items-center gap-3">
-                              <img src={member.avatarUrl} alt={member.displayName} className="w-8 h-8 rounded-full" />
-                              <span className="font-semibold">{member.displayName}</span>
-                            </div>
-                            <div className="relative w-32">
-                              {splitType === 'FIXED' && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">{group?.currencyCode === 'INR' ? '₹' : '$'}</span>}
-                              <input type="number"
-                                value={customSplits[member.userPublicId] || ''}
-                                onChange={(e) => setCustomSplits(prev => ({ ...prev, [member.userPublicId]: e.target.value }))}
-                                className={`w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${splitType === 'PERCENTAGE' ? 'px-3 pr-8' : 'pl-7 pr-3'}`}
-                              />
-                              {splitType === 'PERCENTAGE' && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">%</span>}
-                            </div>
-                          </div>
-                        ))}
-
-                        {!calculations.splitValidation.isValid && (
-                          <div className="text-rose-500 text-sm font-medium mt-2 flex items-center gap-1.5"><Info className="w-4 h-4" /> {calculations.splitValidation.errorMsg}</div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Sticky total validation bar */}
-                    {splitType !== 'EQUAL' && (() => {
-                      const totalAssigned = Object.entries(customSplits)
-                        .filter(([id]) => selectedMemberIds.has(id))
-                        .reduce((sum, [, val]) => sum + (parseFloat(val) || 0), 0);
-                      const target = splitType === 'PERCENTAGE' ? 100 : numAmount;
-                      const diff = target - totalAssigned;
-                      const isBalanced = Math.abs(diff) < 0.01;
-                      const isOver = diff < -0.01;
-                      return (
-                        <div className={`sticky bottom-0 mt-4 flex items-center justify-between p-3.5 rounded-xl text-sm font-semibold shadow-lg ${
-                          isBalanced ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                          : isOver ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                          : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                        }`}>
-                          <span>Total: {totalAssigned.toFixed(2)}{splitType === 'PERCENTAGE' ? '%' : ''}</span>
-                          <span>
-                            {isBalanced ? '✓ Balanced' : isOver ? `Over by ${Math.abs(diff).toFixed(2)}${splitType === 'PERCENTAGE' ? '%' : ''}` : `Remaining: ${diff.toFixed(2)}${splitType === 'PERCENTAGE' ? '%' : ''}`}
-                          </span>
-                        </div>
-                      );
-                    })()}
-                  </div>
+                  <ExpenseSplitForm
+                    splitType={splitType}
+                    numAmount={numAmount}
+                    members={members}
+                    selectedMemberIds={selectedMemberIds}
+                    customSplits={customSplits}
+                    onSplitTypeChange={handleSplitTypeChange}
+                    onCustomSplitChange={(userId, value) => setCustomSplits(prev => ({ ...prev, [userId]: value }))}
+                    splitValidation={calculations.splitValidation}
+                    currencyCode={group?.currencyCode || 'INR'}
+                  />
                 )}
 
                 {/* SHEET: MEMBERS */}
