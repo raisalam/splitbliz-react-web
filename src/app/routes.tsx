@@ -4,7 +4,7 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { Home } from "../features/home/Home";
 import { Splash } from "../features/auth/Splash";
 import { Login } from "../features/auth/Login";
-import SignUp from "../features/auth/SignUp";
+import { SignUp } from "../features/auth/SignUp";
 import { ProfileSetup } from "../features/auth/ProfileSetup";
 import { FirstGroup } from "../features/auth/FirstGroup";
 import { GroupDetail } from "../features/groups/GroupDetail";
