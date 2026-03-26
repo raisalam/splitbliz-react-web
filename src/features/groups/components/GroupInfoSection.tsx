@@ -72,10 +72,8 @@ export function GroupInfoSection({
             type="text"
             value={groupName}
             onChange={(e) => onGroupNameChange(e.target.value)}
-            className="w-full bg-transparent text-white outline-none pb-1"
+            className="w-full bg-transparent text-white text-lg font-bold outline-none pb-1"
             style={{
-              fontSize: '18px',
-              fontWeight: 700,
               borderBottom: '1.5px solid rgba(255,255,255,0.45)',
             }}
           />

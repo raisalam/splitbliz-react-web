@@ -102,7 +102,7 @@ export function GroupSettings() {
           >
             <ArrowLeft className="w-4 h-4" style={{ color: purple }} />
           </button>
-          <span className="font-semibold" style={{ fontSize: '16px', color: colors.textPrimary }}>Group settings</span>
+          <span className="font-semibold text-base" style={{ color: colors.textPrimary }}>Group settings</span>
           <button
             className="px-3.5 py-1.5 rounded-[20px] text-sm font-semibold transition-all active:scale-95"
             style={{ backgroundColor: '#ede9ff', color: purple }}

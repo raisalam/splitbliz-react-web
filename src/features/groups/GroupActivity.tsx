@@ -147,7 +147,7 @@ export function GroupActivity() {
         >
           <ArrowLeft className="w-4 h-4" style={{ color: '#3d3a4a' }} />
         </button>
-        <h1 className="font-semibold" style={{ fontSize: '14px', color: colors.textPrimary }}>
+        <h1 className="font-semibold text-sm" style={{ color: colors.textPrimary }}>
           Activity
         </h1>
       </header>
