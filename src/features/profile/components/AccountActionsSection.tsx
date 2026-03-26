@@ -8,6 +8,7 @@ type AccountActionsSectionProps = {
   mutedLabel: string;
   cardBorder: string;
   sectionDivider: string;
+  onLogout: () => void;
   onDeleteAccount: () => void;
 };
 
@@ -17,6 +18,7 @@ export function AccountActionsSection({
   mutedLabel,
   cardBorder,
   sectionDivider,
+  onLogout,
   onDeleteAccount
 }: AccountActionsSectionProps) {
   return (
@@ -81,7 +83,10 @@ export function AccountActionsSection({
             </p>
           </div>
 
-          <button className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50"
+          >
             <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#faeeda' }}>
               🚪
             </div>

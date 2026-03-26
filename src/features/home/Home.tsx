@@ -33,6 +33,7 @@ import { HomeFAB } from './components/HomeFAB';
 import { Skeleton } from '../../components/ui/skeleton';
 import { EmptyState } from '../../components/EmptyState';
 import { useUser } from '../../providers/UserContext';
+import { authService } from '../../services';
 
 // Static non-settlement actions (group invites etc.)
 const MOCK_STATIC_ACTIONS = [
@@ -92,7 +93,7 @@ const MAX_VISIBLE_ACTIONS = 2;
 export function Home() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'groups' | 'activity'>('groups');
   const [staticActions, setStaticActions] = useState(MOCK_STATIC_ACTIONS);
@@ -158,7 +159,9 @@ export function Home() {
     forceUpdate(n => n + 1);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authService.logout();
+    setUser(null);
     navigate('/login');
   };
 

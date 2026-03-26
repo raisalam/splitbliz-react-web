@@ -11,6 +11,7 @@ import { PreferencesSection } from './components/PreferencesSection';
 import { AccountActionsSection } from './components/AccountActionsSection';
 import { colors } from '../../constants/colors';
 import { useUser } from '../../providers/UserContext';
+import { authService } from '../../services';
 
 // 7-column emoji grid
 const EMOJI_GRID = [
@@ -74,6 +75,12 @@ export function ProfileSettings() {
     navigate('/');
   };
 
+  const handleLogout = async () => {
+    await authService.logout();
+    setUser(null);
+    navigate('/login');
+  };
+
   const displayName = user?.displayName ?? '';
   const email = user?.email ?? '';
 
@@ -117,6 +124,7 @@ export function ProfileSettings() {
           mutedLabel={mutedLabel}
           cardBorder={cardBorder}
           sectionDivider={sectionDivider}
+          onLogout={handleLogout}
           onDeleteAccount={() => setActiveSheet('DELETE_CONFIRM')}
         />
 
@@ -201,6 +209,7 @@ export function ProfileSettings() {
           mutedLabel={mutedLabel}
           cardBorder={cardBorder}
           sectionDivider={sectionDivider}
+          onLogout={handleLogout}
           onDeleteAccount={() => setActiveSheet('DELETE_CONFIRM')}
         />
 

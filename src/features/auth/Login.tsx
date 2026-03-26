@@ -1,27 +1,34 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User, CheckCircle2 } from 'lucide-react';
 import { tokenStore } from '../../services/apiClient';
 import brandLogo from '../../assets/brand/logo.png';
 import { colors } from '../../constants/colors';
+import { authService } from '../../services';
+import { extractApiError } from '../../services/apiClient';
+import { useUser } from '../../providers/UserContext';
 
 type AuthState = 'A' | 'B' | 'C';
 
 export function Login() {
   const navigate = useNavigate();
+  const { setUser } = useUser();
   
   const [authState, setAuthState] = useState<AuthState>('A');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const isValidEmail = email.includes('@') && email.includes('.');
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidEmail) return;
+    setError(null);
     
     if (email.toLowerCase() === 'existing@example.com' || email.toLowerCase() === 'rais@example.com') {
       setAuthState('B');
@@ -30,14 +37,56 @@ export function Login() {
     }
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/');
+    setLoading(true);
+    setError(null);
+    try {
+      const user = await authService.loginEmail({ email, password });
+      setUser(user);
+      navigate('/');
+    } catch (err) {
+      const apiErr = extractApiError(err);
+      if (apiErr?.code === 'ERR_UNAUTHENTICATED') {
+        setError('Incorrect email or password.');
+      } else if (apiErr?.code === 'ERR_ACCOUNT_LOCKED_TEMP') {
+        const seconds = apiErr.details?.retryAfterSeconds ?? 900;
+        const minutes = Math.ceil(seconds / 60);
+        setError(`Too many attempts. Try again in ${minutes} minutes.`);
+      } else if (apiErr?.code === 'ERR_ACCOUNT_SUSPENDED') {
+        setError('Your account has been suspended. Contact support.');
+      } else {
+        setError('Login failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignupSubmit = (e: React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/onboarding/profile');
+    setLoading(true);
+    setError(null);
+    try {
+      const user = await authService.register({
+        email,
+        password,
+        displayName: name,
+      });
+      setUser(user);
+      navigate('/onboarding/profile');
+    } catch (err) {
+      const apiErr = extractApiError(err);
+      if (apiErr?.code === 'ERR_PROVIDER_MISMATCH') {
+        setError('An account with this email already exists. Try logging in.');
+      } else if (apiErr?.code === 'ERR_VALIDATION') {
+        setError(apiErr.details?.fields?.[0]?.message ?? 'Please check your details.');
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleAuth = (e: React.MouseEvent) => {
@@ -56,6 +105,8 @@ export function Login() {
       setAuthState('A');
       setPassword('');
       setName('');
+      setError(null);
+      setLoading(false);
     } else {
       navigate('/welcome');
     }
@@ -280,11 +331,11 @@ export function Login() {
             <motion.div layout className="flex flex-col items-center pt-2">
               <button
                 type="submit"
-                disabled={
+                disabled={loading || (
                   (authState === 'A' && !isValidEmail) ||
                   (authState === 'B' && password.length < 1) ||
                   (authState === 'C' && (password.length < 8 || name.trim().length === 0))
-                }
+                )}
                 className="w-full py-4 rounded-[14px] font-bold transition-all shadow-md active:scale-[0.98]"
                   style={{ 
                     fontSize: '15px',
@@ -309,6 +360,11 @@ export function Login() {
                 {authState === 'B' && 'Sign in →'}
                 {authState === 'C' && 'Create account →'}
               </button>
+              {error && (
+                <p className="mt-3 text-center text-[12px] font-semibold text-rose-600">
+                  {error}
+                </p>
+              )}
               
               {authState === 'A' && (
                 <p className="mt-3 font-semibold" style={{ fontSize: '12px', color: muted }}>
