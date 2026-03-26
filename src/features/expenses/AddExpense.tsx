@@ -7,9 +7,9 @@ import {
   Info
 } from 'lucide-react';
 import {
-  getGroupById, getGroupMembers, MOCK_USER_ID
+  MOCK_USER_ID
 } from '../../api/groups';
-import { expensesService } from '../../services';
+import { expensesService, groupsService } from '../../services';
 import { extractApiError } from '../../services/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUser } from '../../providers/UserContext';
@@ -60,17 +60,14 @@ export function AddExpense() {
       if (!groupId) return;
       try {
         setLoading(true);
-        const [g, m] = await Promise.all([
-          getGroupById(groupId),
-          getGroupMembers(groupId)
-        ]);
-        setGroup(g);
-        setMembers(m);
+        const detail = await groupsService.getGroupDetail(groupId);
+        setGroup(detail.group);
+        setMembers(detail.members);
 
         // Setup defaults
-        setSelectedMemberIds(new Set(m.map(mbr => mbr.userPublicId)));
+        setSelectedMemberIds(new Set(detail.members.map(mbr => mbr.userPublicId)));
         const initSplits: Record<string, string> = {};
-        m.forEach(mbr => { initSplits[mbr.userPublicId] = ''; });
+        detail.members.forEach(mbr => { initSplits[mbr.userPublicId] = ''; });
         setCustomSplits(initSplits);
 
       } catch (err) {
