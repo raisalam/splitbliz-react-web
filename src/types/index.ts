@@ -58,9 +58,11 @@ export type CurrencyCode = 'INR' | 'USD' | 'AED' | 'SAR' | 'GBP' | 'EUR';
 
 export type NotificationType =
   | 'SETTLEMENT_REQUEST'
+  | 'SETTLEMENT_RECEIVED'
   | 'SETTLEMENT_APPROVED'
   | 'SETTLEMENT_REJECTED'
   | 'NEW_EXPENSE'
+  | 'EXPENSE_ADDED'
   | 'GROUP_INVITE'
   | 'MEMBER_JOINED'
   | 'REMINDER';
@@ -403,6 +405,8 @@ export interface Notification {
   isRead: boolean;
   groupId: string | null;
   referenceId: string | null;
+  data?: string | null;
+  deliveredAt?: string | null;
   createdAt: string;
 }
 

@@ -13,7 +13,9 @@ export const notificationsService = {
     params?: { cursor?: string; limit?: number }
   ): Promise<{ notifications: Notification[]; pagination: PaginationResponse }> {
     const res = await apiClient.get('/notifications', { params });
-    return res.data;
+    const data = res.data ?? {};
+    const notifications = data.notifications ?? data.items ?? [];
+    return { notifications, pagination: data.pagination };
   },
 
   async markAsRead(notificationId: string): Promise<void> {

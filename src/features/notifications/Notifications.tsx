@@ -19,9 +19,19 @@ function formatTimeLabel(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
+function parseNotificationData(data?: string | null): Record<string, string> {
+  if (!data) return {};
+  try {
+    return JSON.parse(data);
+  } catch {
+    return {};
+  }
+}
+
 function getNotificationStyle(type: Notification['type']): NotificationStyle {
   switch (type) {
     case 'NEW_EXPENSE':
+    case 'EXPENSE_ADDED':
       return { icon: <CreditCard className="w-4 h-4 text-[#6c5ce7]" />, bg: '#ede9ff' };
     case 'GROUP_INVITE':
     case 'MEMBER_JOINED':
@@ -33,6 +43,7 @@ function getNotificationStyle(type: Notification['type']): NotificationStyle {
     case 'SETTLEMENT_REJECTED':
       return { icon: <X className="w-4 h-4 text-[#e24b4a]" />, bg: '#fceaea' };
     case 'SETTLEMENT_REQUEST':
+    case 'SETTLEMENT_RECEIVED':
     default:
       return { icon: <Clock className="w-4 h-4 text-[#e28a11]" />, bg: '#faeeda' };
   }
@@ -70,7 +81,9 @@ export function Notifications() {
         toast.error('Failed to mark as read.');
       }
     }
-    if (n.groupId) navigate(`/group/${n.groupId}`);
+    const data = parseNotificationData(n.data);
+    const groupId = n.groupId ?? data.groupId;
+    if (groupId) navigate(`/group/${groupId}`);
   };
 
   const renderSection = (title: string, items: Notification[]) => {
@@ -84,6 +97,7 @@ export function Notifications() {
           <AnimatePresence>
             {items.map(n => {
               const style = getNotificationStyle(n.type);
+              const timeLabel = formatTimeLabel(n.deliveredAt || n.createdAt);
               return (
                 <motion.div
                   key={n.id}
@@ -113,7 +127,7 @@ export function Notifications() {
                       </p>
                     )}
                     <p className="mt-1" style={{ fontSize: '9px', color: '#b8b4d8', fontWeight: 600 }}>
-                      {formatTimeLabel(n.createdAt)}
+                      {timeLabel}
                     </p>
                   </div>
                 </motion.div>
