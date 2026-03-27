@@ -12,8 +12,8 @@ import { AccountActionsSection } from './components/AccountActionsSection';
 import { colors } from '../../constants/colors';
 import { useUser } from '../../providers/UserContext';
 import { useUpdateProfile, useUpdateSettings, useDeleteAccount } from '../../hooks/useProfileMutations';
-import { authService } from '../../services';
 import { AVATAR_EMOJI_GRID } from '../../constants/emoji';
+import { useLogout } from '../../hooks/useAuthMutations';
 
 const EMOJI_GRID = AVATAR_EMOJI_GRID;
 
@@ -26,6 +26,7 @@ export function ProfileSettings() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { user, setUser } = useUser();
+  const logout = useLogout();
 
   const updateProfile = useUpdateProfile();
   const updateSettings = useUpdateSettings();
@@ -158,7 +159,7 @@ export function ProfileSettings() {
   };
 
   const handleLogout = async () => {
-    await authService.logout();
+    await logout.mutateAsync();
     setUser(null);
     navigate('/login');
   };

@@ -12,5 +12,6 @@ export { useApproveSettlement, useRejectSettlement, useRemindMember, useCreateSe
 export { useCreateGroup, useUpdateGroup, useDeleteGroup, useAcceptInvite, useRejectInvite, useGenerateInvite, useUpdateMemberRole, useRemoveMember, useLeaveGroup, useAddMembers } from './useGroupMutations';
 export { useCreateExpense, useUpdateExpense, useDeleteExpense } from './useExpenseMutations';
 export { useUpdateProfile, useUpdateSettings } from './useProfileMutations';
+export { useLoginEmail, useRegister, useLogout } from './useAuthMutations';
 export { useMarkAsRead, useMarkAllAsRead } from './useNotificationMutations';
 export { useSendMessage, useCreateWhiteboardItem, useUpdateWhiteboardItem, useDeleteWhiteboardItem } from './useEngagementMutations';

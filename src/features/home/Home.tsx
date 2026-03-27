@@ -1,40 +1,29 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import {
-  X,
-  Wallet,
-  ArrowUpRight,
-  ArrowDownLeft,
-  ArrowUp,
-  ArrowDown,
-  Search,
-  Users,
-  History
-} from 'lucide-react';
-import { GroupAvatar } from '../../components/GroupAvatar';
-import { GroupListItem } from '../../components/GroupListItem';
 import { PendingApprovalsSheet } from '../../components/PendingApprovalsSheet';
 import brandLogo from '../../assets/brand/logo.png';
 import { HomeHeader } from './components/HomeHeader';
 import { InsightBar } from './components/InsightBar';
 import { QuickActions } from './components/QuickActions';
-import { GroupCard } from './components/GroupCard';
 import { RecentActivityList } from './components/RecentActivityList';
 import { HomeFAB } from './components/HomeFAB';
+import { SelectGroupSheet } from './components/SelectGroupSheet';
+import { StoriesRow } from './components/StoriesRow';
+import { HeroBalanceCard } from './components/HeroBalanceCard';
+import { GroupSearchBar } from './components/GroupSearchBar';
+import { HomeTabs } from './components/HomeTabs';
+import { GroupsTabPanel } from './components/GroupsTabPanel';
 import { Skeleton } from '../../components/ui/skeleton';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { EmptyState } from '../../components/EmptyState';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUser } from '../../providers/UserContext';
-import { authService, groupsService, settlementsService } from '../../services';
 import { extractApiError } from '../../services/apiClient';
 import { useHomeData } from '../../hooks/useGroups';
 import { useApproveSettlement, useRejectSettlement } from '../../hooks/useSettlementMutations';
 import { useAcceptInvite, useRejectInvite } from '../../hooks/useGroupMutations';
-import { GROUP_TYPE_EMOJI } from '../../constants/app';
-import { formatCurrency, formatBalance } from '../../utils/formatCurrency';
+import { useLogout } from '../../hooks/useAuthMutations';
 import type { Group, ActionItem } from '../../types';
 
 const MAX_VISIBLE_ACTIONS = 2;
@@ -49,6 +38,7 @@ export function Home() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, setUser } = useUser();
+  const logout = useLogout();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'groups' | 'activity'>('groups');
   const [fabExpanded, setFabExpanded] = useState(false);
@@ -97,7 +87,7 @@ export function Home() {
         }
       }
     } else {
-      // GROUP_INVITE — accept/decline by inviteId
+      // GROUP_INVITE - accept/decline by inviteId
       const item = actionItems.find(a => a.referenceId === referenceId);
       if (action === 'approve' && item?.inviteId) {
         try {
@@ -130,7 +120,7 @@ export function Home() {
   };
 
   const handleLogout = async () => {
-    await authService.logout();
+    await logout.mutateAsync();
     setUser(null);
     navigate('/login');
   };
@@ -199,7 +189,6 @@ export function Home() {
   const totalOwed = groups.filter(g => getNet(g) > 0).reduce((s, g) => s + getNet(g), 0);
   const totalOwe = groups.filter(g => getNet(g) < 0).reduce((s, g) => s + Math.abs(getNet(g)), 0);
   const net = totalOwed - totalOwe;
-  const isPositive = net >= 0;
   const currency = groups[0]?.currencyCode ?? 'INR';
 
   return (
@@ -217,31 +206,11 @@ export function Home() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         
-        {/* Stories Row — all groups, gradient ring only for active (non-settled) groups */}
-        <div className="mb-8">
-          <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
-            {groups.map((group, i) => {
-              const shortName = group.name.split(' ')[0].slice(0, 8);
-              const emoji = GROUP_TYPE_EMOJI[group.groupType] ?? GROUP_TYPE_EMOJI['OTHER'];
-              const hasActivity = getNet(group) !== 0;
-              return (
-                <motion.div 
-                  key={group.id}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.1, type: 'spring' }}
-                  onClick={() => navigate(`/group/${group.id}`)}
-                  className="flex flex-col items-center gap-2 cursor-pointer snap-start shrink-0"
-                >
-                  <GroupAvatar name={group.name} emoji={emoji} size="sm" hasActivity={hasActivity} />
-                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 w-16 text-center truncate">
-                    {shortName}
-                  </span>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
+        <StoriesRow
+          groups={groups}
+          onSelectGroup={(groupId) => navigate(`/group/${groupId}`)}
+          getNet={getNet}
+        />
 
         {/* Dynamic Insight Bar */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
@@ -255,46 +224,12 @@ export function Home() {
           </motion.div>
         </div>
 
-        {/* Glassmorphic Hero Card */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }}
-          className="relative overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 rounded-[2rem] p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/20 mb-10"
-        >
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 translate-y-1/4 -translate-x-1/4 w-48 h-48 bg-purple-400/20 rounded-full blur-2xl pointer-events-none"></div>
-          
-          <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8">
-            <div>
-              <div className="flex items-center gap-2 text-indigo-100 font-medium mb-2">
-                <Wallet className="w-4 h-4" />
-                <span>Total Balance</span>
-              </div>
-              <div className={`text-5xl font-extrabold tracking-tight flex items-center gap-3 ${isPositive ? 'text-emerald-200' : 'text-rose-200'}`}>
-                {isPositive ? <ArrowUp className="w-7 h-7" /> : <ArrowDown className="w-7 h-7" />}
-                {isPositive ? '+' : '-'}{formatCurrency(Math.abs(net).toFixed(2), currency)}
-              </div>
-            </div>
-            
-            <div className="flex gap-6 sm:gap-10">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-1.5 text-indigo-100/80 text-sm">
-                  <ArrowDownLeft className="w-4 h-4 text-emerald-300" />
-                  You are owed
-                </div>
-                <div className="text-xl font-bold text-white">{formatCurrency(totalOwed.toFixed(2), currency)}</div>
-              </div>
-              <div className="w-px bg-white/20"></div>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-1.5 text-indigo-100/80 text-sm">
-                  <ArrowUpRight className="w-4 h-4 text-rose-300" />
-                  You owe
-                </div>
-                <div className="text-xl font-bold text-white">{formatCurrency(totalOwe.toFixed(2), currency)}</div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        <HeroBalanceCard
+          totalOwed={totalOwed}
+          totalOwe={totalOwe}
+          net={net}
+          currencyCode={currency}
+        />
 
         <QuickActions
           groups={groups}
@@ -305,95 +240,18 @@ export function Home() {
           onAction={handleAction}
         />
 
-        {/* Search Bar — always visible */}
-        <div className="mb-4">
-          <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Search groups..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-shadow text-slate-900 dark:text-white placeholder:text-slate-400"
-            />
-          </div>
-        </div>
+        <GroupSearchBar value={searchQuery} onChange={setSearchQuery} />
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 mb-6">
-          <button
-            onClick={() => setActiveTab('groups')}
-            className={`pb-3 text-sm font-medium transition-colors relative ${
-              activeTab === 'groups' 
-                ? 'text-indigo-600 dark:text-indigo-400' 
-                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Your Groups
-            </div>
-            {activeTab === 'groups' && (
-              <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-t-full" />
-            )}
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('activity')}
-            className={`pb-3 text-sm font-medium transition-colors relative ${
-              activeTab === 'activity' 
-                ? 'text-indigo-600 dark:text-indigo-400' 
-                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <History className="w-4 h-4" />
-              Recent Activity
-            </div>
-            {activeTab === 'activity' && (
-              <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-t-full" />
-            )}
-          </button>
-        </div>
+        <HomeTabs activeTab={activeTab} onChange={setActiveTab} />
 
         {/* Groups Content */}
         {activeTab === 'groups' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            {groups.length === 0 ? (
-              <EmptyState
-                title="No groups yet"
-                description="Create your first group to start splitting expenses."
-                action={{ label: 'Create group', onClick: () => navigate('/group/new') }}
-              />
-            ) : (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                {filteredGroups.map((group, index) => (
-                  <GroupCard
-                    key={group.id}
-                    group={group}
-                    index={index}
-                    onClick={() => navigate(`/group/${group.id}`)}
-                  />
-                ))}
-                
-                {filteredGroups.length === 0 && (
-                  <div className="text-center py-12 px-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
-                    <div className="w-12 h-12 mx-auto bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mb-3">
-                      <Search className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-sm font-medium text-slate-900 dark:text-white mb-1">No groups found</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Try adjusting your search query.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </motion.div>
+          <GroupsTabPanel
+            groups={groups}
+            filteredGroups={filteredGroups}
+            onCreateGroup={() => navigate('/group/new')}
+            onSelectGroup={(groupId) => navigate(`/group/${groupId}`)}
+          />
         )}
 
         {/* Activity Content */}
@@ -421,57 +279,16 @@ export function Home() {
         onBackdropClick={() => setFabExpanded(false)}
       />
 
-      {/* Select Group Sheet for Action Routing */}
-      <AnimatePresence>
-        {actionSheetOrigin && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setActionSheetOrigin(null)}
-              className="fixed inset-0 z-50 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 rounded-t-[2.5rem] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col sm:max-w-xl sm:mx-auto"
-            >
-              <div className="pt-4 pb-2 px-6 sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md z-10">
-                <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6" />
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                    Select Group
-                  </h3>
-                  <button onClick={() => setActionSheetOrigin(null)} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <p className="text-sm text-slate-500 mt-1 pb-4">
-                  Where would you like to {actionSheetOrigin === 'expense' ? 'add an expense' : 'settle up'}?
-                </p>
-              </div>
-
-              <div className="pb-12 pt-2 overflow-y-auto custom-scrollbar">
-                <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
-                  {(actionSheetOrigin === 'settle'
-                    ? groups.filter(g => getNet(g) < 0)
-                    : groups
-                  ).map((group, index) => (
-                    <GroupListItem
-                      key={group.id}
-                      group={group}
-                      index={index}
-                      onClick={() => {
-                        setActionSheetOrigin(null);
-                        navigate(`/group/${group.id}/${actionSheetOrigin === 'expense' ? 'add-expense' : 'settle'}`);
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <SelectGroupSheet
+        origin={actionSheetOrigin}
+        groups={groups}
+        getNet={getNet}
+        onClose={() => setActionSheetOrigin(null)}
+        onSelectGroup={(groupId) => {
+          setActionSheetOrigin(null);
+          navigate(`/group/${groupId}/${actionSheetOrigin === 'expense' ? 'add-expense' : 'settle'}`);
+        }}
+      />
 
       {/* Pending Approvals Bottom Sheet */}
       <PendingApprovalsSheet 

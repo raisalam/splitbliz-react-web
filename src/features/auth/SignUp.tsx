@@ -4,15 +4,16 @@ import { useNavigate, useLocation } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User } from 'lucide-react';
 import brandLogo from '../../assets/brand/logo.png';
 import { colors } from '../../constants/colors';
-import { authService } from '../../services';
 import { extractApiError } from '../../services/apiClient';
 import { useUser } from '../../providers/UserContext';
+import { useRegister } from '../../hooks/useAuthMutations';
 
 export function SignUp() {
   const navigate = useNavigate();
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const { setUser } = useUser();
+  const registerUser = useRegister();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState(() => {
     const stateEmail = (location.state as { email?: string } | null)?.email;
@@ -28,7 +29,7 @@ export function SignUp() {
     setLoading(true);
     setError(null);
     try {
-      const user = await authService.register({
+      const user = await registerUser.mutateAsync({
         email,
         password,
         displayName,

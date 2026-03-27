@@ -4,17 +4,18 @@ import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, User, Receipt, Banknote, Edit3, Trash2, MoreHorizontal, Plus, X } from 'lucide-react';
 import { colors } from '../../constants/colors';
 import { Skeleton } from '../../components/ui/skeleton';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { expensesService, groupsService } from '../../services';
+import { useQuery } from '@tanstack/react-query';
+import { groupsService } from '../../services';
 import { useUser } from '../../providers/UserContext';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { EXPENSE_ACTION_EMOJI, EXPENSE_CATEGORY_EMOJI, UI_EMOJI } from '../../constants/emoji';
+import { useDeleteExpense } from '../../hooks/useExpenseMutations';
 
 export function ExpenseDetail() {
   const { groupId, expenseId } = useParams();
   const navigate = useNavigate();
   const { user } = useUser();
-  const queryClient = useQueryClient();
+  const deleteExpenseMutation = useDeleteExpense();
 
   const { data: groupDetail, isLoading: groupLoading } = useQuery({
     queryKey: ['group', groupId],
@@ -35,20 +36,11 @@ export function ExpenseDetail() {
   const [receiptViewOpen, setReceiptViewOpen] = useState(false);
   const [showAllMembers, setShowAllMembers] = useState(false);
 
-  const deleteExpenseMutation = useMutation({
-    mutationFn: async () => {
-      if (!groupId || !expenseId) {
-        throw new Error('Missing group or expense id');
-      }
-      await expensesService.deleteExpense(groupId, expenseId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
-      queryClient.invalidateQueries({ queryKey: ['expenses', groupId] });
-      queryClient.invalidateQueries({ queryKey: ['expense', groupId, expenseId] });
-      navigate(-1);
-    },
-  });
+  const handleDeleteExpense = async () => {
+    if (!groupId || !expenseId) return;
+    await deleteExpenseMutation.mutateAsync({ groupId, expenseId });
+    navigate(-1);
+  };
 
   if (groupLoading || expenseLoading || !expense) {
     return (
@@ -462,7 +454,7 @@ export function ExpenseDetail() {
                 <button
                   onClick={() => {
                     setDeleteConfirmOpen(false);
-                    deleteExpenseMutation.mutate();
+                    handleDeleteExpense();
                   }}
                   className="py-3.5 font-bold text-sm text-white transition-colors active:scale-95 shadow-sm"
                   style={{ backgroundColor: '#e24b4a', borderRadius: '14px' }}

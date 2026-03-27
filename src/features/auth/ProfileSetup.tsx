@@ -3,23 +3,24 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { Pencil, X } from 'lucide-react';
 import { colors } from '../../constants/colors';
-import { authService } from '../../services';
 import { useUser } from '../../providers/UserContext';
 import { toast } from 'sonner';
 import { AVATAR_EMOJI_GRID, DEFAULT_AVATAR_EMOJI } from '../../constants/emoji';
+import { useUpdateProfile } from '../../hooks/useProfileMutations';
 
 const EMOJI_GRID = AVATAR_EMOJI_GRID;
 
 export function ProfileSetup() {
   const navigate = useNavigate();
   const { setUser } = useUser();
+  const updateProfile = useUpdateProfile();
   const [avatar, setAvatar] = useState(DEFAULT_AVATAR_EMOJI);
   const [displayName, setDisplayName] = useState('Aman Sharma');
   const [showEmojiSheet, setShowEmojiSheet] = useState(false);
 
   const handleContinue = async () => {
     try {
-      const updated = await authService.updateProfile({
+      const updated = await updateProfile.mutateAsync({
         displayName: displayName.trim(),
         resolvedAvatar: avatar,
       });

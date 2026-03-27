@@ -4,9 +4,10 @@ import { useNavigate, useLocation } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User, CheckCircle2 } from 'lucide-react';
 import brandLogo from '../../assets/brand/logo.png';
 import { colors } from '../../constants/colors';
-import { authService } from '../../services';
 import { extractApiError } from '../../services/apiClient';
 import { useUser } from '../../providers/UserContext';
+import { useLoginEmail, useRegister } from '../../hooks/useAuthMutations';
+import { authService } from '../../services';
 
 type AuthState = 'A' | 'B' | 'C';
 
@@ -14,6 +15,8 @@ export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setUser } = useUser();
+  const loginEmail = useLoginEmail();
+  const registerUser = useRegister();
   
   const [authState, setAuthState] = useState<AuthState>('A');
   const [email, setEmail] = useState('');
@@ -49,7 +52,7 @@ export function Login() {
     setLoading(true);
     setError(null);
     try {
-      const user = await authService.loginEmail({ email, password });
+      const user = await loginEmail.mutateAsync({ email, password });
       setUser(user);
       navigate('/');
     } catch (err) {
@@ -75,7 +78,7 @@ export function Login() {
     setLoading(true);
     setError(null);
     try {
-      const user = await authService.register({
+      const user = await registerUser.mutateAsync({
         email,
         password,
         displayName: name,

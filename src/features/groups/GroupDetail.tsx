@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { useParams, useNavigate } from 'react-router';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useUser } from '../../providers/UserContext';
@@ -7,11 +7,9 @@ import { useGroupDetail } from '../../hooks/useGroupDetail';
 import { useGroupMqtt } from '../../hooks/useGroupMqtt';
 import {
   Plus, Banknote,
-  Users, History, Receipt,
-  X, AlertCircle, ChevronRight,
+  Users, Receipt,
   ClipboardList
 } from 'lucide-react';
-import type { Settlement } from '../../types';
 import { toast } from 'sonner';
 import { useApproveSettlement, useRejectSettlement, useRemindMember } from '../../hooks/useSettlementMutations';
 import { InviteMemberSheet } from '../../components/InviteMemberSheet';
@@ -19,11 +17,12 @@ import { GroupHeader } from './components/GroupHeader';
 import { BalanceSummaryCard } from './components/BalanceSummaryCard';
 import { ExpenseList } from './components/ExpenseList';
 import { MemberList } from './components/MemberList';
-import { SettlementRow } from './components/SettlementRow';
 import { Skeleton } from '../../components/ui/skeleton';
 import { EmptyState } from '../../components/EmptyState';
-import { CachedAvatar } from '../../components/CachedAvatar';
-import { formatCurrency } from '../../utils/formatCurrency';
+import { MemberAvatar } from './components/MemberAvatar';
+import { ActionBanner } from './components/ActionBanner';
+import { AllMembersSheet } from './components/AllMembersSheet';
+import { SettlementHistorySheet } from './components/SettlementHistorySheet';
 
 export function GroupDetail() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -34,27 +33,14 @@ export function GroupDetail() {
 
   const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'members'>('expenses');
   const [expenseFilter, setExpenseFilter] = useState<'ALL' | 'THIS_MONTH' | 'UNSETTLED'>('ALL');
-  
-  // Replace direct mock fetching with React Query hook
+
   const { data, isLoading: loading, error } = useGroupDetail(groupId);
   const { group, members, expenses, balances, settlements, quickInsight } = data ?? {};
 
-  // Bottom sheet & expand state
   const [historySheet, setHistorySheet] = useState<{ open: boolean; fromId: string; toId: string } | null>(null);
   const [showSettlementHistory, setShowSettlementHistory] = useState(false);
   const [allMembersSheetOpen, setAllMembersSheetOpen] = useState(false);
   const [inviteSheetOpen, setInviteSheetOpen] = useState(false);
-
-  // Settlement helpers
-  const getSettlementsBetween = (fromId: string, toId: string) => {
-    if (!settlements) return [];
-    return settlements
-      .filter((s: Settlement) => 
-        (s.fromUser?.userId === fromId && s.toUser?.userId === toId) ||
-        (s.fromUser?.userId === toId && s.toUser?.userId === fromId)
-      )
-      .sort((a: Settlement, b: Settlement) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  };
 
   const approveSettlement = useApproveSettlement();
   const rejectSettlement = useRejectSettlement();
@@ -77,6 +63,16 @@ export function GroupDetail() {
       toast('Settlement rejected');
     } catch {
       toast.error('Failed to reject settlement');
+    }
+  };
+
+  const handleRemind = async (memberId: string) => {
+    if (!groupId) return;
+    try {
+      await remindMember.mutateAsync({ groupId, toUserId: memberId });
+      toast.success('Reminder sent!');
+    } catch {
+      toast.error('Failed to send reminder.');
     }
   };
 
@@ -126,30 +122,9 @@ export function GroupDetail() {
   }
 
   const currencySymbol = group.currencyCode || 'INR';
-  const getInitial = (name?: string | null) => name?.trim()?.[0]?.toUpperCase() || '?';
-  const renderAvatar = (member: any, className: string) => {
-    const avatarValue = member.resolvedAvatar || member.avatarUrl || null;
-    const isAvatarUrl = typeof avatarValue === 'string' && avatarValue.startsWith('http');
-    if (isAvatarUrl) {
-      return (
-        <CachedAvatar
-          src={avatarValue}
-          alt={member.displayName}
-          fallbackInitials={getInitial(member.displayName)}
-          className={className}
-        />
-      );
-    }
-    return (
-      <div className={`${className} flex items-center justify-center font-bold text-slate-700 bg-slate-200`}>
-        {avatarValue || getInitial(member.displayName)}
-      </div>
-    );
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 pb-20">
-      
       <GroupHeader
         group={group}
         theme={theme}
@@ -161,7 +136,6 @@ export function GroupDetail() {
       />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        
         <BalanceSummaryCard
           group={group}
           members={members || []}
@@ -169,152 +143,60 @@ export function GroupDetail() {
           onAiClick={() => navigate(`/group/${groupId}/ai`)}
         />
 
-        {/* Smart Insight Bar successfully removed and merged */}
-
         {/* Stacked Members Row */}
         <div className="mb-6 flex flex-col gap-2">
-           <div className="flex items-center">
-             <div 
-               className="flex items-center cursor-pointer relative"
-               onClick={() => setAllMembersSheetOpen(true)}
-             >
-               {(members || []).slice(0, 5).map((member: any, i: number) => (
-                 <div
-                   key={member.userId}
-                   className="relative hover:-translate-y-1 transition-transform"
-                   style={{ zIndex: 10 - i, marginLeft: i === 0 ? 0 : '-10px' }}
-                 >
-                   {renderAvatar(
-                     member,
-                     "w-10 h-10 rounded-full object-cover border-2 border-slate-50 dark:border-slate-950"
-                   )}
-                 </div>
-               ))}
-               {(members || []).length > 5 && (
-                 <div 
-                   className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-slate-50 dark:border-slate-950 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 relative hover:-translate-y-1 transition-transform"
-                   style={{ zIndex: 5, marginLeft: '-10px' }}
-                 >
-                   +{members!.length - 5}
-                 </div>
-               )}
-             </div>
-
-             <div className="w-px h-6 bg-slate-200 dark:bg-slate-800 mx-3" />
-
-               <button 
-                onClick={() => setInviteSheetOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-sm font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Invite
-              </button>
+          <div className="flex items-center">
+            <div
+              className="flex items-center cursor-pointer relative"
+              onClick={() => setAllMembersSheetOpen(true)}
+            >
+              {(members || []).slice(0, 5).map((member: any, i: number) => (
+                <div
+                  key={member.userId}
+                  className="relative hover:-translate-y-1 transition-transform"
+                  style={{ zIndex: 10 - i, marginLeft: i === 0 ? 0 : '-10px' }}
+                >
+                  <MemberAvatar
+                    member={member}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-slate-50 dark:border-slate-950"
+                  />
+                </div>
+              ))}
+              {(members || []).length > 5 && (
+                <div
+                  className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-slate-50 dark:border-slate-950 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300 relative hover:-translate-y-1 transition-transform"
+                  style={{ zIndex: 5, marginLeft: '-10px' }}
+                >
+                  +{members!.length - 5}
+                </div>
+              )}
             </div>
+
+            <div className="w-px h-6 bg-slate-200 dark:bg-slate-800 mx-3" />
+
+            <button
+              onClick={() => setInviteSheetOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-sm font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Invite
+            </button>
+          </div>
         </div>
 
-        {/* Smart Action Banner Priority Logic */}
-        {(() => {
-          const netAmount = group?.balance?.netAmount ? Number(group.balance.netAmount) : 0;
-          const quickMeta = quickInsight?.cta?.meta ?? {};
-          const quickUserId = quickMeta.userId as string | undefined;
-          const quickAmount = quickMeta.amount as string | undefined;
-          const quickCurrency = (quickMeta.currencyCode as string | undefined) || group.currencyCode;
-
-          // Priority 1 — You owe money
-          if (netAmount < 0) {
-            const amount = Math.abs(netAmount).toFixed(2);
-            const topOwed = topYouOwe[0];
-            const topAmount = topOwed?.balance?.netAmount ? Math.abs(parseFloat(topOwed.balance.netAmount)).toFixed(2) : amount;
-            const oweName = topOwed?.displayName || 'the group';
-            const displayAmount = quickAmount && quickCurrency
-              ? formatCurrency(quickAmount, quickCurrency)
-              : formatCurrency(topAmount, group.currencyCode || 'INR');
-            const bannerTitle = topOwed
-              ? `You owe ${displayAmount} to ${oweName}`
-              : `You owe ${displayAmount} to ${oweName}`;
-
-            return (
-              <button
-                onClick={() => {
-                  if (quickInsight?.cta?.action === 'SETTLE_USER' && quickUserId) {
-                    const settleAmount = quickAmount ?? amount;
-                    navigate(`/group/${groupId}/settle?from=${currentUserId}&to=${quickUserId}&amount=${settleAmount}&currency=${quickCurrency}`);
-                    return;
-                  }
-                  navigate(`/group/${groupId}/settle`);
-                }}
-                className="w-full flex items-center justify-between bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 p-3 sm:p-4 rounded-2xl mb-6 text-left hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all active:scale-[0.98]"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-600 flex items-center justify-center shrink-0">
-                    <AlertCircle className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-rose-900 dark:text-rose-100">
-                      {bannerTitle}
-                    </p>
-                    <p className="text-xs text-rose-700/80 dark:text-rose-400 mt-0.5">
-                      Settle now
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-rose-400 shrink-0" />
-              </button>
-            );
-          }
-
-          // Priority 2 — You are owed money
-          if (netAmount > 0) {
-            const amount = netAmount.toFixed(2);
-            const displayAmount = quickAmount && quickCurrency
-              ? formatCurrency(quickAmount, quickCurrency)
-              : formatCurrency(amount, group.currencyCode || 'INR');
-            const bannerTitle = quickInsight?.type === 'YOU_ARE_OWED'
-              ? `You are owed ${displayAmount}`
-              : (topOwesYou[0]?.displayName
-                ? `${topOwesYou[0].displayName} owes you ${displayAmount}`
-                : `You are owed ${displayAmount}`);
-
-            return (
-              <button
-                onClick={async () => {
-                  if (quickInsight?.cta?.action === 'REMIND_USER' && quickUserId && groupId) {
-                    try {
-                      await remindMember.mutateAsync({ groupId, toUserId: quickUserId });
-                      toast.success('Reminder sent!');
-                      return;
-                    } catch {
-                      toast.error('Failed to send reminder.');
-                      return;
-                    }
-                  }
-                  toast.success('Reminder sent!');
-                }}
-                className="w-full flex items-center justify-between bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-3 sm:p-4 rounded-2xl mb-6 text-left hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all active:scale-[0.98]"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0">
-                    <Banknote className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-emerald-900 dark:text-emerald-100">
-                      {bannerTitle}
-                    </p>
-                    <p className="text-xs text-emerald-700/80 dark:text-emerald-400 mt-0.5">
-                      Send a reminder?
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-emerald-400 shrink-0" />
-              </button>
-            );
-          }
-          
-          // Priority 3 — Pending settlements (Removed from Group Detail - now handled exclusively on Home Action Items)
-          
-          // Priority 4 — All zero
-          return null; 
-        })()}
+        <ActionBanner
+          groupId={groupId || ''}
+          group={group}
+          quickInsight={quickInsight}
+          currentUserId={currentUserId}
+          topYouOwe={topYouOwe}
+          topOwesYou={topOwesYou}
+          onSettle={() => navigate(`/group/${groupId}/settle`)}
+          onSettleUser={(userId, amount, currencyCode) => {
+            navigate(`/group/${groupId}/settle?from=${currentUserId}&to=${userId}&amount=${amount}&currency=${currencyCode || group.currencyCode}`);
+          }}
+          onRemind={handleRemind}
+        />
 
         {/* Quick Action Pills */}
         <div className="flex gap-3 mb-8 overflow-x-auto pb-1 custom-scrollbar">
@@ -330,7 +212,7 @@ export function GroupDetail() {
               <span className="text-[10px] text-indigo-200 mt-1 font-medium">track costs</span>
             </div>
           </button>
-          
+
           <button
             onClick={() => navigate(`/group/${groupId}/settle`)}
             className="flex items-center gap-3 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-sm shadow-emerald-600/20 transition-all shrink-0 active:scale-95"
@@ -343,7 +225,7 @@ export function GroupDetail() {
               <span className="text-[10px] text-emerald-200 mt-1 font-medium">pay someone</span>
             </div>
           </button>
-          
+
           <button
             onClick={() => navigate(`/group/${groupId}/whiteboard`)}
             className="flex items-center gap-3 px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-sm shadow-amber-500/20 transition-all shrink-0 active:scale-95"
@@ -374,7 +256,7 @@ export function GroupDetail() {
               <motion.div layoutId="groupTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-t-full" />
             )}
           </button>
-          
+
           <button
             onClick={() => setActiveTab('members')}
             className={`pb-3 text-sm font-medium transition-colors relative ${
@@ -413,8 +295,6 @@ export function GroupDetail() {
           )
         )}
 
-
-
         {/* Members Tab */}
         {activeTab === 'members' && (
           <MemberList
@@ -424,142 +304,29 @@ export function GroupDetail() {
             currentUserId={currentUserId}
             onShowHistory={() => setShowSettlementHistory(true)}
             onSettle={(memberId, amount) => navigate(`/group/${groupId}/settle?from=${currentUserId}&to=${memberId}&amount=${amount}&currency=${group?.currencyCode || 'INR'}`)}
-            onRemind={async (memberId) => {
-              if (!groupId) return;
-              try {
-                await remindMember.mutateAsync({ groupId, toUserId: memberId });
-                toast.success('Reminder sent!');
-              } catch {
-                toast.error('Failed to send reminder.');
-              }
-            }}
+            onRemind={handleRemind}
           />
         )}
-
       </main>
 
-      {/* Settlement History Bottom Sheet */}
-      <AnimatePresence>
-        {historySheet?.open && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setHistorySheet(null)}
-              className="fixed inset-0 z-50 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 rounded-t-[2.5rem] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
-            >
-              <div className="pt-4 pb-2 px-6 sticky top-0 bg-white dark:bg-slate-900 z-10">
-                <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6" />
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                    Settlements with {getMemberName(historySheet.fromId === currentUserId ? historySheet.toId : historySheet.fromId)}
-                  </h3>
-                  <button onClick={() => setHistorySheet(null)} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
+      <SettlementHistorySheet
+        open={!!historySheet?.open}
+        fromId={historySheet?.fromId || ''}
+        toId={historySheet?.toId || ''}
+        settlements={settlements || []}
+        currentUserId={currentUserId}
+        currencyCode={group.currencyCode}
+        getMemberName={getMemberName}
+        onClose={() => setHistorySheet(null)}
+      />
 
-              <div className="px-6 pb-12 pt-4 overflow-y-auto">
-                {(() => {
-                  const history = getSettlementsBetween(historySheet.fromId, historySheet.toId);
-                  if (history.length === 0) {
-                    return (
-                      <EmptyState
-                        title="All settled up"
-                        description="No pending settlements in this group."
-                      />
-                    );
-                  }
-                  return (
-                    <div className="space-y-4">
-                      {history.map((s: any) => (
-                        <SettlementRow
-                          key={s.id}
-                          settlement={s}
-                          currencyCode={group.currencyCode}
-                          currentUserId={currentUserId}
-                          getMemberName={getMemberName}
-                        />
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Action Required / Approvals Bottom Sheet — Removed to Home */}
-
-      {/* All Members Bottom Sheet */}
-      <AnimatePresence>
-        {allMembersSheetOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setAllMembersSheetOpen(false)}
-              className="fixed inset-0 z-50 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 rounded-t-[2.5rem] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
-            >
-              <div className="pt-4 pb-2 px-6 sticky top-0 bg-white dark:bg-slate-900 z-10 border-b border-slate-100 dark:border-slate-800">
-                <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6" />
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Users className="w-5 h-5 text-indigo-500" />
-                    All Members ({(members || []).length})
-                  </h3>
-                  <button onClick={() => setAllMembersSheetOpen(false)} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="px-6 pb-24 pt-4 overflow-y-auto space-y-3">
-                {(members || []).map((member: any) => {
-                  const isMe = member.userId === currentUserId;
-                  return (
-                    <div key={member.userId} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
-                      {renderAvatar(member, "w-12 h-12 rounded-full object-cover shrink-0")}
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-slate-900 dark:text-white">{member.displayName}</h4>
-                          {isMe && <span className="text-xs text-slate-400">(You)</span>}
-                          {member.role === 'OWNER' && (
-                            <span className="text-[10px] bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-bold uppercase">Owner</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500">Joined {new Date(member.joinedAt).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent dark:from-slate-900 dark:via-slate-900 pointer-events-none">
-                <div className="pointer-events-auto">
-                   <button 
-                     onClick={() => { setAllMembersSheetOpen(false); setInviteSheetOpen(true); }}
-                     className="w-full py-3.5 rounded-2xl font-bold text-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                   >
-                     <Plus className="w-5 h-5" />
-                     Invite Members
-                   </button>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <AllMembersSheet
+        open={allMembersSheetOpen}
+        members={members || []}
+        currentUserId={currentUserId}
+        onClose={() => setAllMembersSheetOpen(false)}
+        onInvite={() => { setAllMembersSheetOpen(false); setInviteSheetOpen(true); }}
+      />
 
       <InviteMemberSheet
         open={inviteSheetOpen}
@@ -567,7 +334,6 @@ export function GroupDetail() {
         groupId={groupId}
         existingMemberIds={(members || []).map((m: any) => m.userId)}
       />
-
     </div>
   );
 }
