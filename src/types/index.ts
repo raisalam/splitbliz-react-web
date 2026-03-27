@@ -520,13 +520,14 @@ export interface CreateGroupRequest {
   name: string;
   groupType: GroupType;
   currencyCode: CurrencyCode;
-  settings?: Partial<GroupSettings>;
+  configuration?: Record<string, unknown>;
 }
 
 export interface UpdateGroupRequest {
   name?: string;
   groupType?: GroupType;
-  settings?: Partial<GroupSettings>;
+  currencyCode?: CurrencyCode;
+  configuration?: Record<string, unknown>;
   version: number; // required for optimistic concurrency
 }
 

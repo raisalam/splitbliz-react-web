@@ -194,18 +194,21 @@ export const groupsService = {
   },
 
   async getGroup(groupId: string): Promise<Group> {
-    const res = await apiClient.get<{ group: Group }>(`/groups/${groupId}`);
-    return res.data.group;
+    const res = await apiClient.get<{ group: Group } | Group>(`/groups/${groupId}`);
+    const data = res.data as { group?: Group };
+    return data.group ?? (res.data as Group);
   },
 
   async createGroup(data: CreateGroupRequest): Promise<Group> {
-    const res = await apiClient.post<{ group: Group }>('/groups', data);
-    return res.data.group;
+    const res = await apiClient.post<{ group: Group } | Group>('/groups', data);
+    const payload = res.data as { group?: Group };
+    return payload.group ?? (res.data as Group);
   },
 
   async updateGroup(groupId: string, data: UpdateGroupRequest): Promise<Group> {
-    const res = await apiClient.patch<{ group: Group }>(`/groups/${groupId}`, data);
-    return res.data.group;
+    const res = await apiClient.patch<{ group: Group } | Group>(`/groups/${groupId}`, data);
+    const payload = res.data as { group?: Group };
+    return payload.group ?? (res.data as Group);
   },
 
   async deleteGroup(groupId: string): Promise<void> {
@@ -218,8 +221,10 @@ export const groupsService = {
   },
 
   async getMembers(groupId: string): Promise<GroupMember[]> {
-    const res = await apiClient.get<{ members: GroupMember[] }>(`/groups/${groupId}/members`);
-    return res.data.members;
+    const res = await apiClient.get<{ members?: GroupMember[]; items?: GroupMember[] }>(
+      `/groups/${groupId}/members`
+    );
+    return res.data.members ?? res.data.items ?? [];
   },
 
   async addMembers(groupId: string, userIds: string[]): Promise<GroupMember[]> {

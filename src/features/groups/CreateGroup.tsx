@@ -1,48 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { ArrowLeft, Check, X, ChevronRight, Plus, Trash2 } from 'lucide-react';
-import { MOCK_USER_ID } from '../../api/groups';
+import { ArrowLeft, Check, X, ChevronRight } from 'lucide-react';
 import { colors } from '../../constants/colors';
+import { GROUP_TYPE_EMOJI } from '../../constants/app';
+import { useUser } from '../../providers/UserContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { groupsService } from '../../services';
+import { toast } from 'sonner';
 
 // 35+ emojis for the picker grid
 const EMOJI_GRID = [
   '✈️', '🏠', '🍕', '⚽', '🎉', '💼', '💑', '📂',
-  '🚗', '🏝️', '🗺️', '🏖️', '⛰️', '🏕️', '🚅', '🧳',
+  '🚗', '🏝️', '🗺️', '🏖️', '⛱️', '🏕️', '🚅', '🧳',
   '🍔', '🍣', '🍷', '☕', '🌮', '🍻', '🍽️', '🍦',
   '🛋️', '🛒', '🔌', '🛁', '🧹', '💡', '🔑', '📺',
   '🎈', '🎊', '🎁', '🕺', '🥳', '🎤', '🎶', '🎫',
   '🏀', '🏈', '🎾', '🏓', '🏸', '🥊', '🏋️', '🏄',
-  '💻', '📊', '📋', '📅', '📞', '🏢', '👔', '📝',
+  '💻', '📊', '📋', '📝', '📞', '🏢', '👔', '📝',
   '👥', '🤝', '🙌', '💪', '🔥', '✨', '🚀', '🎯',
 ];
 
 const GROUP_TYPES = [
-  { id: 'trip', label: 'Trip', emoji: '✈️' },
-  { id: 'home', label: 'Home', emoji: '🏠' },
-  { id: 'food', label: 'Food', emoji: '🍕' },
-  { id: 'sports', label: 'Sports', emoji: '⚽' },
-  { id: 'event', label: 'Event', emoji: '🎉' },
-  { id: 'office', label: 'Office', emoji: '💼' },
-  { id: 'couple', label: 'Couple', emoji: '💑' },
-  { id: 'other', label: 'Other', emoji: '📂' },
+  { id: 'TRIP', label: 'Trip' },
+  { id: 'HOME', label: 'Home' },
+  { id: 'FOOD', label: 'Food' },
+  { id: 'OFFICE', label: 'Office' },
+  { id: 'ENTERTAINMENT', label: 'Entertainment' },
+  { id: 'SPORTS', label: 'Sports' },
+  { id: 'SHOPPING', label: 'Shopping' },
+  { id: 'OTHER', label: 'Other' },
 ];
 
 export function CreateGroup() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const { user } = useUser();
 
   const [groupName, setGroupName] = useState('');
   const [groupNamePlaceholder, setGroupNamePlaceholder] = useState('Enter group name...');
-  const [selectedEmoji, setSelectedEmoji] = useState('👥');
+  const [selectedEmoji, setSelectedEmoji] = useState(GROUP_TYPE_EMOJI['OTHER']);
   const [emojiSheetOpen, setEmojiSheetOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState('trip');
+  const [selectedType, setSelectedType] = useState('TRIP');
   const [requireApproval, setRequireApproval] = useState(true);
   const [simplifyDebts, setSimplifyDebts] = useState(false);
-  const [newMemberName, setNewMemberName] = useState('');
-  const [members, setMembers] = useState<{ id: string; name: string; isAdmin?: boolean }[]>([
-    { id: MOCK_USER_ID, name: 'Rais', isAdmin: true }
-  ]);
+  const [inviteSheetOpen, setInviteSheetOpen] = useState(false);
+  const [inviteLink, setInviteLink] = useState('');
+  const [createdGroupId, setCreatedGroupId] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   // Pre-fill from URL parameters if available (used by Onboarding Intent Picker)
   useEffect(() => {
@@ -51,23 +57,48 @@ export function CreateGroup() {
     const placeholderParam = searchParams.get('placeholder');
 
     if (emojiParam) setSelectedEmoji(emojiParam);
-    if (typeParam) setSelectedType(typeParam);
+    if (typeParam) {
+      const upper = typeParam.toUpperCase();
+      setSelectedType(upper);
+      setSelectedEmoji(GROUP_TYPE_EMOJI[upper] ?? GROUP_TYPE_EMOJI['OTHER']);
+    }
     if (placeholderParam) setGroupNamePlaceholder(placeholderParam);
   }, [searchParams]);
 
-  const addMember = () => {
-    if (!newMemberName.trim()) return;
-    setMembers(prev => [...prev, { id: `m-${Date.now()}`, name: newMemberName.trim() }]);
-    setNewMemberName('');
+  const handleCreate = async () => {
+    if (!groupName.trim() || isCreating) return;
+    setIsCreating(true);
+    try {
+      const currencyCode = user?.settings?.preferences?.defaultCurrency ?? 'INR';
+      const created = await groupsService.createGroup({
+        name: groupName.trim(),
+        groupType: selectedType,
+        currencyCode,
+        configuration: {
+          defaultSplitType: 'EQUAL',
+          requireSettlementApproval: requireApproval,
+          simplifyDebts,
+        },
+      });
+      setCreatedGroupId(created.id);
+      const invite = await groupsService.generateInvite(created.id);
+      setInviteLink(invite.inviteUrl);
+      setInviteSheetOpen(true);
+      queryClient.invalidateQueries({ queryKey: ['home'] });
+    } catch {
+      toast.error('Failed to create group. Please try again.');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
-  const removeMember = (id: string) => {
-    if (id === MOCK_USER_ID) return; // Can't remove yourself
-    setMembers(prev => prev.filter(m => m.id !== id));
-  };
-
-  const handleCreate = () => {
-    navigate('/');
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard?.writeText(inviteLink);
+      toast.success('Invite link copied');
+    } catch {
+      toast.error('Failed to copy link');
+    }
   };
 
   // Colors from the spec
@@ -142,7 +173,10 @@ export function CreateGroup() {
             {GROUP_TYPES.map(type => (
               <button
                 key={type.id}
-                onClick={() => setSelectedType(type.id)}
+                onClick={() => {
+                  setSelectedType(type.id);
+                  setSelectedEmoji(GROUP_TYPE_EMOJI[type.id] ?? GROUP_TYPE_EMOJI['OTHER']);
+                }}
                 className="flex flex-col items-center gap-1 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95"
                 style={{
                   backgroundColor: selectedType === type.id ? '#ede8ff' : '#f8f7fc',
@@ -150,7 +184,7 @@ export function CreateGroup() {
                   color: selectedType === type.id ? purple : '#6b6588',
                 }}
               >
-                <span className="text-lg">{type.emoji}</span>
+                <span className="text-lg">{GROUP_TYPE_EMOJI[type.id] ?? GROUP_TYPE_EMOJI['OTHER']}</span>
                 <span className="text-xs">{type.label}</span>
               </button>
             ))}
@@ -170,73 +204,8 @@ export function CreateGroup() {
               Members
             </p>
           </div>
-
-          {/* Member rows */}
-          <div>
-            {members.map((member, idx) => (
-              <div
-                key={member.id}
-                className="flex items-center gap-3 px-4 py-3"
-                style={{ borderTop: idx > 0 ? `0.5px solid ${sectionDivider}` : 'none' }}
-              >
-                {/* Avatar circle */}
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
-                  style={{ backgroundColor: member.isAdmin ? purple : colors.primaryLight }}
-                >
-                  {member.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm truncate" style={{ color: colors.textPrimary }}>
-                      {member.name}
-                    </span>
-                    {member.isAdmin && (
-                      <span className="text-[10px] text-slate-400">(you)</span>
-                    )}
-                    {member.isAdmin && (
-                      <span
-                        className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
-                        style={{ backgroundColor: '#ede8ff', color: purple }}
-                      >
-                        Admin
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {!member.isAdmin && (
-                  <button
-                    onClick={() => removeMember(member.id)}
-                    className="p-1 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Add member input row */}
-          <div className="flex items-center gap-2 px-4 py-3" style={{ borderTop: `0.5px solid ${sectionDivider}` }}>
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={newMemberName}
-                onChange={(e) => setNewMemberName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') addMember(); }}
-                placeholder="Enter name or phone / email…"
-                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400 py-1"
-                style={{ color: colors.textPrimary }}
-              />
-            </div>
-            <button
-              onClick={addMember}
-              disabled={!newMemberName.trim()}
-              className="px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all active:scale-95 disabled:opacity-40"
-              style={{ backgroundColor: purple }}
-            >
-              Add
-            </button>
+          <div className="px-4 pb-4 text-sm text-slate-500">
+            You can invite members after the group is created. We’ll generate a shareable invite link.
           </div>
         </motion.div>
 
@@ -261,7 +230,7 @@ export function CreateGroup() {
             </div>
             <span className="flex-1 text-left text-sm font-semibold" style={{ color: colors.textPrimary }}>Currency</span>
             <div className="flex items-center gap-1.5 text-sm" style={{ color: mutedLabel }}>
-              <span className="font-medium">₹ INR</span>
+              <span className="font-medium">{user?.settings?.preferences?.defaultCurrency ?? 'INR'}</span>
               <ChevronRight className="w-4 h-4" />
             </div>
           </button>
@@ -338,7 +307,7 @@ export function CreateGroup() {
           className="pt-2 pb-8"
         >
           <button
-            disabled={!groupName.trim()}
+            disabled={!groupName.trim() || isCreating}
             onClick={handleCreate}
             className="w-full flex items-center justify-center gap-2 py-4 rounded-[14px] font-bold text-base text-white transition-all active:scale-[0.98] shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
@@ -347,7 +316,7 @@ export function CreateGroup() {
             }}
           >
             <Check className="w-5 h-5" />
-            Create group
+            {isCreating ? 'Creating...' : 'Create group'}
           </button>
         </motion.div>
 
@@ -404,6 +373,60 @@ export function CreateGroup() {
                     </button>
                   ))}
                 </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Invite Link Bottom Sheet */}
+      <AnimatePresence>
+        {inviteSheetOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setInviteSheetOpen(false)}
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+            />
+
+            <motion.div
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[24px] shadow-2xl overflow-hidden flex flex-col"
+              style={{ maxHeight: '60vh' }}
+            >
+              <div className="pt-4 pb-3 px-6 flex items-center justify-between">
+                <h3 className="text-lg font-bold" style={{ color: colors.textPrimary }}>
+                  Invite members
+                </h3>
+                <button
+                  onClick={() => setInviteSheetOpen(false)}
+                  className="p-2 rounded-full transition-colors"
+                  style={{ backgroundColor: pageBg }}
+                >
+                  <X className="w-4 h-4" style={{ color: mutedLabel }} />
+                </button>
+              </div>
+
+              <div className="px-6 pb-6 space-y-4">
+                <div className="rounded-xl border border-slate-200 p-3 text-sm text-slate-600 break-all">
+                  {inviteLink || 'Generating invite link...'}
+                </div>
+                <button
+                  onClick={handleCopyLink}
+                  disabled={!inviteLink}
+                  className="w-full py-3 rounded-xl font-semibold text-white transition-all disabled:opacity-50"
+                  style={{ backgroundColor: purple }}
+                >
+                  Copy invite link
+                </button>
+                <button
+                  onClick={() => createdGroupId && navigate(`/group/${createdGroupId}`)}
+                  className="w-full py-3 rounded-xl font-semibold"
+                  style={{ backgroundColor: pageBg, color: purple }}
+                >
+                  Go to group
+                </button>
               </div>
             </motion.div>
           </>
