@@ -52,6 +52,9 @@ class MqttService {
   }
 
   subscribeToGroup(groupId: string): void {
+    if (this.subscribedTopics.has(MQTT_TOPICS.groupHints(groupId)) && this.subscribedTopics.has(MQTT_TOPICS.groupMessages(groupId))) {
+      return;
+    }
     this.subscribe(MQTT_TOPICS.groupHints(groupId));
     this.subscribe(MQTT_TOPICS.groupMessages(groupId));
   }

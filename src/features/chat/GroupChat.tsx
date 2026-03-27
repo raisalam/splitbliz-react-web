@@ -136,7 +136,7 @@ export function GroupChat() {
             const isMe = msg.sender?.userId === user?.id;
 
             return (
-              <React.Fragment key={msg.id}>
+              <React.Fragment key={msg.clientMessageId || msg.id}>
                 {showDateSep && (
                   <div className="flex items-center justify-center py-3">
                     <span className="px-3 py-1 bg-slate-200/60 dark:bg-slate-800/60 rounded-full text-[11px] font-semibold text-slate-500 dark:text-slate-400">
