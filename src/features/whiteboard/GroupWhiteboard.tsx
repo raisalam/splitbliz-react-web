@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router';
 import { useTheme } from '../../providers/ThemeProvider';
 import { ArrowLeft, Plus, Pin, Trash2, X, Moon, Sun } from 'lucide-react';
-import { getGroupById, MOCK_USER_ID } from '../../api/groups';
 import { EmptyState } from '../../components/EmptyState';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { engagementService } from '../../services';
 
 const CATEGORIES = [
   { key: 'ALL', label: 'All', emoji: '📋' },
@@ -39,75 +40,93 @@ interface Note {
   createdAt: string;
 }
 
-const MOCK_NOTES: Note[] = [
-  {
-    id: 'n1', title: 'UPI Payment ID', content: 'Rais: rais@upi\nAman: aman.pay@paytm\nNeha: neha99@ybl',
-    category: 'PAYMENT', colorIndex: 0, pinned: true,
-    author: { name: 'Rais', avatar: 'https://i.pravatar.cc/150?u=00' }, createdAt: '2026-03-12T10:00:00Z'
-  },
-  {
-    id: 'n2', title: 'Group Rules', content: '1. Split equally unless discussed\n2. Settle within 7 days\n3. No cash — UPI only',
-    category: 'RULES', colorIndex: 1, pinned: true,
-    author: { name: 'Rais', avatar: 'https://i.pravatar.cc/150?u=00' }, createdAt: '2026-03-10T08:00:00Z'
-  },
-  {
-    id: 'n3', title: 'Hotel Booking', content: 'Confirmation #GOA2026X\nCheck-in: Mar 15, 2PM\nCheck-out: Mar 18, 11AM\nhttps://booking.com/goa2026',
-    category: 'LINKS', colorIndex: 2, pinned: false,
-    author: { name: 'User 1', avatar: 'https://i.pravatar.cc/150?u=01' }, createdAt: '2026-03-11T14:30:00Z'
-  },
-  {
-    id: 'n4', title: 'Flight Details', content: 'IndiGo 6E-204\nDep: BOM 06:15 → GOI 07:30\nPNR: ABC123',
-    category: 'LINKS', colorIndex: 3, pinned: false,
-    author: { name: 'User 2', avatar: 'https://i.pravatar.cc/150?u=02' }, createdAt: '2026-03-09T20:00:00Z'
-  },
-  {
-    id: 'n5', title: 'Remember to bring', content: '• Sunscreen\n• Board games\n• Portable speaker\n• Snorkeling gear',
-    category: 'NOTES', colorIndex: 4, pinned: false,
-    author: { name: 'User 3', avatar: 'https://i.pravatar.cc/150?u=03' }, createdAt: '2026-03-08T16:00:00Z'
-  },
-  {
-    id: 'n6', title: 'Budget Limit', content: 'Max ₹5000 per person for food.\nActivities budget: ₹3000 each.',
-    category: 'RULES', colorIndex: 5, pinned: true,
-    author: { name: 'Rais', avatar: 'https://i.pravatar.cc/150?u=00' }, createdAt: '2026-03-07T12:00:00Z'
-  },
-];
-
 export function GroupWhiteboard() {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const queryClient = useQueryClient();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['whiteboard', groupId],
+    queryFn: () => engagementService.getWhiteboardItems(groupId || ''),
+    enabled: !!groupId,
+  });
 
-  const [notes, setNotes] = useState<Note[]>(MOCK_NOTES);
+  const [noteMeta, setNoteMeta] = useState<Record<string, { category: string; colorIndex: number; pinned: boolean }>>({});
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newCategory, setNewCategory] = useState('NOTES');
   const [newColorIndex, setNewColorIndex] = useState(0);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const notes: Note[] = useMemo(() => {
+    return (data?.items ?? []).map((item, idx) => {
+      const meta = noteMeta[item.id];
+      return {
+        id: item.id,
+        title: item.title,
+        content: item.content || '',
+        category: meta?.category ?? 'NOTES',
+        colorIndex: meta?.colorIndex ?? (idx % CARD_COLORS.length),
+        pinned: meta?.pinned ?? false,
+        author: {
+          name: item.createdBy?.displayName || 'Member',
+          avatar: item.createdBy?.resolvedAvatar || '',
+        },
+        createdAt: item.createdAt,
+      };
+    });
+  }, [data?.items, noteMeta]);
 
   const filtered = activeCategory === 'ALL'
     ? [...notes].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
     : notes.filter(n => n.category === activeCategory).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
   const togglePin = (id: string) => {
-    setNotes(prev => prev.map(n => n.id === id ? { ...n, pinned: !n.pinned } : n));
+    setNoteMeta(prev => {
+      const current = prev[id] || { category: 'NOTES', colorIndex: 0, pinned: false };
+      return { ...prev, [id]: { ...current, pinned: !current.pinned } };
+    });
   };
-  const deleteNote = (id: string) => {
-    setNotes(prev => prev.filter(n => n.id !== id));
+  const deleteNote = async (id: string) => {
+    if (!groupId) return;
+    await engagementService.deleteWhiteboardItem(groupId, id);
+    queryClient.invalidateQueries({ queryKey: ['whiteboard', groupId] });
   };
-  const addNote = () => {
+  const addNote = async () => {
     if (!newTitle.trim()) return;
-    const note: Note = {
-      id: `n-${Date.now()}`, title: newTitle, content: newContent, category: newCategory,
-      colorIndex: newColorIndex, pinned: false,
-      author: { name: 'Rais', avatar: 'https://i.pravatar.cc/150?u=00' },
-      createdAt: new Date().toISOString()
-    };
-    setNotes(prev => [note, ...prev]);
+    if (!groupId) return;
+    if (editingId) {
+      await engagementService.updateWhiteboardItem(groupId, editingId, {
+        title: newTitle,
+        content: newContent,
+      });
+      queryClient.invalidateQueries({ queryKey: ['whiteboard', groupId] });
+    } else {
+      const created = await engagementService.createWhiteboardItem(groupId, {
+        title: newTitle,
+        content: newContent || undefined,
+      });
+      setNoteMeta(prev => ({
+        ...prev,
+        [created.id]: { category: newCategory, colorIndex: newColorIndex, pinned: false },
+      }));
+      queryClient.invalidateQueries({ queryKey: ['whiteboard', groupId] });
+    }
     setShowAddSheet(false);
     setNewTitle(''); setNewContent(''); setNewCategory('NOTES'); setNewColorIndex(0);
+    setEditingId(null);
   };
   const onAddItem = () => setShowAddSheet(true);
+  const closeSheet = () => {
+    setShowAddSheet(false);
+    setEditingId(null);
+    setNewTitle('');
+    setNewContent('');
+    setNewCategory('NOTES');
+    setNewColorIndex(0);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors pb-20">
@@ -134,6 +153,13 @@ export function GroupWhiteboard() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+        {isLoading && (
+          <div className="text-center text-sm text-slate-500 py-10">Loading whiteboardâ€¦</div>
+        )}
+        {error && (
+          <div className="text-center text-sm text-slate-500 py-10">Failed to load whiteboard.</div>
+        )}
+
         {/* Category Filter Pills */}
         <div className="flex gap-2 overflow-x-auto pb-4 custom-scrollbar">
           {CATEGORIES.map(cat => (
@@ -161,6 +187,14 @@ export function GroupWhiteboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
               className={`break-inside-avoid rounded-2xl border p-4 shadow-sm hover:shadow-md transition-shadow ${CARD_COLORS[note.colorIndex]}`}
+              onClick={() => {
+                setEditingId(note.id);
+                setNewTitle(note.title);
+                setNewContent(note.content);
+                setNewCategory(note.category);
+                setNewColorIndex(note.colorIndex);
+                setShowAddSheet(true);
+              }}
             >
               {/* Pinned + Category */}
               <div className="flex items-center justify-between mb-2">
@@ -168,10 +202,16 @@ export function GroupWhiteboard() {
                   {CATEGORIES.find(c => c.key === note.category)?.emoji} {CATEGORIES.find(c => c.key === note.category)?.label}
                 </span>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => togglePin(note.id)} className={`p-1 rounded-full transition-colors ${note.pinned ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}`}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); togglePin(note.id); }}
+                    className={`p-1 rounded-full transition-colors ${note.pinned ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}`}
+                  >
                     <Pin className="w-3.5 h-3.5" style={note.pinned ? { fill: 'currentColor' } : {}} />
                   </button>
-                  <button onClick={() => deleteNote(note.id)} className="p-1 rounded-full text-slate-400 hover:text-rose-500 transition-colors">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
+                    className="p-1 rounded-full text-slate-400 hover:text-rose-500 transition-colors"
+                  >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -191,7 +231,7 @@ export function GroupWhiteboard() {
           ))}
         </div>
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && !isLoading && (
           <EmptyState
             title="Whiteboard is empty"
             description="Add your first note or task."
@@ -205,7 +245,7 @@ export function GroupWhiteboard() {
         {showAddSheet && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowAddSheet(false)}
+              onClick={closeSheet}
               className="fixed inset-0 z-50 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm" />
             <motion.div
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
@@ -215,8 +255,8 @@ export function GroupWhiteboard() {
               <div className="pt-4 pb-2 px-6">
                 <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6" />
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">New Note</h3>
-                  <button onClick={() => setShowAddSheet(false)} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full">
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">{editingId ? 'Edit Note' : 'New Note'}</h3>
+                  <button onClick={closeSheet} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -265,7 +305,7 @@ export function GroupWhiteboard() {
                     newTitle.trim() ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/25' : 'bg-slate-100 dark:bg-slate-800 text-slate-300 cursor-not-allowed'
                   }`}
                 >
-                  Add to Board
+                  {editingId ? 'Save changes' : 'Add to Board'}
                 </button>
               </div>
             </motion.div>

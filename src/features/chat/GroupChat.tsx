@@ -1,63 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useParams, useNavigate } from 'react-router';
-import { useTheme } from '../../providers/ThemeProvider';
-import { ArrowLeft, Send, Smile, Receipt, Banknote } from 'lucide-react';
-import { MOCK_USER_ID } from '../../api/groups';
-import { MOCK_GROUPS } from '../../mock/groups';
+import { ArrowLeft, Send, Smile } from 'lucide-react';
 import { EmptyState } from '../../components/EmptyState';
-
-interface ChatMessage {
-  id: string;
-  type: 'USER' | 'SYSTEM';
-  senderId?: string;
-  senderName?: string;
-  senderAvatar?: string;
-  text: string;
-  timestamp: string;
-  systemIcon?: 'expense' | 'settle';
-}
-
-function getGroupForChat(groupId: string) {
-  return MOCK_GROUPS.find(g => g.publicId === groupId);
-}
-
-function buildMockMessages(groupId: string): ChatMessage[] {
-  const group = getGroupForChat(groupId);
-  const members = group?.members || [];
-  const m = (idx: number) => members[idx] || { userPublicId: `u-${idx}`, displayName: `User ${idx}`, avatarUrl: `https://i.pravatar.cc/150?u=${idx}` };
-
-  return [
-    { id: 'c1', type: 'SYSTEM', text: `${m(0).displayName} created the group`, timestamp: '2026-03-01T09:00:00Z' },
-    { id: 'c2', type: 'USER', senderId: m(1).userPublicId, senderName: m(1).displayName, senderAvatar: m(1).avatarUrl,
-      text: 'Hey everyone! Excited for this 🎉', timestamp: '2026-03-01T09:05:00Z' },
-    { id: 'c3', type: 'USER', senderId: m(0).userPublicId, senderName: m(0).displayName, senderAvatar: m(0).avatarUrl,
-      text: 'Same here! Let\'s start tracking expenses', timestamp: '2026-03-01T09:06:00Z' },
-    { id: 'c4', type: 'SYSTEM', text: `${m(1).displayName} added expense "Flight Tickets" — ₹12,000`, timestamp: '2026-03-01T10:00:00Z', systemIcon: 'expense' },
-    { id: 'c5', type: 'USER', senderId: m(2).userPublicId, senderName: m(2).displayName, senderAvatar: m(2).avatarUrl,
-      text: 'Got it. I\'ll add the hotel booking later today', timestamp: '2026-03-01T10:15:00Z' },
-    { id: 'c6', type: 'USER', senderId: m(0).userPublicId, senderName: m(0).displayName, senderAvatar: m(0).avatarUrl,
-      text: 'Perfect. Don\'t forget the cab from airport too!', timestamp: '2026-03-01T10:16:00Z' },
-    // Day 2
-    { id: 'c7', type: 'SYSTEM', text: `${m(0).displayName} added expense "Dinner at Shack" — ₹3,000`, timestamp: '2026-03-02T20:00:00Z', systemIcon: 'expense' },
-    { id: 'c8', type: 'USER', senderId: m(3).userPublicId, senderName: m(3).displayName, senderAvatar: m(3).avatarUrl,
-      text: 'That dinner was amazing 🍕🔥', timestamp: '2026-03-02T20:30:00Z' },
-    { id: 'c9', type: 'USER', senderId: m(1).userPublicId, senderName: m(1).displayName, senderAvatar: m(1).avatarUrl,
-      text: 'Agreed! Best seafood ever', timestamp: '2026-03-02T20:32:00Z' },
-    { id: 'c10', type: 'USER', senderId: m(0).userPublicId, senderName: m(0).displayName, senderAvatar: m(0).avatarUrl,
-      text: 'Added it to the board so we remember the place', timestamp: '2026-03-02T20:33:00Z' },
-    // Today
-    { id: 'c11', type: 'SYSTEM', text: `${m(2).displayName} settled ₹100 with ${m(0).displayName}`, timestamp: '2026-03-13T08:00:00Z', systemIcon: 'settle' },
-    { id: 'c12', type: 'USER', senderId: m(2).userPublicId, senderName: m(2).displayName, senderAvatar: m(2).avatarUrl,
-      text: 'Sent ₹100 via UPI. Please approve!', timestamp: '2026-03-13T08:01:00Z' },
-    { id: 'c13', type: 'USER', senderId: m(0).userPublicId, senderName: m(0).displayName, senderAvatar: m(0).avatarUrl,
-      text: 'Got it, approved ✅', timestamp: '2026-03-13T08:05:00Z' },
-    { id: 'c14', type: 'USER', senderId: m(4).userPublicId, senderName: m(4).displayName, senderAvatar: m(4).avatarUrl,
-      text: 'When are we settling everything else? 😅', timestamp: '2026-03-13T10:00:00Z' },
-    { id: 'c15', type: 'USER', senderId: m(0).userPublicId, senderName: m(0).displayName, senderAvatar: m(0).avatarUrl,
-      text: 'Let\'s settle by end of this week. Use the Settle Up button!', timestamp: '2026-03-13T10:02:00Z' },
-  ];
-}
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { engagementService, groupsService } from '../../services';
+import { useUser } from '../../providers/UserContext';
+import { v4 as uuidv4 } from 'uuid';
+import { GROUP_TYPE_EMOJI } from '../../constants/app';
+import type { ChatMessage } from '../../types';
 
 function formatDateLabel(dateStr: string): string {
   const d = new Date(dateStr);
@@ -75,26 +26,66 @@ function formatTime(dateStr: string): string {
 export function GroupChat() {
   const { groupId } = useParams();
   const navigate = useNavigate();
-  const { theme } = useTheme();
+  const { user } = useUser();
+  const queryClient = useQueryClient();
+  const { data: groupDetail } = useQuery({
+    queryKey: ['group', groupId],
+    queryFn: () => groupsService.getGroupDetail(groupId || ''),
+    enabled: !!groupId,
+  });
+  const group = groupDetail?.group;
+  const emoji = group?.groupType ? GROUP_TYPE_EMOJI[group.groupType] : GROUP_TYPE_EMOJI['OTHER'];
 
-  const group = getGroupForChat(groupId || '');
-  const [messages, setMessages] = useState<ChatMessage[]>(buildMockMessages(groupId || ''));
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['messages', groupId],
+    queryFn: () => engagementService.getMessages(groupId || ''),
+    enabled: !!groupId,
+  });
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (data?.messages) {
+      setMessages(prev => {
+        const existing = new Map(prev.map(m => [m.clientMessageId || m.id, m]));
+        data.messages.forEach((m) => {
+          const key = m.clientMessageId || m.id;
+          existing.set(key, m);
+        });
+        return Array.from(existing.values());
+      });
+    }
+  }, [data?.messages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!inputText.trim()) return;
-    const newMsg: ChatMessage = {
-      id: `c-${Date.now()}`, type: 'USER',
-      senderId: MOCK_USER_ID, senderName: 'Rais', senderAvatar: 'https://i.pravatar.cc/150?u=00',
-      text: inputText, timestamp: new Date().toISOString()
+    const clientMessageId = uuidv4();
+    const optimistic: ChatMessage = {
+      id: `tmp-${clientMessageId}`,
+      clientMessageId,
+      groupId: groupId || '',
+      sender: {
+        userId: user?.id || 'me',
+        displayName: user?.displayName || 'You',
+        resolvedAvatar: user?.resolvedAvatar || null,
+      },
+      content: inputText,
+      createdAt: new Date().toISOString(),
     };
-    setMessages(prev => [...prev, newMsg]);
+    setMessages(prev => [...prev, optimistic]);
     setInputText('');
+    try {
+      await engagementService.sendMessage(groupId || '', { content: optimistic.content, clientMessageId });
+      queryClient.invalidateQueries({ queryKey: ['messages', groupId] });
+    } catch {
+      // keep optimistic message; optionally show error
+    }
   };
 
   // Group messages by date for separators
@@ -111,7 +102,7 @@ export function GroupChat() {
           {group && (
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-lg shrink-0">
-                {group.emoji}
+                {emoji}
               </div>
               <div className="min-w-0">
                 <h1 className="font-bold text-sm truncate">{group.name}</h1>
@@ -124,17 +115,23 @@ export function GroupChat() {
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-1 max-w-xl mx-auto w-full">
-        {messages.length === 0 ? (
+        {isLoading && (
+          <div className="text-center text-sm text-slate-500 mt-10">Loading messagesâ€¦</div>
+        )}
+        {error && (
+          <div className="text-center text-sm text-slate-500 mt-10">Failed to load messages.</div>
+        )}
+        {!isLoading && !error && messages.length === 0 ? (
           <EmptyState
             title="No messages yet"
             description="Be the first to say something."
           />
         ) : (
           messages.map((msg, idx) => {
-            const msgDate = formatDateLabel(msg.timestamp);
+            const msgDate = formatDateLabel(msg.createdAt);
             const showDateSep = msgDate !== lastDate;
             lastDate = msgDate;
-            const isMe = msg.senderId === MOCK_USER_ID;
+            const isMe = msg.sender?.userId === user?.id;
 
             return (
               <React.Fragment key={msg.id}>
@@ -146,7 +143,7 @@ export function GroupChat() {
                   </div>
                 )}
 
-                {msg.type === 'SYSTEM' ? (
+                {false ? (
                   <motion.div
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                     className="flex items-center justify-center gap-2 py-2"
@@ -162,21 +159,21 @@ export function GroupChat() {
                     className={`flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
                   >
                     {!isMe && (
-                      <img src={msg.senderAvatar} alt={msg.senderName} className="w-7 h-7 rounded-full self-end shrink-0" />
+                      <img src={msg.sender?.resolvedAvatar || ''} alt={msg.sender?.displayName} className="w-7 h-7 rounded-full self-end shrink-0" />
                     )}
                     <div className={`max-w-[75%] ${isMe ? 'order-first' : ''}`}>
                       {!isMe && (
-                        <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5 ml-1">{msg.senderName}</p>
+                        <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5 ml-1">{msg.sender?.displayName}</p>
                       )}
                       <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                         isMe
                           ? 'bg-indigo-600 text-white rounded-br-md'
                           : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 rounded-bl-md'
                       }`}>
-                        {msg.text}
+                        {msg.content}
                       </div>
                       <p className={`text-[10px] text-slate-400 mt-0.5 ${isMe ? 'text-right mr-1' : 'ml-1'}`}>
-                        {formatTime(msg.timestamp)}
+                        {formatTime(msg.createdAt)}
                         {isMe && ' ✓✓'}
                       </p>
                     </div>

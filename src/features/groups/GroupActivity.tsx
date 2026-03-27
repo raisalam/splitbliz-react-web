@@ -1,18 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Check, LogOut, Receipt, PenLine, Users } from 'lucide-react';
-import { MOCK_GROUPS } from '../../mock/groups';
 import { colors } from '../../constants/colors';
 import { Skeleton } from '../../components/ui/skeleton';
 import { EmptyState } from '../../components/EmptyState';
-
-type ActivityType = 'EXPENSE' | 'SETTLE' | 'EDIT' | 'JOIN' | 'LEAVE';
+import { useActivity } from '../../hooks/useActivity';
 
 interface GroupActivityEvent {
   id: string;
-  type: ActivityType;
-  dateKey: 'TODAY' | 'YESTERDAY' | 'MAR 13'; // simplified for mock
+  type: 'EXPENSE' | 'SETTLE' | 'EDIT' | 'JOIN' | 'LEAVE';
+  dateKey: string;
   timeLabel: string;
   
   // Content
@@ -22,74 +20,18 @@ interface GroupActivityEvent {
   subtitleLabel: string;
 }
 
-const MOCK_ACTIVITY: GroupActivityEvent[] = [
-  {
-    id: 'a1',
-    type: 'EXPENSE',
-    dateKey: 'TODAY',
-    timeLabel: '10:30 AM',
-    memberName: 'Sarah Connor',
-    actionText: 'added Dinner at Jimbaran',
-    amount: '₹4,500',
-    subtitleLabel: 'Split equally',
-  },
-  {
-    id: 'a2',
-    type: 'JOIN',
-    dateKey: 'TODAY',
-    timeLabel: '9:15 AM',
-    memberName: 'Alex Carter',
-    actionText: 'joined the group',
-    subtitleLabel: 'Invited by You',
-  },
-  {
-    id: 'a3',
-    type: 'EDIT',
-    dateKey: 'YESTERDAY',
-    timeLabel: '8:45 PM',
-    memberName: 'David Brooks',
-    actionText: 'edited Snorkeling Gear',
-    subtitleLabel: '₹1,200 → ₹1,500',
-  },
-  {
-    id: 'a4',
-    type: 'SETTLE',
-    dateKey: 'MAR 13',
-    timeLabel: '11:20 AM',
-    memberName: 'You',
-    actionText: 'settled up with Sarah',
-    subtitleLabel: '₹450',
-  },
-  {
-    id: 'a5',
-    type: 'LEAVE',
-    dateKey: 'MAR 13',
-    timeLabel: '9:00 AM',
-    memberName: 'John Smith',
-    actionText: 'left the group',
-    subtitleLabel: '',
-  }
-];
-
 export function GroupActivity() {
   const { groupId } = useParams();
   const navigate = useNavigate();
-  const [activities] = useState(MOCK_ACTIVITY);
-  const [loading, setLoading] = useState(true);
-
-  const group = MOCK_GROUPS.find(g => g.publicId === groupId) || MOCK_GROUPS[0];
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(t);
-  }, []);
+  const { data, isLoading: loading, error } = useActivity(groupId || '');
+  const entries = data?.entries ?? [];
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white font-sans pb-10">
         <header className="sticky top-0 z-50 bg-white shadow-sm flex items-center px-4 h-16">
           <button 
-            onClick={() => navigate(`/group/${group.publicId}`)}
+            onClick={() => navigate(`/group/${groupId}`)}
             className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors hover:bg-[#e0ddf5] mr-3"
             style={{ backgroundColor: colors.primaryFaint }}
           >
@@ -115,7 +57,29 @@ export function GroupActivity() {
     );
   }
 
-  const getIconProps = (type: ActivityType) => {
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white font-sans pb-10">
+        <header className="sticky top-0 z-50 bg-white shadow-sm flex items-center px-4 h-16">
+          <button 
+            onClick={() => navigate(`/group/${groupId}`)}
+            className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors hover:bg-[#e0ddf5] mr-3"
+            style={{ backgroundColor: colors.primaryFaint }}
+          >
+            <ArrowLeft className="w-4 h-4" style={{ color: '#3d3a4a' }} />
+          </button>
+          <h1 className="font-semibold text-sm" style={{ color: colors.textPrimary }}>
+            Activity
+          </h1>
+        </header>
+        <div className="pt-10 text-center text-sm text-slate-500">
+          Failed to load activity. Please try again.
+        </div>
+      </div>
+    );
+  }
+
+  const getIconProps = (type: GroupActivityEvent['type']) => {
     switch (type) {
       case 'EXPENSE': return { icon: <Receipt className="w-[18px] h-[18px] text-[#6c5ce7]" />, bg: '#ede9ff' };
       case 'SETTLE': return { icon: <Check className="w-[18px] h-[18px] text-[#0f6e56]" strokeWidth={3} />, bg: colors.successLight };
@@ -124,6 +88,68 @@ export function GroupActivity() {
       case 'LEAVE': return { icon: <LogOut className="w-[18px] h-[18px] text-[#e24b4a]" />, bg: '#fceaea' };
     }
   };
+
+  const toEvent = (entry: any): GroupActivityEvent => {
+    const createdAt = entry.createdAt;
+    const dateKey = new Date(createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    const timeLabel = new Date(createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    const memberName = entry.actor?.displayName || 'Someone';
+    const amount = entry.metadata?.amount;
+
+    let type: GroupActivityEvent['type'] = 'EXPENSE';
+    let actionText = 'updated activity';
+    let subtitleLabel = entry.metadata?.subtitle || '';
+    switch (entry.eventType) {
+      case 'EXPENSE_CREATED':
+        type = 'EXPENSE';
+        actionText = `added ${entry.metadata?.title || 'an expense'}`;
+        break;
+      case 'EXPENSE_EDITED':
+        type = 'EDIT';
+        actionText = `edited ${entry.metadata?.title || 'an expense'}`;
+        break;
+      case 'EXPENSE_DELETED':
+        type = 'EDIT';
+        actionText = `deleted ${entry.metadata?.title || 'an expense'}`;
+        break;
+      case 'SETTLEMENT_CREATED':
+        type = 'SETTLE';
+        actionText = 'requested a settlement';
+        break;
+      case 'SETTLEMENT_APPROVED':
+        type = 'SETTLE';
+        actionText = 'approved a settlement';
+        break;
+      case 'SETTLEMENT_REJECTED':
+        type = 'SETTLE';
+        actionText = 'rejected a settlement';
+        break;
+      case 'MEMBER_JOINED':
+        type = 'JOIN';
+        actionText = 'joined the group';
+        break;
+      case 'MEMBER_REMOVED':
+      case 'MEMBER_LEFT':
+        type = 'LEAVE';
+        actionText = 'left the group';
+        break;
+      default:
+        break;
+    }
+
+    return {
+      id: entry.id,
+      type,
+      dateKey,
+      timeLabel,
+      memberName,
+      actionText,
+      amount,
+      subtitleLabel,
+    };
+  };
+
+  const activities = entries.map(toEvent);
 
   const renderActivityRow = (event: GroupActivityEvent, index: number) => {
     const iconProps = getIconProps(event.type);
@@ -180,7 +206,7 @@ export function GroupActivity() {
       {/* Sticky White Header */}
       <header className="sticky top-0 z-50 bg-white shadow-sm flex items-center px-4 h-16">
         <button 
-          onClick={() => navigate(`/group/${group.publicId}`)}
+          onClick={() => navigate(`/group/${groupId}`)}
           className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors hover:bg-[#e0ddf5] mr-3"
           style={{ backgroundColor: colors.primaryFaint }}
         >

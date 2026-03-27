@@ -1,48 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router';
-import { ArrowLeft, MoreHorizontal, FileText, Edit2, Share, Copy, Trash2, X, Plus } from 'lucide-react';
-import { getGroupById, getGroupMembers, getGroupExpenses, MOCK_USER_ID } from '../../api/groups';
+import { ArrowLeft, MoreHorizontal, X, Plus } from 'lucide-react';
 import { colors } from '../../constants/colors';
 import { Skeleton } from '../../components/ui/skeleton';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { expensesService, groupsService } from '../../services';
+import { useUser } from '../../providers/UserContext';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 export function ExpenseDetail() {
   const { groupId, expenseId } = useParams();
   const navigate = useNavigate();
+  const { user } = useUser();
+  const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(true);
-  const [group, setGroup] = useState<any>(null);
-  const [members, setMembers] = useState<any[]>([]);
-  const [expense, setExpense] = useState<any>(null);
+  const { data: groupDetail, isLoading: groupLoading } = useQuery({
+    queryKey: ['group', groupId],
+    queryFn: () => groupsService.getGroupDetail(groupId || ''),
+    enabled: !!groupId,
+  });
+  const group = groupDetail?.group;
+  const members = groupDetail?.members ?? [];
+
+  const { data: expense, isLoading: expenseLoading } = useQuery({
+    queryKey: ['expense', groupId, expenseId],
+    queryFn: () => expensesService.getExpense(groupId || '', expenseId || ''),
+    enabled: !!groupId && !!expenseId,
+  });
 
   const [actionsSheetOpen, setActionsSheetOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [receiptViewOpen, setReceiptViewOpen] = useState(false);
   const [showAllMembers, setShowAllMembers] = useState(false);
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!groupId || !expenseId) return;
-      try {
-        setLoading(true);
-        const [g, m, e] = await Promise.all([
-          getGroupById(groupId),
-          getGroupMembers(groupId),
-          getGroupExpenses(groupId)
-        ]);
-        setGroup(g);
-        setMembers(m);
-        setExpense(e.content.find((exp: any) => exp.publicId === expenseId) || null);
-      } catch (err) {
-        console.error("Error fetching expense data", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, [groupId, expenseId]);
-
-  if (loading || !expense) {
+  if (groupLoading || expenseLoading || !expense) {
     return (
       <div className="min-h-screen font-sans pb-10 flex flex-col" style={{ backgroundColor: colors.pageBg }}>
         <div className="px-4 py-6 space-y-4">
@@ -64,30 +56,56 @@ export function ExpenseDetail() {
     );
   }
 
-  const currencySymbol = expense.currencyCode === 'INR' ? '₹' : '$';
-  const payer = members.find(m => m.userPublicId === expense.paidByUserPublicId);
-  const isCreatorOrAdmin = expense.paidByUserPublicId === MOCK_USER_ID || members.find(m => m.userPublicId === MOCK_USER_ID)?.role === 'OWNER';
+  const currencyCode = expense.currencyCode || group?.currencyCode || 'INR';
+  const formattedAmount = formatCurrency(expense.amount, currencyCode);
+  const payer = expense.payers?.[0];
+  const currentUserId = user?.id || '';
+  const isCreatorOrAdmin = expense.createdBy?.userId === currentUserId || group?.myRole === 'OWNER';
+  const canEdit = expense.isEditable || isCreatorOrAdmin;
+  const canDelete = expense.isDeletable || isCreatorOrAdmin;
   
-  const formattedDate = new Date(expense.expenseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const formattedDate = new Date(expense.expenseDate || expense.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  const categoryEmojiMap: Record<string, string> = {
+    FOOD: '🍽️',
+    TRAVEL: '✈️',
+    TRANSPORT: '🚌',
+    ACCOMMODATION: '🏠',
+    ENTERTAINMENT: '🎬',
+    SHOPPING: '🛍️',
+    UTILITIES: '💡',
+    MEDICAL: '🩺',
+    EDUCATION: '📚',
+    OTHER: '🧾',
+  };
+  const categoryEmoji = categoryEmojiMap[expense.category] || '🧾';
+
+  const participants = expense.splits || [];
   
-  // Logic to determine settlement status (simplified using member balance as proxy for mock)
   const getParticipantStatus = (participant: any) => {
-    const isMe = participant.userPublicId === MOCK_USER_ID;
-    const isPayer = participant.userPublicId === expense.paidByUserPublicId;
-    if (isMe) return 'YOU'; // You/pending
-    
-    // In a real app we'd check explicit settlement links for THIS expense. 
-    // Here we use the mockup's member balance state.
-    const m = members.find(mb => mb.userPublicId === participant.userPublicId);
-    if (!m) return 'OWES';
-    
-    const isSettled = m.isSettled ?? (Math.abs(parseFloat(m.balance || '0')) === 0);
-    if (isPayer) return 'SETTLED'; // Payer doesn't owe themselves
-    return isSettled ? 'SETTLED' : 'OWES';
+    if (participant.userId === currentUserId) return 'YOU';
+    if (participant.isSettled) return 'SETTLED';
+    if (participant.settledAmount === participant.splitAmount) return 'SETTLED';
+    return 'OWES';
   };
 
-  const visibleParticipants = showAllMembers ? expense.participants : expense.participants.slice(0, 4);
-  const hiddenCount = Math.max(0, expense.participants.length - 4);
+  const visibleParticipants = showAllMembers ? participants : participants.slice(0, 4);
+  const hiddenCount = Math.max(0, participants.length - 4);
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async () => {
+      if (!groupId || !expenseId) {
+        throw new Error('Missing group or expense id');
+      }
+      await expensesService.deleteExpense(groupId, expenseId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['expenses', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['expense', groupId, expenseId] });
+      navigate(-1);
+    },
+  });
 
   return (
     <div className="min-h-screen font-sans pb-10 flex flex-col" style={{ backgroundColor: colors.pageBg }}>
@@ -130,7 +148,7 @@ export function ExpenseDetail() {
               border: '2px solid rgba(255,255,255,0.35)' 
             }}
           >
-            {expense.categoryEmoji || '🧾'}
+            {categoryEmoji}
           </div>
           <div>
             <h2 className="font-bold text-white text-base leading-tight">{expense.title}</h2>
@@ -140,7 +158,7 @@ export function ExpenseDetail() {
         
         <div className="mt-4 mb-3">
           <span className="font-extrabold text-white" style={{ fontSize: '26px' }}>
-            {currencySymbol}{expense.totalAmount}
+            {formattedAmount}
           </span>
         </div>
         
@@ -157,7 +175,7 @@ export function ExpenseDetail() {
           </div>
           <div className="px-3 py-1 flex items-center gap-1.5" style={{ background: colors.white18, border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px' }}>
             <span className="text-white font-medium capitalize" style={{ fontSize: '9px' }}>
-              {expense.categoryEmoji} {expense.category?.toLowerCase() || 'Expense'}
+              {categoryEmoji} {expense.category?.toLowerCase() || 'Expense'}
             </span>
           </div>
         </div>
@@ -185,7 +203,7 @@ export function ExpenseDetail() {
               </div>
               <div className="flex flex-col items-end gap-1">
                 <span className="font-bold text-[#1a1625] text-xs">
-                  {currencySymbol}{expense.totalAmount}
+                  {formattedAmount}
                 </span>
                 <span className="px-2.5 py-0.5 font-semibold" style={{ background: colors.successLight, color: colors.success, borderRadius: '20px', fontSize: '9px' }}>
                   Paid
@@ -198,14 +216,14 @@ export function ExpenseDetail() {
         {/* Split Between Card */}
         <div>
           <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: colors.textMuted, letterSpacing: '0.06em', marginLeft: '8px' }}>
-            SPLIT BETWEEN · {expense.participants?.length || 0} MEMBERS
+            SPLIT BETWEEN · {participants.length} MEMBERS
           </h3>
           <div className="bg-white p-4" style={{ border: '0.5px solid #e8e4f8', borderRadius: '14px' }}>
             <div className="space-y-4">
               {visibleParticipants.map((p: any) => {
-                const m = members.find(mb => mb.userPublicId === p.userPublicId);
-                const isMe = p.userPublicId === MOCK_USER_ID;
-                const isPayer = p.userPublicId === expense.paidByUserPublicId;
+                const m = members.find(mb => mb.userId === p.userId);
+                const isMe = p.userId === currentUserId;
+                const isPayer = payer?.userId === p.userId;
                 const status = getParticipantStatus(p);
 
                 // Badge colors
@@ -224,27 +242,28 @@ export function ExpenseDetail() {
 
                 // Random pastel colors for simple avatar
                 const pastelColors = ['#e6f1fb', '#fceaea', '#faeeda', colors.successLight, '#ede9ff'];
-                const letter = (m?.displayName || '?')[0].toUpperCase();
-                const avatarColor = pastelColors[p.userPublicId.charCodeAt(p.userPublicId.length - 1) % pastelColors.length];
+                const displayName = p.displayName || m?.displayName || 'Unknown';
+                const letter = displayName[0]?.toUpperCase() || '?';
+                const avatarColor = pastelColors[p.userId.charCodeAt(p.userId.length - 1) % pastelColors.length];
 
                 return (
-                  <div key={p.userPublicId} 
+                  <div key={p.userId} 
                     className="flex items-center justify-between"
-                    onClick={() => m && navigate(`/group/${groupId}/balance/${p.userPublicId}`)} // Theoretical navigation
+                    onClick={() => m && navigate(`/group/${groupId}/balance/${p.userId}`)} // Theoretical navigation
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center font-bold text-[#1a1625]" style={{ backgroundColor: avatarColor, fontSize: '11px' }}>
                         {letter}
                       </div>
                       <p className="font-medium text-[#1a1625]" style={{ fontSize: '11px' }}>
-                        {m?.displayName || 'Unknown'}
+                        {displayName}
                         {isMe && <span className="ml-1" style={{ color: colors.textMuted }}>(you)</span>}
                         {isPayer && !isMe && <span className="ml-1" style={{ color: colors.textMuted }}>(paid)</span>}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-[#1a1625]" style={{ fontSize: '11px' }}>
-                        {currencySymbol}{parseFloat(p.shareAmount || '0').toFixed(2)}
+                        {formatCurrency(p.splitAmount || '0', currencyCode)}
                       </span>
                       <span className="px-2 py-0.5 font-semibold" style={{ ...badgeStyle, borderRadius: '4px', fontSize: '9px' }}>
                         {badgeText}
@@ -261,28 +280,28 @@ export function ExpenseDetail() {
                 className="w-full mt-4 pt-4 border-t"
                 style={{ borderTopColor: colors.border, fontSize: '10px', fontWeight: 600, color: colors.primary }}
               >
-                View all {expense.participants.length} members ›
+                View all {participants.length} members
               </button>
             )}
           </div>
         </div>
 
         {/* Notes Card */}
-        {expense.note && (
+        {expense.notes && (
           <div>
             <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: colors.textMuted, letterSpacing: '0.06em', marginLeft: '8px' }}>
               NOTES
             </h3>
             <div className="bg-white p-4" style={{ border: '0.5px solid #e8e4f8', borderRadius: '14px' }}>
               <p style={{ fontSize: '11px', color: '#5f5e5a', lineHeight: 1.4 }}>
-                {expense.note}
+                {expense.notes}
               </p>
             </div>
           </div>
         )}
 
         {/* Receipt Card */}
-        {(expense.receiptUrl || !expense.note) && (
+        {(expense.receiptUrl || !expense.notes) && (
           <div>
             <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: colors.textMuted, letterSpacing: '0.06em', marginLeft: '8px' }}>
               RECEIPT
@@ -340,13 +359,13 @@ export function ExpenseDetail() {
                 </div>
                 <div className="text-center mb-2">
                   <h3 className="font-bold text-[#1a1625] text-xs" style={{ color: colors.textPrimary }}>
-                    {expense.title} · {currencySymbol}{expense.totalAmount}
+                    {expense.title} · {formattedAmount}
                   </h3>
                 </div>
               </div>
 
               <div className="px-4 pb-10 space-y-1">
-                {isCreatorOrAdmin && (
+                {canEdit && (
                   <button 
                     onClick={() => {
                       setActionsSheetOpen(false);
@@ -375,7 +394,7 @@ export function ExpenseDetail() {
                   <span className="font-semibold text-[#1a1625]" style={{ fontSize: '13px', color: colors.textPrimary }}>Share breakdown</span>
                 </button>
 
-                {isCreatorOrAdmin && (
+                {canEdit && (
                   <>
                     <button 
                       onClick={() => {
@@ -390,7 +409,8 @@ export function ExpenseDetail() {
                       <span className="font-semibold text-[#1a1625]" style={{ fontSize: '13px', color: colors.textPrimary }}>Duplicate expense</span>
                     </button>
 
-                    <button 
+                    {canDelete && (
+                      <button 
                       onClick={() => {
                         setActionsSheetOpen(false);
                         setTimeout(() => setDeleteConfirmOpen(true), 200);
@@ -402,6 +422,7 @@ export function ExpenseDetail() {
                       </div>
                       <span className="font-semibold" style={{ color: '#e24b4a', fontSize: '13px' }}>Delete expense</span>
                     </button>
+                    )}
                   </>
                 )}
               </div>
@@ -445,9 +466,8 @@ export function ExpenseDetail() {
                 </button>
                 <button 
                   onClick={() => {
-                    // Actual delete API call here
                     setDeleteConfirmOpen(false);
-                    navigate(-1);
+                    deleteExpenseMutation.mutate();
                   }}
                   className="py-3.5 font-bold text-sm text-white transition-colors active:scale-95 shadow-sm"
                   style={{ backgroundColor: '#e24b4a', borderRadius: '14px' }}
