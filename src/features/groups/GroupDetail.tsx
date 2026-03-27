@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useUser } from '../../providers/UserContext';
 import { useGroupDetail } from '../../hooks/useGroupDetail';
+import { useGroupMqtt } from '../../hooks/useGroupMqtt';
 import {
   Plus, Banknote,
   Users, History, Receipt,
@@ -28,6 +29,7 @@ export function GroupDetail() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { user } = useUser();
+  useGroupMqtt(groupId || '');
 
   const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'members'>('expenses');
   const [expenseFilter, setExpenseFilter] = useState<'ALL' | 'THIS_MONTH' | 'UNSETTLED'>('ALL');

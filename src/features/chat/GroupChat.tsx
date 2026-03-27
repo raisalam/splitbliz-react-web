@@ -9,6 +9,7 @@ import { useUser } from '../../providers/UserContext';
 import { v4 as uuidv4 } from 'uuid';
 import { GROUP_TYPE_EMOJI } from '../../constants/app';
 import type { ChatMessage } from '../../types';
+import { useGroupMqtt } from '../../hooks/useGroupMqtt';
 
 function formatDateLabel(dateStr: string): string {
   const d = new Date(dateStr);
@@ -28,6 +29,7 @@ export function GroupChat() {
   const navigate = useNavigate();
   const { user } = useUser();
   const queryClient = useQueryClient();
+  useGroupMqtt(groupId || '');
   const { data: groupDetail } = useQuery({
     queryKey: ['group', groupId],
     queryFn: () => groupsService.getGroupDetail(groupId || ''),
