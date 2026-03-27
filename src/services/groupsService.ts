@@ -221,10 +221,23 @@ export const groupsService = {
   },
 
   async getMembers(groupId: string): Promise<GroupMember[]> {
-    const res = await apiClient.get<{ members?: GroupMember[]; items?: GroupMember[] }>(
+    const res = await apiClient.get<{ members?: any[]; items?: any[] }>(
       `/groups/${groupId}/members`
     );
-    return res.data.members ?? res.data.items ?? [];
+    const items = res.data.members ?? res.data.items ?? [];
+    return items.map((m: any) => ({
+      userId: m.userId,
+      displayName: m.displayName,
+      resolvedAvatar: m.resolvedAvatar ?? null,
+      role: m.role ?? 'MEMBER',
+      status: 'ACTIVE',
+      balance: {
+        netAmount: m.balance?.netBalance ?? '0.00',
+        paidAmount: m.balance?.paidAmount ?? '0.00',
+        lastComputedAt: m.balance?.lastComputedAt ?? new Date().toISOString(),
+      },
+      joinedAt: m.joinedAt ?? new Date().toISOString(),
+    }));
   },
 
   async addMembers(groupId: string, userIds: string[]): Promise<GroupMember[]> {
@@ -239,12 +252,11 @@ export const groupsService = {
     await apiClient.delete(`/groups/${groupId}/members/${userId}`);
   },
 
-  async updateMemberRole(groupId: string, userId: string, role: string): Promise<GroupMember> {
-    const res = await apiClient.patch<{ member: GroupMember }>(
+  async updateMemberRole(groupId: string, userId: string, role: string): Promise<void> {
+    await apiClient.patch(
       `/groups/${groupId}/members/${userId}/role`,
       { role }
     );
-    return res.data.member;
   },
 
   async leaveGroup(groupId: string): Promise<void> {

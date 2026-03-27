@@ -1,6 +1,7 @@
 import React from 'react';
 import { colors } from '../../../constants/colors';
 import { MoreHorizontal, UserPlus } from 'lucide-react';
+import { CachedAvatar } from '../../../components/CachedAvatar';
 
 type MemberManagementSectionProps = {
   visibleMembers: any[];
@@ -56,10 +57,13 @@ export function MemberManagementSection({
 
       <div>
         {visibleMembers.map((member, idx) => {
-          const isCurrentUser = member.userPublicId === currentUserId || member.displayName === 'Rais';
+          const isCurrentUser = member.userId === currentUserId;
           const isOwner = member.role === 'OWNER';
           const badge = getRoleBadge(member.role);
           const avatarColor = avatarColors[idx % avatarColors.length];
+          const avatarValue = member.resolvedAvatar || member.avatarUrl || null;
+          const isAvatarUrl = typeof avatarValue === 'string' && avatarValue.startsWith('http');
+          const initials = member.displayName?.trim()?.[0]?.toUpperCase() || '?';
 
           return (
             <div
@@ -67,12 +71,21 @@ export function MemberManagementSection({
               className="flex items-center gap-3 px-4 py-3"
               style={{ borderTop: `0.5px solid ${sectionDivider}` }}
             >
-              <div
-                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
-                style={{ backgroundColor: avatarColor }}
-              >
-                {member.displayName.charAt(0).toUpperCase()}
-              </div>
+              {isAvatarUrl ? (
+                <CachedAvatar
+                  src={avatarValue}
+                  alt={member.displayName}
+                  fallbackInitials={initials}
+                  className="w-9 h-9 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
+                  style={{ backgroundColor: avatarColor }}
+                >
+                  {avatarValue || initials}
+                </div>
+              )}
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
@@ -95,9 +108,9 @@ export function MemberManagementSection({
                 {badge.label}
               </span>
 
-              {!isCurrentUser && !isOwner ? (
-                <button
-                  onClick={() => onMemberAction(member.userPublicId)}
+                {!isCurrentUser && !isOwner ? (
+                  <button
+                  onClick={() => onMemberAction(member.userId)}
                   className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors hover:bg-slate-100"
                   style={{ backgroundColor: pageBg }}
                 >

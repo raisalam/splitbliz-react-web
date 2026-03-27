@@ -1,46 +1,28 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, X } from 'lucide-react';
-import { MOCK_USER_ID } from '../../api/groups';
 import { InviteMemberSheet } from '../../components/InviteMemberSheet';
 import { GroupInfoSection } from './components/GroupInfoSection';
 import { MemberManagementSection } from './components/MemberManagementSection';
 import { DangerZoneSection } from './components/DangerZoneSection';
 import { colors } from '../../constants/colors';
+import { GROUP_TYPE_EMOJI } from '../../constants/app';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { groupsService } from '../../services';
+import { useUser } from '../../providers/UserContext';
+import { toast } from 'sonner';
 
-// 7-column emoji grid (same as CreateGroup)
-const EMOJI_GRID = [
-  '✈️', '🏠', '🍕', '⚽', '🎉', '💼', '💑', '📂',
-  '🚗', '🏝️', '🗺️', '🏖️', '⛰️', '🏕️', '🚅', '🧳',
-  '🍔', '🍣', '🍷', '☕', '🌮', '🍻', '🍽️', '🍦',
-  '🛋️', '🛒', '🔌', '🛁', '🧹', '💡', '🔑', '📺',
-  '🎈', '🎊', '🎁', '🕺', '🥳', '🎤', '🎶', '🎫',
-  '🏀', '🏈', '🎾', '🏓', '🏸', '🥊', '🏋️', '🏄',
-  '💻', '📊', '📋', '📅', '📞', '🏢', '👔', '📝',
-  '👥', '🤝', '🙌', '💪', '🔥', '✨', '🚀', '🎯',
+const GROUP_TYPES = [
+  { id: 'TRIP', label: 'Trip' },
+  { id: 'HOME', label: 'Home' },
+  { id: 'FOOD', label: 'Food' },
+  { id: 'OFFICE', label: 'Office' },
+  { id: 'ENTERTAINMENT', label: 'Entertainment' },
+  { id: 'SPORTS', label: 'Sports' },
+  { id: 'SHOPPING', label: 'Shopping' },
+  { id: 'OTHER', label: 'Other' },
 ];
-
-// Mock data — 10 members
-const MOCK_GROUP = {
-  publicId: 'g-trip-goa',
-  name: 'Goa Trip 2026',
-  emoji: '✈️',
-  planTierCode: 'PRO',
-  currencyCode: 'INR',
-  members: [
-    { userPublicId: 'u0-0', displayName: 'Rais', role: 'OWNER' },
-    { userPublicId: 'u0-1', displayName: 'Aman', role: 'ADMIN' },
-    { userPublicId: 'u0-2', displayName: 'Neha', role: 'MEMBER' },
-    { userPublicId: 'u0-3', displayName: 'Sarah', role: 'MEMBER' },
-    { userPublicId: 'u0-4', displayName: 'John', role: 'MEMBER' },
-    { userPublicId: 'u0-5', displayName: 'Emma', role: 'MEMBER' },
-    { userPublicId: 'u0-6', displayName: 'Arjun', role: 'MEMBER' },
-    { userPublicId: 'u0-7', displayName: 'Priya', role: 'MEMBER' },
-    { userPublicId: 'u0-8', displayName: 'Karan', role: 'MEMBER' },
-    { userPublicId: 'u0-9', displayName: 'Divya', role: 'MEMBER' },
-  ]
-};
 
 // Unique avatar colors per member index
 const AVATAR_COLORS = colors.avatarPalette;
@@ -50,10 +32,35 @@ type BottomSheet = 'NONE' | 'EMOJI' | 'MEMBER_ACTION' | 'DELETE_CONFIRM';
 export function GroupSettings() {
   const navigate = useNavigate();
   const { groupId } = useParams();
+  const queryClient = useQueryClient();
+  const { user } = useUser();
 
-  const [groupName, setGroupName] = useState(MOCK_GROUP.name);
-  const [selectedEmoji, setSelectedEmoji] = useState(MOCK_GROUP.emoji);
-  const [splitType, setSplitType] = useState<'EQUAL' | 'PERCENTAGE' | 'EXACT'>('EQUAL');
+  const { data: group, isLoading: groupLoading, error: groupError } = useQuery({
+    queryKey: ['groupSettings', groupId],
+    queryFn: () => groupsService.getGroup(groupId || ''),
+    enabled: !!groupId,
+  });
+
+  const { data: members = [], isLoading: membersLoading } = useQuery({
+    queryKey: ['groupMembers', groupId],
+    queryFn: () => groupsService.getMembers(groupId || ''),
+    enabled: !!groupId,
+  });
+
+  const parsedConfig = useMemo(() => {
+    const rawConfig = (group as any)?.configuration;
+    if (!rawConfig) return {};
+    try {
+      return typeof rawConfig === 'string' ? JSON.parse(rawConfig) : rawConfig;
+    } catch {
+      return {};
+    }
+  }, [group]);
+
+  const [groupName, setGroupName] = useState('');
+  const [selectedEmoji, setSelectedEmoji] = useState(GROUP_TYPE_EMOJI['OTHER']);
+  const [selectedType, setSelectedType] = useState('TRIP');
+  const [splitType, setSplitType] = useState<'EQUAL' | 'PERCENTAGE' | 'FIXED'>('EQUAL');
   const [requireApproval, setRequireApproval] = useState(true);
   const [simplifyDebts, setSimplifyDebts] = useState(false);
   const [showAllMembers, setShowAllMembers] = useState(false);
@@ -61,6 +68,16 @@ export function GroupSettings() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [leaveError, setLeaveError] = useState(false);
   const [inviteSheetOpen, setInviteSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (!group) return;
+    setGroupName(group.name || '');
+    setSelectedType((group as any).groupType || 'OTHER');
+    setSelectedEmoji(GROUP_TYPE_EMOJI[(group as any).groupType] ?? GROUP_TYPE_EMOJI['OTHER']);
+    setSplitType((parsedConfig?.defaultSplitType as any) || 'EQUAL');
+    setRequireApproval(!!parsedConfig?.requireSettlementApproval);
+    setSimplifyDebts(!!parsedConfig?.simplifyDebts);
+  }, [group, parsedConfig]);
 
   // Design tokens from spec
   const purple = colors.primary;
@@ -70,8 +87,8 @@ export function GroupSettings() {
   const mutedLabel = colors.textMuted;
   const headerBorder = colors.border;
 
-  const visibleMembers = showAllMembers ? MOCK_GROUP.members : MOCK_GROUP.members.slice(0, 4);
-  const totalMembers = MOCK_GROUP.members.length;
+  const visibleMembers = showAllMembers ? members : members.slice(0, 4);
+  const totalMembers = members.length;
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -84,7 +101,89 @@ export function GroupSettings() {
     }
   };
 
-  const selectedMember = MOCK_GROUP.members.find(m => m.userPublicId === selectedMemberId);
+  const selectedMember = members.find((m: any) => m.userId === selectedMemberId);
+  const currentUserId = user?.id || '';
+
+  const handleSave = async () => {
+    if (!groupId || !group) return;
+    try {
+      await groupsService.updateGroup(groupId, {
+        name: groupName,
+        groupType: selectedType,
+        currencyCode: (group as any).currencyCode ?? 'INR',
+        configuration: {
+          defaultSplitType: splitType,
+          requireSettlementApproval: requireApproval,
+          simplifyDebts,
+        },
+        version: (group as any).version ?? 1,
+      });
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['groupSettings', groupId] });
+      toast.success('Group settings updated');
+    } catch {
+      toast.error('Failed to update group');
+    }
+  };
+
+  const handleMemberRole = async () => {
+    if (!groupId || !selectedMember) return;
+    const nextRole = selectedMember.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
+    try {
+      await groupsService.updateMemberRole(groupId, selectedMember.userId, nextRole);
+      queryClient.invalidateQueries({ queryKey: ['groupMembers', groupId] });
+      setActiveSheet('NONE');
+      toast.success('Member role updated');
+    } catch {
+      toast.error('Failed to update role');
+    }
+  };
+
+  const handleRemoveMember = async () => {
+    if (!groupId || !selectedMember) return;
+    try {
+      await groupsService.removeMember(groupId, selectedMember.userId);
+      queryClient.invalidateQueries({ queryKey: ['groupMembers', groupId] });
+      setActiveSheet('NONE');
+      toast.success('Member removed');
+    } catch {
+      toast.error('Failed to remove member');
+    }
+  };
+
+  const handleLeave = async () => {
+    if (!groupId || !currentUserId) return;
+    try {
+      await groupsService.removeMember(groupId, currentUserId);
+      navigate('/');
+    } catch {
+      setLeaveError(true);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!groupId) return;
+    try {
+      await groupsService.deleteGroup(groupId);
+      navigate('/');
+    } catch {
+      toast.error('Failed to delete group');
+    }
+  };
+
+  if (groupLoading || membersLoading) {
+    return (
+      <div className="min-h-screen font-sans" style={{ backgroundColor: pageBg }} />
+    );
+  }
+
+  if (groupError || !group) {
+    return (
+      <div className="min-h-screen font-sans flex items-center justify-center" style={{ backgroundColor: pageBg }}>
+        <button onClick={() => navigate('/')} className="text-indigo-600 hover:underline">Return to Home</button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: pageBg }}>
@@ -104,6 +203,7 @@ export function GroupSettings() {
           </button>
           <span className="font-semibold text-base" style={{ color: colors.textPrimary }}>Group settings</span>
           <button
+            onClick={handleSave}
             className="px-3.5 py-1.5 rounded-[20px] text-sm font-semibold transition-all active:scale-95"
             style={{ backgroundColor: '#ede9ff', color: purple }}
           >
@@ -117,6 +217,7 @@ export function GroupSettings() {
         <GroupInfoSection
           groupName={groupName}
           selectedEmoji={selectedEmoji}
+          currencyCode={(group as any).currencyCode ?? 'INR'}
           splitType={splitType}
           onGroupNameChange={setGroupName}
           onEmojiClick={() => setActiveSheet('EMOJI')}
@@ -143,7 +244,7 @@ export function GroupSettings() {
           }}
           getRoleBadge={getRoleBadge}
           avatarColors={AVATAR_COLORS}
-          currentUserId={MOCK_USER_ID}
+          currentUserId={currentUserId}
           mutedLabel={mutedLabel}
           purple={purple}
           sectionDivider={sectionDivider}
@@ -153,7 +254,7 @@ export function GroupSettings() {
 
         <DangerZoneSection
           leaveError={leaveError}
-          onLeave={() => setLeaveError(true)}
+          onLeave={handleLeave}
           onDelete={() => setActiveSheet('DELETE_CONFIRM')}
           sectionDivider={sectionDivider}
           cardBorder={cardBorder}
@@ -184,7 +285,7 @@ export function GroupSettings() {
                 <div className="w-10 h-1.5 rounded-full mb-4" style={{ backgroundColor: '#e0dced' }} />
                 <div className="flex items-center justify-between w-full">
                   <h3 className="text-lg font-bold" style={{ color: colors.textPrimary }}>
-                    {activeSheet === 'EMOJI' && 'Pick an icon'}
+                    {activeSheet === 'EMOJI' && 'Pick a type'}
                     {activeSheet === 'MEMBER_ACTION' && (selectedMember?.displayName || 'Member')}
                     {activeSheet === 'DELETE_CONFIRM' && 'Delete group?'}
                   </h3>
@@ -198,24 +299,27 @@ export function GroupSettings() {
                 </div>
               </div>
 
-              {/* EMOJI GRID */}
+              {/* TYPE GRID */}
               {activeSheet === 'EMOJI' && (
                 <div className="flex-1 overflow-y-auto px-5 py-4 hide-scrollbar">
-                  <div className="grid grid-cols-7 gap-2">
-                    {EMOJI_GRID.map((emoji, idx) => (
+                  <div className="grid grid-cols-4 gap-2">
+                    {GROUP_TYPES.map((type) => (
                       <button
-                        key={`${emoji}-${idx}`}
+                        key={type.id}
                         onClick={() => {
-                          setSelectedEmoji(emoji);
+                          setSelectedType(type.id);
+                          setSelectedEmoji(GROUP_TYPE_EMOJI[type.id] ?? GROUP_TYPE_EMOJI['OTHER']);
                           setActiveSheet('NONE');
                         }}
-                        className="aspect-square flex items-center justify-center rounded-xl text-2xl transition-all hover:scale-110 active:scale-95"
+                        className="flex flex-col items-center gap-1 py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-95"
                         style={{
-                          backgroundColor: selectedEmoji === emoji ? '#ede8ff' : '#f8f7fc',
-                          border: selectedEmoji === emoji ? `2px solid ${purple}` : '1px solid transparent',
+                          backgroundColor: selectedType === type.id ? '#ede8ff' : '#f8f7fc',
+                          border: selectedType === type.id ? `1.5px solid ${purple}` : '1.5px solid #e8e4f8',
+                          color: selectedType === type.id ? purple : '#6b6588',
                         }}
                       >
-                        <span style={{ lineHeight: 1 }}>{emoji}</span>
+                        <span className="text-lg">{GROUP_TYPE_EMOJI[type.id] ?? GROUP_TYPE_EMOJI['OTHER']}</span>
+                        <span className="text-xs">{type.label}</span>
                       </button>
                     ))}
                   </div>
@@ -226,18 +330,20 @@ export function GroupSettings() {
               {activeSheet === 'MEMBER_ACTION' && (
                 <div className="px-5 py-4 space-y-2">
                   <button
-                    onClick={() => setActiveSheet('NONE')}
+                    onClick={handleMemberRole}
                     className="w-full text-left px-4 py-3.5 rounded-xl flex items-center gap-3 transition-colors hover:bg-slate-50"
                     style={{ color: colors.textPrimary }}
                   >
                     <span className="text-lg">👑</span>
                     <div>
-                      <p className="text-sm font-semibold">Make admin</p>
-                      <p className="text-[11px]" style={{ color: mutedLabel }}>Grant admin privileges</p>
+                      <p className="text-sm font-semibold">
+                        {selectedMember?.role === 'ADMIN' ? 'Remove admin' : 'Make admin'}
+                      </p>
+                      <p className="text-[11px]" style={{ color: mutedLabel }}>Grant or revoke admin privileges</p>
                     </div>
                   </button>
                   <button
-                    onClick={() => setActiveSheet('NONE')}
+                    onClick={handleRemoveMember}
                     className="w-full text-left px-4 py-3.5 rounded-xl flex items-center gap-3 transition-colors hover:bg-red-50"
                   >
                     <span className="text-lg">🚫</span>
@@ -258,10 +364,7 @@ export function GroupSettings() {
                   </p>
                   <div className="space-y-2">
                     <button
-                      onClick={() => {
-                        setActiveSheet('NONE');
-                        navigate('/');
-                      }}
+                      onClick={handleDeleteGroup}
                       className="w-full py-3.5 rounded-[14px] font-bold text-white text-sm transition-all active:scale-[0.98]"
                       style={{ backgroundColor: '#e24b4a' }}
                     >
@@ -286,7 +389,7 @@ export function GroupSettings() {
       <InviteMemberSheet
         open={inviteSheetOpen}
         onOpenChange={setInviteSheetOpen}
-        groupId={groupId || MOCK_GROUP.publicId}
+        groupId={groupId}
       />
 
     </div>

@@ -7,10 +7,11 @@ import { colors } from '../../../constants/colors';
 type GroupInfoSectionProps = {
   groupName: string;
   selectedEmoji: string;
-  splitType: 'EQUAL' | 'PERCENTAGE' | 'EXACT';
+  currencyCode: string;
+  splitType: 'EQUAL' | 'PERCENTAGE' | 'FIXED';
   onGroupNameChange: (value: string) => void;
   onEmojiClick: () => void;
-  onSplitTypeChange: (value: 'EQUAL' | 'PERCENTAGE' | 'EXACT') => void;
+  onSplitTypeChange: (value: 'EQUAL' | 'PERCENTAGE' | 'FIXED') => void;
   requireApproval: boolean;
   simplifyDebts: boolean;
   onToggleRequireApproval: () => void;
@@ -25,6 +26,7 @@ type GroupInfoSectionProps = {
 export function GroupInfoSection({
   groupName,
   selectedEmoji,
+  currencyCode,
   splitType,
   onGroupNameChange,
   onEmojiClick,
@@ -85,7 +87,7 @@ export function GroupInfoSection({
                 border: '1px solid rgba(255,255,255,0.4)',
               }}
             >
-              ★ PRO
+              PRO
             </span>
           </div>
         </div>
@@ -113,7 +115,7 @@ export function GroupInfoSection({
             <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>All expenses in this group</p>
           </div>
           <div className="flex items-center gap-1.5 text-sm" style={{ color: mutedLabel }}>
-            <span className="font-medium">₹ INR</span>
+            <span className="font-medium">{currencyCode}</span>
             <ChevronRight className="w-4 h-4" />
           </div>
         </button>
@@ -127,7 +129,7 @@ export function GroupInfoSection({
             {[
               { id: 'EQUAL' as const, label: 'Equal' },
               { id: 'PERCENTAGE' as const, label: 'Percentage' },
-              { id: 'EXACT' as const, label: 'Exact amounts' },
+              { id: 'FIXED' as const, label: 'Exact amounts' },
             ].map(type => (
               <button
                 key={type.id}
