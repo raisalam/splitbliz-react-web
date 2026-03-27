@@ -54,13 +54,20 @@ export function GroupChat() {
       setMessages(prev => {
         const existing = new Map(prev.map(m => [m.clientMessageId || m.id, m]));
         data.messages.forEach((m) => {
+          console.debug('[Chat] message', {
+            id: m.id,
+            clientMessageId: m.clientMessageId,
+            senderId: m.sender?.userId,
+            senderName: m.sender?.displayName,
+            currentUserId,
+          });
           const key = m.clientMessageId || m.id;
           existing.set(key, m);
         });
         return Array.from(existing.values());
       });
     }
-  }, [data?.messages]);
+  }, [data?.messages, currentUserId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
