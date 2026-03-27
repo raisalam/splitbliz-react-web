@@ -99,6 +99,7 @@ class MqttService {
         this.hintHandlers.forEach(h => h(payload as MqttHint));
       } else if (topic.endsWith('/messages')) {
         const groupId = topic.split('/')[2];
+        console.debug('[MQTT message]', { topic, groupId, payload });
         this.chatHandlers.get(groupId)?.forEach(h => h(payload as MqttChatMessage));
       }
     } catch (e) {
