@@ -23,10 +23,11 @@ export const expensesService = {
   },
 
   async getExpense(groupId: string, expenseId: string): Promise<Expense> {
-    const res = await apiClient.get<{ expense: Expense }>(
+    const res = await apiClient.get<{ expense: Expense } | Expense>(
       `/groups/${groupId}/expenses/${expenseId}`
     );
-    return res.data.expense;
+    const data = res.data as { expense?: Expense };
+    return data.expense ?? (res.data as Expense);
   },
 
   async createExpense(groupId: string, data: CreateExpenseRequest): Promise<Expense> {
