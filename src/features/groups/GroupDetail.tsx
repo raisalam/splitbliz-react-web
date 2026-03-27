@@ -111,6 +111,26 @@ export function GroupDetail() {
   }
 
   const currencySymbol = group.currencyCode || 'INR';
+  const getInitial = (name?: string | null) => name?.trim()?.[0]?.toUpperCase() || '?';
+  const renderAvatar = (member: any, className: string) => {
+    const avatarValue = member.resolvedAvatar || member.avatarUrl || null;
+    const isAvatarUrl = typeof avatarValue === 'string' && avatarValue.startsWith('http');
+    if (isAvatarUrl) {
+      return (
+        <CachedAvatar
+          src={avatarValue}
+          alt={member.displayName}
+          fallbackInitials={getInitial(member.displayName)}
+          className={className}
+        />
+      );
+    }
+    return (
+      <div className={`${className} flex items-center justify-center font-bold text-slate-700 bg-slate-200`}>
+        {avatarValue || getInitial(member.displayName)}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-300 pb-20">
@@ -144,13 +164,16 @@ export function GroupDetail() {
                onClick={() => setAllMembersSheetOpen(true)}
              >
                {(members || []).slice(0, 5).map((member: any, i: number) => (
-                 <CachedAvatar 
+                 <div
                    key={member.userId}
-                   src={member.resolvedAvatar || member.avatarUrl} 
-                   alt={member.displayName}
-                   className="w-10 h-10 rounded-full object-cover border-2 border-slate-50 dark:border-slate-950 relative hover:-translate-y-1 transition-transform"
+                   className="relative hover:-translate-y-1 transition-transform"
                    style={{ zIndex: 10 - i, marginLeft: i === 0 ? 0 : '-10px' }}
-                 />
+                 >
+                   {renderAvatar(
+                     member,
+                     "w-10 h-10 rounded-full object-cover border-2 border-slate-50 dark:border-slate-950"
+                   )}
+                 </div>
                ))}
                {(members || []).length > 5 && (
                  <div 
@@ -455,7 +478,7 @@ export function GroupDetail() {
                   const isMe = member.userId === currentUserId;
                   return (
                     <div key={member.userId} className="flex items-center gap-3 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
-                      <CachedAvatar src={member.resolvedAvatar || member.avatarUrl} className="w-12 h-12 rounded-full object-cover shrink-0" alt="" />
+                      {renderAvatar(member, "w-12 h-12 rounded-full object-cover shrink-0")}
                       <div>
                         <div className="flex items-center gap-2">
                           <h4 className="font-semibold text-slate-900 dark:text-white">{member.displayName}</h4>

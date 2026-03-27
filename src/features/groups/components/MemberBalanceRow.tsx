@@ -23,6 +23,9 @@ export function MemberBalanceRow({ member, idx, isMe, currencySymbol, onSettle, 
   const amt = Math.abs(netBalance);
   const isSettled = member.isSettled ?? (amt === 0);
   const currencyCode = member.currencyCode || 'INR'; // Fallback if group currency not passed down
+  const avatarValue = member.resolvedAvatar || member.avatarUrl || null;
+  const isAvatarUrl = typeof avatarValue === 'string' && avatarValue.startsWith('http');
+  const initials = member.displayName?.trim()?.[0]?.toUpperCase() || '?';
 
   return (
     <motion.div
@@ -32,7 +35,18 @@ export function MemberBalanceRow({ member, idx, isMe, currencySymbol, onSettle, 
     >
       <div className="flex items-center gap-4">
         <div className="relative">
-          <CachedAvatar src={member.resolvedAvatar || member.avatarUrl} alt={member.displayName} className="w-12 h-12 rounded-full object-cover ring-2 ring-transparent" />
+          {isAvatarUrl ? (
+            <CachedAvatar
+              src={avatarValue}
+              alt={member.displayName}
+              fallbackInitials={initials}
+              className="w-12 h-12 rounded-full object-cover ring-2 ring-transparent"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold bg-slate-200 text-slate-700 ring-2 ring-transparent">
+              {avatarValue || initials}
+            </div>
+          )}
           {iOweThem && <div className="absolute inset-0 rounded-full ring-2 ring-rose-400 ring-offset-2 dark:ring-offset-slate-900" />}
           {theyOweMe && <div className="absolute inset-0 rounded-full ring-2 ring-emerald-400 ring-offset-2 dark:ring-offset-slate-900" />}
         </div>
