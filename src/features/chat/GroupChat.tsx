@@ -30,6 +30,7 @@ export function GroupChat() {
   const { user } = useUser();
   const queryClient = useQueryClient();
   useGroupMqtt(groupId || '');
+  const currentUserId = user?.id;
   const { data: groupDetail } = useQuery({
     queryKey: ['group', groupId],
     queryFn: () => groupsService.getGroupDetail(groupId || ''),
@@ -133,7 +134,7 @@ export function GroupChat() {
             const msgDate = formatDateLabel(msg.createdAt);
             const showDateSep = msgDate !== lastDate;
             lastDate = msgDate;
-            const isMe = msg.sender?.userId === user?.id;
+            const isMe = msg.sender?.userId === currentUserId || msg.sender?.userId === 'me';
 
             return (
               <React.Fragment key={msg.clientMessageId || msg.id}>
