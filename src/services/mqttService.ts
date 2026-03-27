@@ -1,6 +1,7 @@
 import Paho from 'paho-mqtt';
 import { MqttHint, MqttChatMessage } from '../types';
 import { MQTT_TOPICS } from '../constants/app';
+import { tokenStore } from './apiClient';
 
 type HintHandler = (hint: MqttHint) => void;
 type ChatHandler = (message: MqttChatMessage) => void;
@@ -14,6 +15,7 @@ class MqttService {
   connect(userId: string): void {
     const url = import.meta.env.VITE_MQTT_URL ?? 'ws://localhost:8083/mqtt';
     const clientId = `web_${userId}_${Date.now()}`;
+    const token = tokenStore.get();
 
     this.client = new Paho.Client(url, clientId);
 
@@ -30,6 +32,8 @@ class MqttService {
 
     this.client.connect({
       useSSL: url.startsWith('wss'),
+      userName: userId,
+      password: token ?? undefined,
       onSuccess: () => {
         console.log('[MQTT] Connected');
         this.subscribe(MQTT_TOPICS.userHints(userId));
