@@ -38,7 +38,9 @@ function ToggleRow({ label, subtitle, checked, onChange, sectionDivider, mutedLa
 
 type PreferencesSectionProps = {
   theme: 'light' | 'dark';
+  currencyLabel: string;
   onToggleTheme: () => void;
+  onOpenCurrency: () => void;
   cardBorder: string;
   sectionDivider: string;
   mutedLabel: string;
@@ -47,7 +49,9 @@ type PreferencesSectionProps = {
 
 export function PreferencesSection({
   theme,
+  currencyLabel,
   onToggleTheme,
+  onOpenCurrency,
   cardBorder,
   sectionDivider,
   mutedLabel,
@@ -64,7 +68,10 @@ export function PreferencesSection({
         </p>
       </div>
 
-      <button className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50">
+      <button
+        onClick={onOpenCurrency}
+        className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50/50"
+      >
         <div className="w-8 h-8 rounded-[10px] flex items-center justify-center text-sm" style={{ backgroundColor: '#faeeda' }}>
           💱
         </div>
@@ -73,7 +80,7 @@ export function PreferencesSection({
           <p className="text-[11px] mt-0.5" style={{ color: mutedLabel }}>Used when creating new groups</p>
         </div>
         <div className="flex items-center gap-1.5 text-sm" style={{ color: mutedLabel }}>
-          <span className="font-medium">₹ INR</span>
+          <span className="font-medium">{currencyLabel}</span>
           <ChevronRight className="w-4 h-4" />
         </div>
       </button>

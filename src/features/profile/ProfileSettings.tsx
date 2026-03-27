@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../providers/ThemeProvider';
@@ -25,8 +25,10 @@ const EMOJI_GRID = [
   '👥', '🤝', '🙌', '💪', '🔥', '✨', '🚀', '🎯',
 ];
 
+const CURRENCY_OPTIONS = ['INR', 'USD', 'AED', 'SAR', 'GBP', 'EUR'] as const;
+
 // Type for active bottom sheet
-type BottomSheet = 'NONE' | 'EDIT_HERO' | 'EDIT_NAME' | 'DELETE_CONFIRM';
+type BottomSheet = 'NONE' | 'EDIT_HERO' | 'EDIT_NAME' | 'EDIT_CURRENCY' | 'DELETE_CONFIRM';
 
 export function ProfileSettings() {
   const navigate = useNavigate();
@@ -35,7 +37,7 @@ export function ProfileSettings() {
 
   // State
   const [activeSheet, setActiveSheet] = useState<BottomSheet>('NONE');
-  const [avatar, setAvatar] = useState('R'); // Default to initial
+  const [avatar, setAvatar] = useState('');
   
   // Notification Toggles
   const [pushNotifs, setPushNotifs] = useState(true);
@@ -43,6 +45,7 @@ export function ProfileSettings() {
   const [newExpenses, setNewExpenses] = useState(true);
   const [emailSummaries, setEmailSummaries] = useState(true);
   const [reminders, setReminders] = useState(false);
+  const [defaultCurrency, setDefaultCurrency] = useState('INR');
 
   // Edit Sheet State
   const [tempValue, setTempValue] = useState('');
@@ -56,17 +59,93 @@ export function ProfileSettings() {
   const headerBorder = colors.border;
 
   // Handlers
+  useEffect(() => {
+    if (!user) return;
+    setAvatar(user.resolvedAvatar || user.displayName?.charAt(0).toUpperCase() || '');
+    const notif = user.settings?.notifications;
+    setPushNotifs(notif?.push ?? true);
+    setSettlementReqs(notif?.settlementRequests ?? true);
+    setNewExpenses(notif?.newExpenses ?? true);
+    setEmailSummaries(notif?.emailSummaries ?? true);
+    setReminders(notif?.reminders ?? false);
+    const prefs = user.settings?.preferences;
+    setDefaultCurrency(prefs?.defaultCurrency ?? 'INR');
+  }, [user]);
+
   const handleOpenEdit = (sheet: BottomSheet, initialValue: string = '') => {
     setTempValue(initialValue);
     setActiveSheet(sheet);
   };
 
-  const handleSaveEdit = () => {
-    if (activeSheet === 'EDIT_NAME') {
-      setUser(user ? { ...user, displayName: tempValue } : user);
+  const handleSaveEdit = async () => {
+    if (activeSheet !== 'EDIT_NAME') return;
+    const nextValue = tempValue.trim();
+    if (!nextValue) return;
+    try {
+      const updated = await authService.updateProfile({ displayName: nextValue });
+      setUser(updated);
+      setActiveSheet('NONE');
+      toast.success('Profile updated');
+    } catch {
+      toast.error('Failed to update profile.');
     }
+  };
+
+  const handleAvatarUpdate = async (value: string) => {
+    setAvatar(value);
     setActiveSheet('NONE');
-    toast.success('Profile updated');
+    try {
+      const updated = await authService.updateProfile({ resolvedAvatar: value });
+      setUser(updated);
+      toast.success('Profile updated');
+    } catch {
+      toast.error('Failed to update profile.');
+    }
+  };
+
+  const handleToggleNotification = async (
+    key: 'push' | 'settlementRequests' | 'newExpenses' | 'emailSummaries' | 'reminders',
+    currentValue: boolean,
+    setValue: (next: boolean) => void
+  ) => {
+    const nextValue = !currentValue;
+    setValue(nextValue);
+    try {
+      const updated = await authService.updateSettings({
+        notifications: { [key]: nextValue },
+      });
+      setUser(updated);
+    } catch {
+      setValue(currentValue);
+      toast.error('Failed to save setting.');
+    }
+  };
+
+  const handlePreferenceChange = async (key: 'defaultCurrency' | 'darkMode', value: string | boolean) => {
+    try {
+      const updated = await authService.updateSettings({
+        preferences: { [key]: value },
+      });
+      setUser(updated);
+      return true;
+    } catch {
+      toast.error('Failed to save preference.');
+      return false;
+    }
+  };
+
+  const handleToggleThemePreference = async () => {
+    const nextIsDark = theme !== 'dark';
+    toggleTheme();
+    const ok = await handlePreferenceChange('darkMode', nextIsDark);
+    if (!ok) toggleTheme();
+  };
+
+  const handleCurrencyChange = async (currencyCode: string) => {
+    setDefaultCurrency(currencyCode);
+    setActiveSheet('NONE');
+    const ok = await handlePreferenceChange('defaultCurrency', currencyCode);
+    if (!ok) setDefaultCurrency(user?.settings?.preferences.defaultCurrency ?? 'INR');
   };
 
   const handleDelete = () => {
@@ -179,7 +258,9 @@ export function ProfileSettings() {
 
         <PreferencesSection
           theme={theme}
-          onToggleTheme={toggleTheme}
+          currencyLabel={defaultCurrency}
+          onToggleTheme={handleToggleThemePreference}
+          onOpenCurrency={() => setActiveSheet('EDIT_CURRENCY')}
           cardBorder={cardBorder}
           sectionDivider={sectionDivider}
           mutedLabel={mutedLabel}
@@ -192,11 +273,11 @@ export function ProfileSettings() {
           newExpenses={newExpenses}
           emailSummaries={emailSummaries}
           reminders={reminders}
-          onTogglePush={() => setPushNotifs(!pushNotifs)}
-          onToggleSettlement={() => setSettlementReqs(!settlementReqs)}
-          onToggleExpenses={() => setNewExpenses(!newExpenses)}
-          onToggleSummaries={() => setEmailSummaries(!emailSummaries)}
-          onToggleReminders={() => setReminders(!reminders)}
+          onTogglePush={() => handleToggleNotification('push', pushNotifs, setPushNotifs)}
+          onToggleSettlement={() => handleToggleNotification('settlementRequests', settlementReqs, setSettlementReqs)}
+          onToggleExpenses={() => handleToggleNotification('newExpenses', newExpenses, setNewExpenses)}
+          onToggleSummaries={() => handleToggleNotification('emailSummaries', emailSummaries, setEmailSummaries)}
+          onToggleReminders={() => handleToggleNotification('reminders', reminders, setReminders)}
           cardBorder={cardBorder}
           sectionDivider={sectionDivider}
           mutedLabel={mutedLabel}
@@ -292,8 +373,7 @@ export function ProfileSettings() {
                       {/* Avatar initial reset button */}
                       <button
                         onClick={() => {
-                          setAvatar('R');
-                          setActiveSheet('NONE');
+                          handleAvatarUpdate(displayName.charAt(0).toUpperCase());
                         }}
                         className="aspect-square flex items-center justify-center rounded-xl text-lg font-bold text-white transition-all hover:scale-110 active:scale-95"
                         style={{
@@ -308,8 +388,7 @@ export function ProfileSettings() {
                         <button
                           key={`${emoji}-${idx}`}
                           onClick={() => {
-                            setAvatar(emoji);
-                            setActiveSheet('NONE');
+                            handleAvatarUpdate(emoji);
                           }}
                           className="aspect-square flex items-center justify-center rounded-xl text-2xl transition-all hover:scale-110 active:scale-95"
                           style={{
@@ -334,6 +413,38 @@ export function ProfileSettings() {
                       >
                         Upload custom image
                       </button>
+                  </div>
+                </div>
+              )}
+
+              {activeSheet === 'EDIT_CURRENCY' && (
+                <div className="px-5 pb-6">
+                  <div className="flex justify-center mb-4">
+                    <div className="w-9 h-1 rounded-full bg-slate-200" />
+                  </div>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-bold" style={{ color: colors.textPrimary }}>
+                      Default currency
+                    </h3>
+                    <button onClick={() => setActiveSheet('NONE')} className="p-2 rounded-full bg-slate-100">
+                      <X className="w-4 h-4" style={{ color: mutedLabel }} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {CURRENCY_OPTIONS.map((code) => (
+                      <button
+                        key={code}
+                        onClick={() => handleCurrencyChange(code)}
+                        className="py-3 rounded-xl font-semibold text-sm transition-all"
+                        style={{
+                          backgroundColor: defaultCurrency === code ? colors.primaryFaint : pageBg,
+                          color: defaultCurrency === code ? purple : colors.textPrimary,
+                          border: `1px solid ${defaultCurrency === code ? purple : 'transparent'}`,
+                        }}
+                      >
+                        {code}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
