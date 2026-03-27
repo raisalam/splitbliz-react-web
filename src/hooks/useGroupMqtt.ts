@@ -15,7 +15,7 @@ export function useGroupMqtt(groupId: string) {
       queryClient.setQueryData(
         ['messages', groupId],
         (old: any) => {
-          if (!old) return old;
+          if (!old) return { messages: [msg] };
           const exists = old.messages?.some(
             (m: MqttChatMessage) => m.clientMessageId === msg.clientMessageId
           );
