@@ -100,7 +100,19 @@ class MqttService {
       } else if (topic.endsWith('/messages')) {
         const groupId = topic.split('/')[2];
         console.log('[MQTT message]', { topic, groupId, payload });
-        this.chatHandlers.get(groupId)?.forEach(h => h(payload as MqttChatMessage));
+        const normalized = {
+          id: payload.messageId ?? payload.id,
+          clientMessageId: payload.clientMessageId ?? payload.messageId,
+          groupId: payload.groupId ?? groupId,
+          content: payload.content,
+          createdAt: payload.createdAt,
+          sender: payload.sender ?? {
+            userId: payload.senderId,
+            displayName: payload.senderName ?? payload.senderDisplayName ?? 'Member',
+            resolvedAvatar: payload.senderAvatar ?? null,
+          },
+        };
+        this.chatHandlers.get(groupId)?.forEach(h => h(normalized as MqttChatMessage));
       }
     } catch (e) {
       console.warn('[MQTT] Failed to parse message:', e);
