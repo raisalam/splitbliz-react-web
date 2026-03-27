@@ -69,7 +69,9 @@ export function GroupChat() {
     const merged = Array.from(existing.values()).map((msg) => {
       const member = membersById.get(msg.sender?.userId);
       if (!member) return msg;
-      const displayName = msg.sender?.displayName || member.displayName;
+      const displayName = !msg.sender?.displayName || msg.sender.displayName === 'Member'
+        ? member.displayName
+        : msg.sender.displayName;
       const resolvedAvatar = msg.sender?.resolvedAvatar || member.resolvedAvatar || member.avatarUrl || null;
       return {
         ...msg,
