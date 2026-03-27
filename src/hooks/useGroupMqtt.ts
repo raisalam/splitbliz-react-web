@@ -15,12 +15,22 @@ export function useGroupMqtt(groupId: string) {
       queryClient.setQueryData(
         ['messages', groupId],
         (old: any) => {
-          if (!old) return { messages: [msg] };
-          const exists = old.messages?.some(
-            (m: MqttChatMessage) => m.clientMessageId === msg.clientMessageId
+          if (!old) {
+            return { pages: [{ messages: [msg], pagination: { nextCursor: null, hasMore: false, limit: 0 } }], pageParams: [undefined] };
+          }
+          const pages = old.pages ?? [];
+          const lastPageIndex = pages.length - 1;
+          const lastPage = pages[lastPageIndex] ?? { messages: [] };
+          const exists = pages.some((page: any) =>
+            page.messages?.some((m: MqttChatMessage) => m.clientMessageId === msg.clientMessageId)
           );
           if (exists) return old;
-          return { ...old, messages: [...(old.messages ?? []), msg] };
+          const nextPages = [...pages];
+          nextPages[lastPageIndex] = {
+            ...lastPage,
+            messages: [...(lastPage.messages ?? []), msg],
+          };
+          return { ...old, pages: nextPages };
         }
       );
     });
