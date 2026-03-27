@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { useTheme } from '../../providers/ThemeProvider';
-import { ArrowLeft, ArrowRight, X, ChevronRight, Plus, Banknote, CreditCard, Smartphone, Building2 } from 'lucide-react';
-import { MOCK_USER_ID } from '../../api/groups';
+import { ArrowLeft, ArrowRight, X, ChevronRight, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettlementMemberPicker } from './components/SettlementMemberPicker';
 import { SettlementAmountForm } from './components/SettlementAmountForm';
@@ -12,8 +11,10 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { CachedAvatar } from '../../components/CachedAvatar';
 import { settlementsService, groupsService } from '../../services';
 import { extractApiError } from '../../services/apiClient';
-import { useQueryClient } from '@tanstack/react-query';
+import { useCreateSettlement } from '../../hooks/useSettlementMutations';
 import { useUser } from '../../providers/UserContext';
+import { formatCurrency, formatCurrencyParts } from '../../utils/formatCurrency';
+import { SETTLEMENT_PAYMENT_METHODS } from '../../constants/iconography';
 
 type ActiveSheet = 'NONE' | 'AMOUNT' | 'NOTE' | 'FROM' | 'TO';
 
@@ -23,7 +24,8 @@ export function SettleUp() {
   const { theme } = useTheme();
   const [searchParams] = useSearchParams();
   const { user } = useUser();
-  const queryClient = useQueryClient();
+
+  const createSettlement = useCreateSettlement();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -33,7 +35,7 @@ export function SettleUp() {
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>('NONE');
 
   // Smart defaults: from = current user, to/amount from query params or empty
-  const currentUserId = user?.id ?? MOCK_USER_ID;
+  const currentUserId = user?.id ?? '';
   const [selectedFromId, setSelectedFromId] = useState(searchParams.get('from') || currentUserId);
   const [selectedToId, setSelectedToId] = useState(searchParams.get('to') || '');
   const initialAmount = searchParams.get('amount') || '0';
@@ -70,23 +72,28 @@ export function SettleUp() {
   const toName = selectedToId ? (selectedToId === currentUserId ? 'You' : toMember?.displayName || 'Unknown') : 'Select recipient';
   const currencyCode = group?.currencyCode || 'INR';
   const currency = currencyCode;
-  const currencySymbol = currency === 'INR' ? '₹' : '$';
+  const amountParts = formatCurrencyParts(numAmount.toFixed(2), currencyCode);
 
   const canSubmit = numAmount > 0 && selectedFromId && selectedToId && selectedFromId !== selectedToId;
 
   const handleSettle = async () => {
     if (!groupId || !canSubmit) return;
+    if (!currentUserId) {
+      toast.error('Session expired. Please log in again.');
+      return;
+    }
     setSubmitting(true);
     try {
-      await settlementsService.createSettlement(groupId, {
-        toUserId: selectedToId,
-        amount: numAmount.toFixed(2),
-        currencyCode: currencyCode,
-        paymentMethod: paymentMethod || undefined,
-        notes: note || undefined
+      await createSettlement.mutateAsync({
+        groupId,
+        data: {
+          toUserId: selectedToId,
+          amount: numAmount.toFixed(2),
+          currencyCode: currencyCode,
+          paymentMethod: paymentMethod || undefined,
+          notes: note || undefined
+        }
       });
-      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
-      queryClient.invalidateQueries({ queryKey: ['home'] });
       setSuccess(true);
     } catch (err) {
       const apiErr = extractApiError(err);
@@ -137,12 +144,7 @@ export function SettleUp() {
       : { amount: netAmount, direction: 'owed' };
   };
 
-  const paymentMethods = [
-    { id: 'UPI', label: 'UPI', icon: Smartphone },
-    { id: 'Cash', label: 'Cash', icon: Banknote },
-    { id: 'Bank Transfer', label: 'Bank', icon: Building2 },
-    { id: 'Other', label: 'Other', icon: CreditCard },
-  ];
+  const paymentMethods = SETTLEMENT_PAYMENT_METHODS;
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white font-sans overflow-x-hidden relative">
@@ -166,7 +168,7 @@ export function SettleUp() {
           {/* Success State */}
           {success && (
             <SettlementConfirmSheet
-              currencySymbol={currencySymbol}
+              currencyCode={currencyCode}
               numAmount={numAmount}
               toName={toName}
               onBack={() => navigate(`/group/${groupId}`)}
@@ -227,8 +229,8 @@ export function SettleUp() {
                   className="cursor-pointer group"
                 >
                   <div className="flex items-center text-6xl font-black tracking-tighter text-slate-900 dark:text-white group-hover:scale-105 transition-transform">
-                    <span className="text-slate-400 mr-1 text-5xl font-medium">{currencySymbol}</span>
-                    {numAmount.toFixed(2)}
+                    <span className="text-slate-400 mr-1 text-5xl font-medium">{amountParts.symbol}</span>
+                    {amountParts.amount}
                   </div>
                   <p className="text-center text-sm text-slate-400 dark:text-slate-500 mt-2 group-hover:text-indigo-500 transition-colors">Tap to edit amount</p>
                 </div>
@@ -264,9 +266,9 @@ export function SettleUp() {
                   </div>
 
                   <SettlementAmountForm
-                    currencySymbol={currencySymbol}
+                    currencyCode={currencyCode}
                     numAmount={numAmount}
-                    paymentMethods={paymentMethods}
+                    paymentMethods={[...paymentMethods]}
                     paymentMethod={paymentMethod}
                     onAmountClick={() => setActiveSheet('AMOUNT')}
                     onPaymentMethodChange={setPaymentMethod}
@@ -303,7 +305,7 @@ export function SettleUp() {
                 {submitting ? (
                   <>Settling <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin ml-2" /></>
                 ) : (
-                  <>Settle {currencySymbol}{numAmount.toFixed(2)}</>
+                  <>Settle {formatCurrency(numAmount.toFixed(2), currencyCode)}</>
                 )}
               </button>
             </motion.div>
@@ -345,7 +347,7 @@ export function SettleUp() {
                 {activeSheet === 'AMOUNT' && (
                   <div className="flex flex-col items-center justify-center py-8">
                     <div className="flex items-center text-7xl font-black text-slate-900 dark:text-white">
-                      <span className="text-slate-300 mr-2 text-5xl font-medium">{currencySymbol}</span>
+                      <span className="text-slate-300 mr-2 text-5xl font-medium">{amountParts.symbol}</span>
                       <input
                         ref={amtInputRef} type="number" value={amountStr}
                         onChange={(e) => setAmountStr(e.target.value)}
@@ -392,7 +394,7 @@ export function SettleUp() {
                     mode={activeSheet === 'FROM' ? 'FROM' : 'TO'}
                     selectedUserId={activeSheet === 'FROM' ? selectedFromId : selectedToId}
                     currentUserId={currentUserId}
-                    currencySymbol={currencySymbol}
+                    currencyCode={currencyCode}
                     getBalanceWithMember={getBalanceWithMember}
                     onSelect={(memberId, balanceInfo) => {
                       if (activeSheet === 'FROM') {

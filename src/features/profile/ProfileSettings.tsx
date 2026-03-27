@@ -11,19 +11,11 @@ import { PreferencesSection } from './components/PreferencesSection';
 import { AccountActionsSection } from './components/AccountActionsSection';
 import { colors } from '../../constants/colors';
 import { useUser } from '../../providers/UserContext';
+import { useUpdateProfile, useUpdateSettings, useDeleteAccount } from '../../hooks/useProfileMutations';
 import { authService } from '../../services';
+import { AVATAR_EMOJI_GRID } from '../../constants/emoji';
 
-// 7-column emoji grid
-const EMOJI_GRID = [
-  '✈️', '🏠', '🍕', '⚽', '🎉', '💼', '💑', '📂',
-  '🚗', '🏝️', '🗺️', '🏖️', '⛰️', '🏕️', '🚅', '🧳',
-  '🍔', '🍣', '🍷', '☕', '🌮', '🍻', '🍽️', '🍦',
-  '🛋️', '🛒', '🔌', '🛁', '🧹', '💡', '🔑', '📺',
-  '🎈', '🎊', '🎁', '🕺', '🥳', '🎤', '🎶', '🎫',
-  '🏀', '🏈', '🎾', '🏓', '🏸', '🥊', '🏋️', '🏄',
-  '💻', '📊', '📋', '📅', '📞', '🏢', '👔', '📝',
-  '👥', '🤝', '🙌', '💪', '🔥', '✨', '🚀', '🎯',
-];
+const EMOJI_GRID = AVATAR_EMOJI_GRID;
 
 const CURRENCY_OPTIONS = ['INR', 'USD', 'AED', 'SAR', 'GBP', 'EUR'] as const;
 
@@ -34,6 +26,10 @@ export function ProfileSettings() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { user, setUser } = useUser();
+
+  const updateProfile = useUpdateProfile();
+  const updateSettings = useUpdateSettings();
+  const deleteAccount = useDeleteAccount();
 
   // State
   const [activeSheet, setActiveSheet] = useState<BottomSheet>('NONE');
@@ -82,7 +78,7 @@ export function ProfileSettings() {
     const nextValue = tempValue.trim();
     if (!nextValue) return;
     try {
-      const updated = await authService.updateProfile({ displayName: nextValue });
+      const updated = await updateProfile.mutateAsync({ displayName: nextValue });
       setUser(updated);
       setActiveSheet('NONE');
       toast.success('Profile updated');
@@ -95,7 +91,7 @@ export function ProfileSettings() {
     setAvatar(value);
     setActiveSheet('NONE');
     try {
-      const updated = await authService.updateProfile({ resolvedAvatar: value });
+      const updated = await updateProfile.mutateAsync({ resolvedAvatar: value });
       setUser(updated);
       toast.success('Profile updated');
     } catch {
@@ -111,8 +107,8 @@ export function ProfileSettings() {
     const nextValue = !currentValue;
     setValue(nextValue);
     try {
-      const updated = await authService.updateSettings({
-        notifications: { [key]: nextValue },
+      const updated = await updateSettings.mutateAsync({
+        notifications: { [key]: nextValue } as any,
       });
       setUser(updated);
     } catch {
@@ -123,8 +119,8 @@ export function ProfileSettings() {
 
   const handlePreferenceChange = async (key: 'defaultCurrency' | 'darkMode', value: string | boolean) => {
     try {
-      const updated = await authService.updateSettings({
-        preferences: { [key]: value },
+      const updated = await updateSettings.mutateAsync({
+        preferences: { [key]: value } as any,
       });
       setUser(updated);
       return true;
@@ -150,8 +146,15 @@ export function ProfileSettings() {
 
   const handleDelete = () => {
     setActiveSheet('NONE');
-    toast.success('Account deleted');
-    navigate('/');
+    deleteAccount.mutateAsync()
+      .then(() => {
+        setUser(null);
+        toast.success('Account deletion requested');
+        navigate('/login');
+      })
+      .catch(() => {
+        toast.error('Failed to delete account.');
+      });
   };
 
   const handleLogout = async () => {
@@ -402,18 +405,7 @@ export function ProfileSettings() {
                     </div>
                   </div>
                   
-                  <div className="mt-4 pt-4 border-t border-slate-100">
-                     <button
-                        onClick={() => {
-                          toast.success('Upload dialog opened');
-                          setActiveSheet('NONE');
-                        }}
-                        className="w-full py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98]"
-                        style={{ backgroundColor: pageBg, color: purple }}
-                      >
-                        Upload custom image
-                      </button>
-                  </div>
+                  <div className="mt-4 pt-4 border-t border-slate-100" />
                 </div>
               )}
 

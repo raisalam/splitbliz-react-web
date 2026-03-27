@@ -1,5 +1,6 @@
 import React from 'react';
 import { Info, Users } from 'lucide-react';
+import { formatCurrency, formatCurrencyParts } from '../../../utils/formatCurrency';
 
 type PayerSelectorProps = {
   members: any[];
@@ -26,6 +27,7 @@ export function PayerSelector({
   payerValidation,
   numericPayers
 }: PayerSelectorProps) {
+  const currencyParts = formatCurrencyParts('0', currencyCode);
   return (
     <div className="space-y-3">
       {members.map(member => {
@@ -41,13 +43,13 @@ export function PayerSelector({
                   {member.displayName} {member.userPublicId === currentUserId && '(You)'}
                 </span>
                 <span className="text-xs text-slate-400 dark:text-slate-500">
-                  Equal share: ₹{equalShare.toFixed(2)}
+                  Equal share: {formatCurrency(equalShare.toFixed(2), currencyCode)}
                 </span>
               </div>
             </div>
             {isPayer && (
               <div className="relative w-28">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">₹</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">{currencyParts.symbol}</span>
                 <input type="number" value={payerVal} onChange={(e) => onPayerAmountChange(member.userPublicId, e.target.value)} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl py-2.5 pl-7 pr-3 text-right font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="0" />
               </div>
             )}
@@ -63,7 +65,7 @@ export function PayerSelector({
       {!payerValidation.isValid && (
         <div className="flex items-start gap-2 text-rose-500 bg-rose-50 dark:bg-rose-500/10 p-4 rounded-xl text-sm font-medium">
           <Info className="w-5 h-5 shrink-0" />
-          Diff: {currencyCode === 'INR' ? '₹' : '$'}{Math.abs(numAmount - Object.values(numericPayers).reduce((a, b) => a + b, 0)).toFixed(2)} off from the total.
+          Diff: {formatCurrency(Math.abs(numAmount - Object.values(numericPayers).reduce((a, b) => a + b, 0)).toFixed(2), currencyCode)} off from the total.
         </div>
       )}
     </div>

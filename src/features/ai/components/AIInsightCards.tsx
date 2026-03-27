@@ -1,13 +1,13 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { TrendingUp, AlertTriangle, Sparkles, ChevronRight, BarChart3 } from 'lucide-react';
+import { CachedAvatar } from '../../../components/CachedAvatar';
+import { formatCurrency } from '../../../utils/formatCurrency';
+import { AI_CATEGORY_EMOJI } from '../../../constants/emoji';
 
 const CATEGORY_COLORS: Record<string, string> = {
   TRAVEL: 'bg-sky-500', FOOD: 'bg-amber-500', RENT: 'bg-violet-500',
   ENTERTAINMENT: 'bg-rose-500', SHOPPING: 'bg-emerald-500', OTHER: 'bg-slate-500'
-};
-const CATEGORY_EMOJIS: Record<string, string> = {
-  TRAVEL: '✈️', FOOD: '🍕', RENT: '🏠', ENTERTAINMENT: '🎬', SHOPPING: '🛍️', OTHER: '📦'
 };
 
 type AIInsightCardsProps = {
@@ -15,6 +15,41 @@ type AIInsightCardsProps = {
   groupId: string | undefined;
   currentUserId: string;
   onNavigate: (path: string) => void;
+};
+
+const getInitial = (name?: string | null) => {
+  const trimmed = name?.trim();
+  return trimmed ? trimmed[0].toUpperCase() : '?';
+};
+
+const renderAvatar = (avatarUrl: string | null | undefined, displayName: string, ringClass: string) => {
+  const fallback = getInitial(displayName);
+  const baseClass = `w-10 h-10 rounded-full ring-2 ${ringClass} ring-offset-2 dark:ring-offset-slate-900`;
+
+  if (avatarUrl && avatarUrl.startsWith('http')) {
+    return (
+      <CachedAvatar
+        src={avatarUrl}
+        alt={displayName}
+        fallbackInitials={fallback}
+        className={`${baseClass} object-cover`}
+      />
+    );
+  }
+
+  if (avatarUrl) {
+    return (
+      <div className={`${baseClass} flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold`}>
+        {avatarUrl}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${baseClass} flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold`}>
+      {fallback}
+    </div>
+  );
 };
 
 export function AIInsightCards({
@@ -41,13 +76,13 @@ export function AIInsightCards({
                 <h3 className="font-bold text-emerald-900 dark:text-emerald-100 text-sm">Top Spender</h3>
               </div>
               <div className="flex items-center gap-3 relative z-10">
-                <img src={insights.topSpender.avatarUrl} alt={insights.topSpender.displayName} className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-400 ring-offset-2 dark:ring-offset-slate-900" />
+                {renderAvatar(insights.topSpender.avatarUrl, insights.topSpender.displayName, 'ring-emerald-400')}
                 <div className="min-w-0">
                   <p className="font-bold text-slate-900 dark:text-white truncate">
                     {insights.topSpender.userPublicId === currentUserId ? 'You' : insights.topSpender.displayName}
                   </p>
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold truncate">
-                    {insights.currencySymbol}{insights.topSpender.amount.toLocaleString()}
+                    {formatCurrency(insights.topSpender.amount.toFixed(2), insights.currencyCode)}
                   </p>
                 </div>
               </div>
@@ -67,13 +102,13 @@ export function AIInsightCards({
                 <h3 className="font-bold text-amber-900 dark:text-amber-100 text-sm">Top Debtor</h3>
               </div>
               <div className="flex items-center gap-3 relative z-10">
-                <img src={insights.topDebtor.avatarUrl} alt={insights.topDebtor.displayName} className="w-10 h-10 rounded-full object-cover ring-2 ring-amber-400 ring-offset-2 dark:ring-offset-slate-900" />
+                {renderAvatar(insights.topDebtor.avatarUrl, insights.topDebtor.displayName, 'ring-amber-400')}
                 <div className="min-w-0">
                   <p className="font-bold text-slate-900 dark:text-white truncate">
                     {insights.topDebtor.userPublicId === currentUserId ? 'You' : insights.topDebtor.displayName}
                   </p>
                   <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold truncate">
-                    Owes {insights.currencySymbol}{insights.topDebtor.amountOwed.toLocaleString()}
+                    Owes {formatCurrency(insights.topDebtor.amountOwed.toFixed(2), insights.currencyCode)}
                   </p>
                 </div>
               </div>
@@ -131,7 +166,9 @@ export function AIInsightCards({
                 <p className="text-xs text-rose-500 mt-1 font-medium">{insights.anomaly.reason}</p>
               </div>
               <div className="text-xl font-bold text-slate-900 dark:text-white shrink-0 ml-4">
-                {insights.currencySymbol}{insights.anomaly.expenseAmount?.toLocaleString()}
+                {insights.anomaly.expenseAmount != null
+                  ? formatCurrency(insights.anomaly.expenseAmount.toFixed(2), insights.currencyCode)
+                  : null}
               </div>
             </div>
           </motion.div>
@@ -184,8 +221,8 @@ export function AIInsightCards({
               <div key={cat.category} className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full shrink-0 ${CATEGORY_COLORS[cat.category] || 'bg-slate-500'}`} />
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold truncate flex items-center gap-1.5">{CATEGORY_EMOJIS[cat.category] || '📦'} {cat.category}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">{insights.currencySymbol}{cat.amount.toLocaleString()} ({cat.percentage}%)</div>
+                  <div className="text-sm font-semibold truncate flex items-center gap-1.5">{AI_CATEGORY_EMOJI[cat.category] || '\u{1F4E6}'} {cat.category}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">{formatCurrency(cat.amount.toFixed(2), insights.currencyCode)} ({cat.percentage}%)</div>
                 </div>
               </div>
             ))}

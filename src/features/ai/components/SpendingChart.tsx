@@ -4,6 +4,7 @@ import { LineChart } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell 
 } from 'recharts';
+import { formatCurrency, formatCurrencyParts } from '../../../utils/formatCurrency';
 
 type TrendPoint = {
   month: string;
@@ -26,7 +27,7 @@ export function SpendingChart({
   trendInsight,
   theme
 }: SpendingChartProps) {
-  const resolvedSymbol = currencySymbol || (currencyCode === 'INR' ? '₹' : '$');
+  const resolvedSymbol = currencySymbol || formatCurrencyParts('0', currencyCode).symbol;
 
   return (
     <motion.div
@@ -53,7 +54,7 @@ export function SpendingChart({
               cursor={{ fill: theme === 'dark' ? '#1e293b' : '#f1f5f9' }}
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff', color: theme === 'dark' ? '#f8fafc' : '#0f172a' }}
               itemStyle={{ fontWeight: 'bold' }}
-              formatter={(value: number) => [`${resolvedSymbol}${value.toLocaleString()}`, 'Amount']}
+              formatter={(value: number) => [formatCurrency(value.toFixed(2), currencyCode), 'Amount']}
               labelStyle={{ color: '#64748b', marginBottom: '4px' }}
             />
             <Bar dataKey="amount" radius={[6, 6, 6, 6]}>

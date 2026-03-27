@@ -1,5 +1,6 @@
 import React from 'react';
 import { Info } from 'lucide-react';
+import { formatCurrency, formatCurrencyParts } from '../../../utils/formatCurrency';
 import { SplitType } from '../../../utils/expenseCalculator';
 import { SplitTypeToggle } from './SplitTypeToggle';
 
@@ -26,6 +27,7 @@ export function ExpenseSplitForm({
   splitValidation,
   currencyCode
 }: ExpenseSplitFormProps) {
+  const currencyParts = formatCurrencyParts('0', currencyCode);
   return (
     <div className="flex flex-col">
       <SplitTypeToggle value={splitType} onChange={onSplitTypeChange} />
@@ -40,7 +42,7 @@ export function ExpenseSplitForm({
                 <span className="font-semibold">{member.displayName}</span>
               </div>
               <div className="relative w-32">
-                {splitType === 'FIXED' && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">{currencyCode === 'INR' ? '₹' : '$'}</span>}
+                {splitType === 'FIXED' && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">{currencyParts.symbol}</span>}
                 <input type="number"
                   value={customSplits[member.userPublicId] || ''}
                   onChange={(e) => onCustomSplitChange(member.userPublicId, e.target.value)}
@@ -71,9 +73,20 @@ export function ExpenseSplitForm({
             : isOver ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
             : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
           }`}>
-            <span>Total: {totalAssigned.toFixed(2)}{splitType === 'PERCENTAGE' ? '%' : ''}</span>
             <span>
-              {isBalanced ? '✓ Balanced' : isOver ? `Over by ${Math.abs(diff).toFixed(2)}${splitType === 'PERCENTAGE' ? '%' : ''}` : `Remaining: ${diff.toFixed(2)}${splitType === 'PERCENTAGE' ? '%' : ''}`}
+              Total: {splitType === 'PERCENTAGE'
+                ? `${totalAssigned.toFixed(2)}%`
+                : formatCurrency(totalAssigned.toFixed(2), currencyCode)}
+            </span>
+            <span>
+              {isBalanced ? '✓ Balanced'
+                : isOver
+                  ? `Over by ${splitType === 'PERCENTAGE'
+                    ? `${Math.abs(diff).toFixed(2)}%`
+                    : formatCurrency(Math.abs(diff).toFixed(2), currencyCode)}`
+                  : `Remaining: ${splitType === 'PERCENTAGE'
+                    ? `${diff.toFixed(2)}%`
+                    : formatCurrency(diff.toFixed(2), currencyCode)}`}
             </span>
           </div>
         );

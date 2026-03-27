@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router';
-import { ArrowLeft, MoreHorizontal, X, Plus } from 'lucide-react';
+import { ArrowLeft, User, Receipt, Banknote, Edit3, Trash2, MoreHorizontal, Plus, X } from 'lucide-react';
 import { colors } from '../../constants/colors';
 import { Skeleton } from '../../components/ui/skeleton';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { expensesService, groupsService } from '../../services';
 import { useUser } from '../../providers/UserContext';
 import { formatCurrency } from '../../utils/formatCurrency';
+import { EXPENSE_ACTION_EMOJI, EXPENSE_CATEGORY_EMOJI, UI_EMOJI } from '../../constants/emoji';
 
 export function ExpenseDetail() {
   const { groupId, expenseId } = useParams();
@@ -78,25 +79,12 @@ export function ExpenseDetail() {
   const isCreatorOrAdmin = expense.createdBy?.userId === currentUserId || group?.myRole === 'OWNER';
   const canEdit = expense.isEditable || isCreatorOrAdmin;
   const canDelete = expense.isDeletable || isCreatorOrAdmin;
-  
+
   const formattedDate = new Date(expense.expenseDate || expense.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-  const categoryEmojiMap: Record<string, string> = {
-    FOOD: '🍽️',
-    TRAVEL: '✈️',
-    TRANSPORT: '🚌',
-    ACCOMMODATION: '🏠',
-    ENTERTAINMENT: '🎬',
-    SHOPPING: '🛍️',
-    UTILITIES: '💡',
-    MEDICAL: '🩺',
-    EDUCATION: '📚',
-    OTHER: '🧾',
-  };
-  const categoryEmoji = categoryEmojiMap[expense.category] || '🧾';
-
+  const categoryEmoji = EXPENSE_CATEGORY_EMOJI[expense.category] || EXPENSE_CATEGORY_EMOJI.OTHER;
   const participants = expense.splits || [];
-  
+
   const getParticipantStatus = (participant: any) => {
     if (participant.userId === currentUserId) return 'YOU';
     if (participant.isSettled) return 'SETTLED';
@@ -107,25 +95,23 @@ export function ExpenseDetail() {
   const visibleParticipants = showAllMembers ? participants : participants.slice(0, 4);
   const hiddenCount = Math.max(0, participants.length - 4);
 
-
   return (
     <div className="min-h-screen font-sans pb-10 flex flex-col" style={{ backgroundColor: colors.pageBg }}>
-      
       {/* Top Bar */}
       <header className="sticky top-0 z-40 bg-white flex items-center justify-between px-4 h-16" style={{ borderBottom: `0.5px solid ${colors.border}` }}>
-        <button 
-          onClick={() => navigate(-1)} // Preserves scroll on previous page
+        <button
+          onClick={() => navigate(-1)}
           className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors"
           style={{ backgroundColor: colors.primaryFaint }}
         >
           <ArrowLeft className="w-4 h-4" style={{ color: colors.primary }} />
         </button>
-        
+
         <h1 className="font-semibold text-sm" style={{ color: colors.textPrimary }}>
           Expense detail
         </h1>
 
-        <button 
+        <button
           onClick={() => setActionsSheetOpen(true)}
           className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors"
           style={{ backgroundColor: colors.pageBg }}
@@ -135,18 +121,18 @@ export function ExpenseDetail() {
       </header>
 
       {/* Hero Banner */}
-      <div 
+      <div
         className="p-4"
-        style={{ 
+        style={{
           background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight})`
         }}
       >
         <div className="flex items-center gap-3">
-          <div 
+          <div
             className="w-[44px] h-[44px] rounded-full flex items-center justify-center text-xl shrink-0"
-            style={{ 
-              background: colors.white20, 
-              border: '2px solid rgba(255,255,255,0.35)' 
+            style={{
+              background: colors.white20,
+              border: '2px solid rgba(255,255,255,0.35)'
             }}
           >
             {categoryEmoji}
@@ -156,34 +142,33 @@ export function ExpenseDetail() {
             <p className="mt-0.5" style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>{group?.name || 'Group'}</p>
           </div>
         </div>
-        
+
         <div className="mt-4 mb-3">
           <span className="font-extrabold text-white" style={{ fontSize: '26px' }}>
             {formattedAmount}
           </span>
         </div>
-        
+
         <div className="flex flex-wrap gap-2">
           <div className="px-3 py-1 flex items-center gap-1.5" style={{ background: colors.white18, border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px' }}>
             <span className="text-white font-medium" style={{ fontSize: '9px' }}>
-              {expense.splitType === 'EQUAL' ? '⚖️ Equal split' : '✏️ Custom split'}
+              {expense.splitType === 'EQUAL' ? `${UI_EMOJI.SPLIT_EQUAL} Equal split` : `${UI_EMOJI.SPLIT_CUSTOM} Custom split`}
             </span>
           </div>
           <div className="px-3 py-1 flex items-center gap-1.5" style={{ background: colors.white18, border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px' }}>
             <span className="text-white font-medium" style={{ fontSize: '9px' }}>
-              📅 {formattedDate}
+              {UI_EMOJI.CALENDAR} {formattedDate}
             </span>
           </div>
           <div className="px-3 py-1 flex items-center gap-1.5" style={{ background: colors.white18, border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px' }}>
             <span className="text-white font-medium capitalize" style={{ fontSize: '9px' }}>
-              {categoryEmoji} {expense.category?.toLowerCase() || 'Expense'}
+              {categoryEmoji} {expense.category?.toLowerCase() || 'expense'}
             </span>
           </div>
         </div>
       </div>
 
       <div className="px-4 py-5 space-y-4">
-        
         {/* Paid By Card */}
         <div>
           <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: colors.textMuted, letterSpacing: '0.06em', marginLeft: '8px' }}>
@@ -192,12 +177,12 @@ export function ExpenseDetail() {
           <div className="bg-white p-4" style={{ border: '0.5px solid #e8e4f8', borderRadius: '14px' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {payer?.avatarUrl ? (
-                  <img src={payer.avatarUrl} className="w-[32px] h-[32px] rounded-full object-cover" alt="" />
+                {payer?.resolvedAvatar ? (
+                  <img src={payer.resolvedAvatar} className="w-[32px] h-[32px] rounded-full object-cover" alt="" />
                 ) : (
                   <div className="w-[32px] h-[32px] rounded-full bg-slate-200" />
                 )}
-                  <div>
+                <div>
                   <p className="font-semibold text-[#1a1625] text-xs">{payer?.displayName || 'Unknown'}</p>
                   <p className="mt-0.5" style={{ fontSize: '10px', color: colors.textMuted }}>Paid full amount</p>
                 </div>
@@ -217,7 +202,7 @@ export function ExpenseDetail() {
         {/* Split Between Card */}
         <div>
           <h3 className="mb-2 font-bold uppercase" style={{ fontSize: '10px', color: colors.textMuted, letterSpacing: '0.06em', marginLeft: '8px' }}>
-            SPLIT BETWEEN · {participants.length} MEMBERS
+            SPLIT BETWEEN - {participants.length} MEMBERS
           </h3>
           <div className="bg-white p-4" style={{ border: '0.5px solid #e8e4f8', borderRadius: '14px' }}>
             <div className="space-y-4">
@@ -248,9 +233,9 @@ export function ExpenseDetail() {
                 const avatarColor = pastelColors[p.userId.charCodeAt(p.userId.length - 1) % pastelColors.length];
 
                 return (
-                  <div key={p.userId} 
+                  <div key={p.userId}
                     className="flex items-center justify-between"
-                    onClick={() => m && navigate(`/group/${groupId}/balance/${p.userId}`)} // Theoretical navigation
+                    onClick={() => m && navigate(`/group/${groupId}/balance/${p.userId}`)}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center font-bold text-[#1a1625]" style={{ backgroundColor: avatarColor, fontSize: '11px' }}>
@@ -274,9 +259,9 @@ export function ExpenseDetail() {
                 );
               })}
             </div>
-            
+
             {!showAllMembers && hiddenCount > 0 && (
-              <button 
+              <button
                 onClick={() => setShowAllMembers(true)}
                 className="w-full mt-4 pt-4 border-t"
                 style={{ borderTopColor: colors.border, fontSize: '10px', fontWeight: 600, color: colors.primary }}
@@ -309,13 +294,13 @@ export function ExpenseDetail() {
             </h3>
             <div className="bg-white" style={{ border: '0.5px solid #e8e4f8', borderRadius: '14px' }}>
               {expense.receiptUrl ? (
-                <button 
+                <button
                   onClick={() => setReceiptViewOpen(true)}
                   className="w-full p-4 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: '#ede9ff' }}>
-                      🧾
+                      {EXPENSE_ACTION_EMOJI.RECEIPT}
                     </div>
                     <span className="font-semibold" style={{ fontSize: '11px', color: colors.primary }}>
                       View attached receipt
@@ -336,10 +321,9 @@ export function ExpenseDetail() {
             </div>
           </div>
         )}
-
       </div>
 
-      {/* ⋯ Actions Bottom Sheet */}
+      {/* Actions Bottom Sheet */}
       <AnimatePresence>
         {actionsSheetOpen && (
           <>
@@ -360,69 +344,79 @@ export function ExpenseDetail() {
                 </div>
                 <div className="text-center mb-2">
                   <h3 className="font-bold text-[#1a1625] text-xs" style={{ color: colors.textPrimary }}>
-                    {expense.title} · {formattedAmount}
+                    {expense.title} - {formattedAmount}
                   </h3>
                 </div>
               </div>
 
               <div className="px-4 pb-10 space-y-1">
                 {canEdit && (
-                  <button 
+                  <button
                     onClick={() => {
                       setActionsSheetOpen(false);
-                      // Theoretical navigation to edit mode
-                       navigate(`/group/${groupId}/add-expense?edit=${expenseId}`);
+                      navigate(`/group/${groupId}/add-expense?edit=${expenseId}`);
                     }}
                     className="w-full flex items-center gap-4 p-4 rounded-2xl transition-colors hover:bg-[#f4f2fb]"
                   >
                     <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: '#ede9ff' }}>
-                      ✏️
+                      {EXPENSE_ACTION_EMOJI.EDIT}
                     </div>
                     <span className="font-semibold text-[#1a1625]" style={{ fontSize: '13px', color: colors.textPrimary }}>Edit expense</span>
                   </button>
                 )}
-                
-                <button 
+
+                <button
                   onClick={() => {
                     setActionsSheetOpen(false);
-                    // Native share action logic here
+                    const lines = [
+                      `Expense: ${expense.title}`,
+                      `Amount: ${formattedAmount}`,
+                      `Group: ${group?.name ?? 'Group'}`,
+                      `Date: ${formattedDate}`,
+                    ];
+                    const shareText = lines.join('\n');
+                    if (navigator.share) {
+                      navigator.share({ title: 'Expense breakdown', text: shareText }).catch(() => {});
+                    } else {
+                      navigator.clipboard?.writeText(shareText).catch(() => {});
+                    }
                   }}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl transition-colors hover:bg-[#f4f2fb]"
                 >
                   <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: '#e6f1fb' }}>
-                    📤
+                    {EXPENSE_ACTION_EMOJI.SHARE}
                   </div>
                   <span className="font-semibold text-[#1a1625]" style={{ fontSize: '13px', color: colors.textPrimary }}>Share breakdown</span>
                 </button>
 
                 {canEdit && (
                   <>
-                    <button 
+                    <button
                       onClick={() => {
                         setActionsSheetOpen(false);
-                        // Navigate to Add Expense with duplicated pre-fill
+                        navigate(`/group/${groupId}/add-expense?duplicate=${expenseId}`);
                       }}
                       className="w-full flex items-center gap-4 p-4 rounded-2xl transition-colors hover:bg-[#f4f2fb]"
                     >
                       <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: '#faeeda' }}>
-                        📋
+                        {EXPENSE_ACTION_EMOJI.DUPLICATE}
                       </div>
                       <span className="font-semibold text-[#1a1625]" style={{ fontSize: '13px', color: colors.textPrimary }}>Duplicate expense</span>
                     </button>
 
                     {canDelete && (
-                      <button 
-                      onClick={() => {
-                        setActionsSheetOpen(false);
-                        setTimeout(() => setDeleteConfirmOpen(true), 200);
-                      }}
-                      className="w-full flex items-center gap-4 p-4 rounded-2xl transition-colors hover:bg-[#fceaea]/50"
-                    >
-                      <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: '#fceaea' }}>
-                        🗑️
-                      </div>
-                      <span className="font-semibold" style={{ color: '#e24b4a', fontSize: '13px' }}>Delete expense</span>
-                    </button>
+                      <button
+                        onClick={() => {
+                          setActionsSheetOpen(false);
+                          setTimeout(() => setDeleteConfirmOpen(true), 200);
+                        }}
+                        className="w-full flex items-center gap-4 p-4 rounded-2xl transition-colors hover:bg-[#fceaea]/50"
+                      >
+                        <div className="w-[32px] h-[32px] rounded-lg flex items-center justify-center text-lg" style={{ backgroundColor: '#fceaea' }}>
+                          {EXPENSE_ACTION_EMOJI.DELETE}
+                        </div>
+                        <span className="font-semibold" style={{ color: '#e24b4a', fontSize: '13px' }}>Delete expense</span>
+                      </button>
                     )}
                   </>
                 )}
@@ -456,16 +450,16 @@ export function ExpenseDetail() {
               <p className="text-center mb-8" style={{ fontSize: '13px', color: colors.textMuted }}>
                 This cannot be undone. Balances will be recalculated.
               </p>
-              
+
               <div className="grid grid-cols-2 gap-3">
-                <button 
+                <button
                   onClick={() => setDeleteConfirmOpen(false)}
                   className="py-3.5 font-bold text-sm transition-colors active:scale-95"
                   style={{ backgroundColor: colors.pageBg, color: colors.textPrimary, borderRadius: '14px' }}
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     setDeleteConfirmOpen(false);
                     deleteExpenseMutation.mutate();
@@ -500,7 +494,6 @@ export function ExpenseDetail() {
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

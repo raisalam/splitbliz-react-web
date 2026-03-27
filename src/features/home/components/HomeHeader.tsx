@@ -23,6 +23,7 @@ export function HomeHeader({
 }: HomeHeaderProps) {
   const { user } = useUser();
   const hasUnread = unreadCount > 0;
+  const badgeText = unreadCount > 99 ? '99+' : String(unreadCount);
   const avatarUrl = user?.resolvedAvatar ?? '';
   const avatarInitial = (user?.displayName?.charAt(0) ?? 'U').toUpperCase();
 
@@ -53,7 +54,9 @@ export function HomeHeader({
               <Bell className="w-5 h-5" />
             </button>
             {hasUnread && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-white dark:border-slate-900"></span>
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-semibold rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center leading-none">
+                {badgeText}
+              </span>
             )}
           </div>
 

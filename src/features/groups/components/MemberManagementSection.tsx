@@ -67,7 +67,7 @@ export function MemberManagementSection({
 
           return (
             <div
-              key={member.userPublicId}
+              key={member.userId}
               className="flex items-center gap-3 px-4 py-3"
               style={{ borderTop: `0.5px solid ${sectionDivider}` }}
             >

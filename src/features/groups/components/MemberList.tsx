@@ -11,7 +11,7 @@ type MemberListProps = {
   currentUserId: string;
   onShowHistory: () => void;
   onSettle: (memberId: string, amount: number) => void;
-  onRemind: (memberName: string) => void;
+  onRemind: (memberId: string) => void;
 };
 
 export function MemberList({
@@ -74,7 +74,7 @@ export function MemberList({
               isMe={isMe}
               currencySymbol={currencySymbol}
               onSettle={(amount) => onSettle(member.userPublicId, amount)}
-              onRemind={() => onRemind(member.displayName)}
+              onRemind={() => onRemind(member.userId)}
             />
           );
         })}

@@ -2,24 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useParams, useNavigate } from 'react-router';
 import { useTheme } from '../../providers/ThemeProvider';
-import { 
-  ArrowLeft, Sparkles, RefreshCw, Bot
-} from 'lucide-react';
-import { MOCK_USER_ID } from '../../api/groups';
-import { MOCK_GROUPS } from '../../mock/groups';
-import { MOCK_EXPENSES } from '../../mock/expenses';
-import { MOCK_PAIR_BALANCES } from '../../mock/balances';
+import { ArrowLeft, Sparkles, RefreshCw, Bot, TrendingUp } from 'lucide-react';
 import { AIInsightCards } from './components/AIInsightCards';
 import { SpendingChart } from './components/SpendingChart';
 import { AIChatPanel } from './components/AIChatPanel';
+import { useUser } from '../../providers/UserContext';
+import { CURRENCY_CONFIG } from '../../constants/app';
+import { aiInsightsService, aiService, groupsService, extractApiError } from '../../services';
+import type { Group, GroupMember } from '../../types';
+import type { GroupAiInsightsResponse } from '../../services/aiInsightsService';
+import { EmptyState } from '../../components/EmptyState';
+import { formatCurrency } from '../../utils/formatCurrency';
 
-// --- FINAL UNIFIED API JSON CONTRACT ---
+// --- Normalized UI model for AI insights ---
 export interface GroupAIResponse {
   groupId: string;
   groupName: string;
   currencyCode: string;
   currencySymbol: string;
-  
+
   overview: {
     totalSpent: number;
     expenseCount: number;
@@ -36,14 +37,14 @@ export interface GroupAIResponse {
   topSpender: {
     userPublicId: string;
     displayName: string;
-    avatarUrl: string;
+    avatarUrl: string | null;
     amount: number;
   } | null;
 
   topDebtor: {
     userPublicId: string;
     displayName: string;
-    avatarUrl: string;
+    avatarUrl: string | null;
     amountOwed: number;
   } | null;
 
@@ -78,158 +79,197 @@ export interface GroupAIResponse {
   };
 }
 
-// --- MOCK API GENERATOR ---
-function generateInsights(groupId: string): GroupAIResponse | null {
-  const group = MOCK_GROUPS.find(g => g.publicId === groupId);
-  if (!group) return null;
+const TREND_MAP: Record<string, 'UPWARD' | 'DOWNWARD' | 'STABLE'> = {
+  INCREASING: 'UPWARD',
+  DECREASING: 'DOWNWARD',
+  STABLE: 'STABLE',
+  UPWARD: 'UPWARD',
+  DOWNWARD: 'DOWNWARD',
+};
 
-  const expenses = MOCK_EXPENSES[groupId] || [];
-  const balances = MOCK_PAIR_BALANCES[groupId] || [];
-  const members = group.members || [];
-  const totalSpent = expenses.reduce((s, e) => s + parseFloat(e.totalAmount), 0);
-  const currSym = group.currencyCode === 'INR' ? '₹' : '$';
-  const perPerson = totalSpent / Math.max(members.length, 1);
+const toNumber = (value: unknown, fallback = 0): number => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : fallback;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+};
 
-  // Spender Map
-  const spenderMap: Record<string, number> = {};
-  members.forEach((m: any) => spenderMap[m.userPublicId] = 0);
-  expenses.forEach((e: any) => {
-    if (spenderMap[e.paidByUserPublicId] !== undefined) {
-      spenderMap[e.paidByUserPublicId] += parseFloat(e.totalAmount);
-    }
-  });
-
-  const catMap: Record<string, number> = {};
-  expenses.forEach((e: any) => {
-    catMap[e.category] = (catMap[e.category] || 0) + parseFloat(e.totalAmount);
-  });
-  const categories = Object.entries(catMap).sort((a, b) => b[1] - a[1])
-    .map(([name, amount]) => ({ category: name, amount, percentage: totalSpent > 0 ? Math.round((amount / totalSpent) * 100) : 0 }));
-
-  const topSpenderEntry = Object.entries(spenderMap).sort((a, b) => b[1] - a[1])[0];
-  const topSpender = (topSpenderEntry && topSpenderEntry[1] > 0) ? {
-    userPublicId: members.find((m: any) => m.userPublicId === topSpenderEntry[0])?.userPublicId || '',
-    displayName: members.find((m: any) => m.userPublicId === topSpenderEntry[0])?.displayName || 'User',
-    avatarUrl: members.find((m: any) => m.userPublicId === topSpenderEntry[0])?.avatarUrl || '',
-    amount: topSpenderEntry[1]
-  } : null;
-
-  const balanceMap: Record<string, number> = {};
-  members.forEach((m: any) => balanceMap[m.userPublicId] = 0);
-  Object.values(balances).forEach((b: any) => {
-    const amt = parseFloat(b.netAmount);
-    if (balanceMap[b.userHighPublicId] !== undefined) balanceMap[b.userHighPublicId] += amt;
-    if (balanceMap[b.userLowPublicId] !== undefined) balanceMap[b.userLowPublicId] -= amt;
-  });
-
-  const topDebtorEntry = Object.entries(balanceMap).sort((a, b) => a[1] - b[1])[0];
-  const topDebtor = (topDebtorEntry && topDebtorEntry[1] < 0) ? {
-    userPublicId: members.find((m: any) => m.userPublicId === topDebtorEntry[0])?.userPublicId || '',
-    displayName: members.find((m: any) => m.userPublicId === topDebtorEntry[0])?.displayName || 'User',
-    avatarUrl: members.find((m: any) => m.userPublicId === topDebtorEntry[0])?.avatarUrl || '',
-    amountOwed: Math.abs(topDebtorEntry[1])
-  } : null;
-
-  const maxDev = Object.values(spenderMap).reduce((max, spent) => Math.max(max, Math.abs(spent - perPerson)), 0);
-  const fairnessScore = totalSpent > 0 ? Math.max(0, Math.min(100, Math.round(100 - (maxDev / perPerson) * 100))) : 100;
-
-  let anomaly: GroupAIResponse['anomaly'] = { hasAnomaly: false };
-  if (expenses.length > 0) {
-    const largest = [...expenses].sort((a, b) => parseFloat(b.totalAmount) - parseFloat(a.totalAmount))[0];
-    if (parseFloat(largest.totalAmount) > perPerson * 1.5) {
-      anomaly = {
-        hasAnomaly: true,
-        expenseTitle: largest.title,
-        expenseAmount: parseFloat(largest.totalAmount),
-        reason: `Unusually large compared to group average (${currSym}${perPerson.toFixed(0)})`
-      };
+const parseMaybeJson = <T,>(value: T | string | null | undefined): T | null => {
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return null;
     }
   }
+  return (value ?? null) as T | null;
+};
 
-  const unsettled = balances.filter((b: any) => parseFloat(b.netAmount) !== 0);
+const resolveCurrencySymbol = (currencyCode?: string): string => {
+  if (!currencyCode) return '';
+  return CURRENCY_CONFIG[currencyCode]?.symbol ?? currencyCode;
+};
 
-  // Trend Mock Logic (simulating 6 months history based on totalSpent)
-  const baseLine = totalSpent > 0 ? totalSpent : 10000;
+const resolveTrend = (value?: string): 'UPWARD' | 'DOWNWARD' | 'STABLE' => {
+  if (!value) return 'STABLE';
+  const key = value.toUpperCase();
+  return TREND_MAP[key] ?? 'STABLE';
+};
+
+const buildInsights = (
+  groupId: string,
+  group: Group,
+  members: GroupMember[],
+  raw: GroupAiInsightsResponse
+): GroupAIResponse => {
+  const currencyCode = group.currencyCode ?? 'INR';
+  const currencySymbol = resolveCurrencySymbol(currencyCode);
+  const memberById = new Map(members.map((m) => [m.userId, m]));
+
+  const overviewRaw = parseMaybeJson(raw.overview) ?? {};
+  const totalSpent = toNumber((overviewRaw as any).totalSpent);
+  const expenseCount = Number((overviewRaw as any).expenseCount ?? 0);
+  const memberCount = Number((overviewRaw as any).memberCount ?? group.memberCount ?? members.length ?? 0);
+  const avgPerPerson = toNumber((overviewRaw as any).avgPerPerson);
+
+  const breakdownRaw = parseMaybeJson(raw.spendingBreakdown);
+  const spendingBreakdown = Array.isArray(breakdownRaw)
+    ? breakdownRaw.map((b: any) => ({
+      category: b.category,
+      amount: toNumber(b.amount),
+      percentage: Number(b.percentage ?? 0),
+    }))
+    : [];
+
+  const topSpenderRaw = parseMaybeJson(raw.topSpender);
+  const topSpenderMember = topSpenderRaw?.userId ? memberById.get(topSpenderRaw.userId) : null;
+  const topSpender = topSpenderRaw?.userId ? {
+    userPublicId: topSpenderRaw.userId,
+    displayName: topSpenderMember?.displayName || topSpenderRaw.name || 'Member',
+    avatarUrl: topSpenderMember?.resolvedAvatar ?? null,
+    amount: toNumber(topSpenderRaw.amount),
+  } : null;
+
+  const topDebtorRaw = parseMaybeJson(raw.topDebtor);
+  const topDebtorMember = topDebtorRaw?.userId ? memberById.get(topDebtorRaw.userId) : null;
+  const topDebtor = topDebtorRaw?.userId ? {
+    userPublicId: topDebtorRaw.userId,
+    displayName: topDebtorMember?.displayName || topDebtorRaw.name || 'Member',
+    avatarUrl: topDebtorMember?.resolvedAvatar ?? null,
+    amountOwed: toNumber(topDebtorRaw.amountOwed),
+  } : null;
+
+  const trendRaw = parseMaybeJson(raw.trendAnalysis) ?? {};
+  const trendPointsRaw = Array.isArray((trendRaw as any).dataPoints) ? (trendRaw as any).dataPoints : [];
   const trendAnalysis = {
-    timeframe: "6_MONTHS",
-    overallTrend: "UPWARD" as const,
-    averageMonthlySpend: Math.round(baseLine * 0.9),
-    dataPoints: [
-      { month: "Oct 25", type: "HISTORICAL" as const, amount: Math.round(baseLine * 0.7) },
-      { month: "Nov 25", type: "HISTORICAL" as const, amount: Math.round(baseLine * 0.8) },
-      { month: "Dec 25", type: "HISTORICAL" as const, amount: Math.round(baseLine * 1.3) },
-      { month: "Jan 26", type: "HISTORICAL" as const, amount: Math.round(baseLine * 0.9) },
-      { month: "Feb 26", type: "HISTORICAL" as const, amount: Math.round(baseLine * 1.0) },
-      { month: "Mar 26", type: "FORECAST" as const, amount: Math.round(baseLine * 1.15) }
-    ],
-    trendInsight: "Spending spiked 30% in December. Based on current habits, March spending is projected to end 15% higher than your average."
+    timeframe: '6_MONTHS',
+    overallTrend: resolveTrend((trendRaw as any).overallTrend),
+    averageMonthlySpend: toNumber((trendRaw as any).averageMonthlySpend),
+    dataPoints: trendPointsRaw.map((p: any) => ({
+      month: p.month,
+      type: p.type === 'FORECAST' ? 'FORECAST' : 'HISTORICAL',
+      amount: toNumber(p.amount),
+    })),
+    trendInsight: (trendRaw as any).trendInsight || 'No trend insights yet.',
   };
 
+  const anomalyRaw = parseMaybeJson(raw.anomaly);
+  const hasAnomaly = !!(anomalyRaw && anomalyRaw.expenseTitle);
+  const anomaly = hasAnomaly ? {
+    hasAnomaly: true,
+    expenseTitle: anomalyRaw.expenseTitle,
+    expenseAmount: toNumber(anomalyRaw.expenseAmount),
+    reason: anomalyRaw.reason || (
+      anomalyRaw.groupAverageExpense
+        ? `Unusually large compared to group average (${formatCurrency(toNumber(anomalyRaw.groupAverageExpense).toFixed(2), currencyCode)})`
+        : undefined
+    ),
+  } : { hasAnomaly: false };
+
+  const settlementRaw = parseMaybeJson(raw.settlement) ?? {};
+  const settlement = {
+    unsettledTransactionCount: Number((settlementRaw as any).unsettledTransactionCount ?? 0),
+    strategyMessage: (settlementRaw as any).strategyMessage || 'No settlement strategy available yet.',
+  };
+
+  const aiChatRaw = parseMaybeJson(raw.aiChat) ?? {};
   const aiChat = {
-    initialMessage: totalSpent > 5000
-      ? `I noticed your group spending is quite high lately. The ${categories[0]?.category || 'top'} category makes up ${categories[0]?.percentage || 0}% of all expenses. Your trend shows a 15% predicted increase for next month.`
-      : expenses.length === 0
-      ? 'No expenses yet. Add your first expense and I will start analyzing your group spending patterns.'
-      : `Your group spends around ${currSym}${perPerson.toFixed(0)} per person. Things look well balanced! Keep it up.`
+    initialMessage: (aiChatRaw as any).initialMessage || 'I am ready to help analyze your group spending.',
   };
 
   return {
-    groupId: group.publicId,
-    groupName: group.name,
-    currencyCode: group.currencyCode,
-    currencySymbol: currSym,
+    groupId,
+    groupName: group.name ?? 'Group',
+    currencyCode,
+    currencySymbol,
     overview: {
       totalSpent,
-      expenseCount: expenses.length,
-      memberCount: members.length,
-      avgPerPerson: perPerson
+      expenseCount,
+      memberCount,
+      avgPerPerson,
     },
-    spendingBreakdown: categories,
+    spendingBreakdown,
     topSpender,
     topDebtor,
-    fairnessScore,
+    fairnessScore: raw.fairnessScore ?? 0,
     trendAnalysis,
     anomaly,
-    settlement: {
-      unsettledTransactionCount: unsettled.length,
-      strategyMessage: unsettled.length === 0
-        ? 'Everyone is settled up! No transactions needed. 🎉'
-        : unsettled.length === 1
-        ? `Just 1 transaction needed to settle everything!`
-        : `${unsettled.length} optimal transactions needed to clear all balances. Use the Settle Up feature for the fastest resolution.`
-    },
-    aiChat
+    settlement,
+    aiChat,
   };
-}
+};
 
 export function GroupAI() {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { user } = useUser();
+  const currentUserId = user?.id ?? '';
 
   const [loading, setLoading] = useState(true);
   const [insights, setInsights] = useState<GroupAIResponse | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [groupInfo, setGroupInfo] = useState<Group | null>(null);
   
   // Local Chat state
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  const loadInsights = () => {
-    setLoading(true);
-    setTimeout(() => {
-      const data = generateInsights(groupId || '');
-      setInsights(data);
-      if (data) {
-        setChatMessages([{ id: 1, sender: 'ai', text: data.aiChat.initialMessage }]);
-      }
+  const loadInsights = async () => {
+    if (!groupId) {
       setLoading(false);
-    }, 2000);
+      return;
+    }
+    setLoading(true);
+    setErrorMessage(null);
+    setErrorCode(null);
+    try {
+      const group = await groupsService.getGroup(groupId);
+      setGroupInfo(group);
+      const [rawInsights, members] = await Promise.all([
+        aiInsightsService.getGroupInsights(groupId),
+        groupsService.getMembers(groupId),
+      ]);
+      const data = buildInsights(groupId, group, members, rawInsights);
+      setInsights(data);
+      setChatMessages([{ id: 1, sender: 'ai', text: data.aiChat.initialMessage }]);
+    } catch (err) {
+      const apiError = extractApiError(err);
+      setErrorMessage(apiError?.message ?? 'Unable to load AI insights for this group.');
+      setErrorCode(apiError?.code ?? null);
+      setInsights(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadInsights(); }, [groupId]);
 
-  const handleSendQuery = (e: React.FormEvent) => {
+  const handleSendQuery = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !insights) return;
     
@@ -237,12 +277,24 @@ export function GroupAI() {
     setChatMessages(prev => [...prev, newMsg]);
     setChatInput('');
     setIsTyping(true);
-
-    setTimeout(() => {
-      const aiReply = { id: Date.now(), sender: 'ai', text: "I'm analyzing that for you... Based on the 6-month data, your group tends to spend more on weekends. I suggest splitting large bills evenly to maintain fairness." };
+    try {
+      const response = await aiService.prompt(chatInput, {
+        groupId: insights.groupId,
+        groupName: insights.groupName,
+        currencyCode: insights.currencyCode,
+        overview: insights.overview,
+        spendingBreakdown: insights.spendingBreakdown,
+        trendAnalysis: insights.trendAnalysis,
+        settlement: insights.settlement,
+      });
+      const aiReply = { id: Date.now(), sender: 'ai', text: response.result || 'No response available.' };
       setChatMessages(prev => [...prev, aiReply]);
+    } catch {
+      const aiReply = { id: Date.now(), sender: 'ai', text: 'Unable to fetch AI response right now.' };
+      setChatMessages(prev => [...prev, aiReply]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   if (loading) {
@@ -265,9 +317,47 @@ export function GroupAI() {
   }
 
   if (!insights) {
+    if (errorCode === 'ERR_INSIGHTS_NOT_READY') {
+      return (
+        <div className="min-h-screen bg-slate-50 dark:bg-[#0A0F1C] text-slate-900 dark:text-white">
+          <header className="sticky top-0 z-50 bg-white/70 dark:bg-[#0A0F1C]/70 backdrop-blur-xl border-b border-white/20 dark:border-white/5">
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-3">
+              <button onClick={() => navigate(`/group/${groupId}`)} className="p-2 -ml-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="min-w-0">
+                <h1 className="font-bold text-base truncate">{groupInfo?.name ?? 'Group AI'}</h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Insights are being generated</p>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800/50 shadow-sm">
+              <EmptyState
+                title="Insights are still preparing"
+                description="Add a few expenses and check back shortly. We’ll generate spending patterns, trends, and smart settlement tips."
+                action={{
+                  label: 'Add expense',
+                  onClick: () => navigate(`/group/${groupId}/add-expense`),
+                }}
+              />
+              <div className="pb-8 flex items-center justify-center">
+                <button
+                  onClick={() => navigate(`/group/${groupId}`)}
+                  className="text-sm font-semibold text-indigo-600 hover:underline"
+                >
+                  Back to group
+                </button>
+              </div>
+            </div>
+          </main>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-500">
-        No data available for this group
+        {errorMessage ?? 'No data available for this group'}
       </div>
     );
   }
@@ -316,7 +406,7 @@ export function GroupAI() {
                 <span>AI Financial Summary</span>
               </div>
               <div className="text-5xl font-black tracking-tight mb-2 drop-shadow-lg">
-                {insights.currencySymbol}{insights.overview.totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatCurrency(insights.overview.totalSpent.toFixed(2), insights.currencyCode)}
               </div>
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-sm font-medium border border-white/20">
                 <TrendingUp className="w-4 h-4" />
@@ -347,7 +437,7 @@ export function GroupAI() {
           <AIInsightCards
             insights={insights}
             groupId={groupId}
-            currentUserId={MOCK_USER_ID}
+            currentUserId={currentUserId}
             onNavigate={navigate}
           />
         </motion.div>

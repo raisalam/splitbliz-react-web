@@ -4,22 +4,13 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Check, X, ChevronRight } from 'lucide-react';
 import { colors } from '../../constants/colors';
 import { GROUP_TYPE_EMOJI } from '../../constants/app';
+import { GROUP_EMOJI_GRID } from '../../constants/emoji';
 import { useUser } from '../../providers/UserContext';
-import { useQueryClient } from '@tanstack/react-query';
-import { groupsService } from '../../services';
+import { useCreateGroup, useGenerateInvite } from '../../hooks/useGroupMutations';
 import { toast } from 'sonner';
 
 // 35+ emojis for the picker grid
-const EMOJI_GRID = [
-  '✈️', '🏠', '🍕', '⚽', '🎉', '💼', '💑', '📂',
-  '🚗', '🏝️', '🗺️', '🏖️', '⛱️', '🏕️', '🚅', '🧳',
-  '🍔', '🍣', '🍷', '☕', '🌮', '🍻', '🍽️', '🍦',
-  '🛋️', '🛒', '🔌', '🛁', '🧹', '💡', '🔑', '📺',
-  '🎈', '🎊', '🎁', '🕺', '🥳', '🎤', '🎶', '🎫',
-  '🏀', '🏈', '🎾', '🏓', '🏸', '🥊', '🏋️', '🏄',
-  '💻', '📊', '📋', '📝', '📞', '🏢', '👔', '📝',
-  '👥', '🤝', '🙌', '💪', '🔥', '✨', '🚀', '🎯',
-];
+const EMOJI_GRID = GROUP_EMOJI_GRID;
 
 const GROUP_TYPES = [
   { id: 'TRIP', label: 'Trip' },
@@ -35,14 +26,16 @@ const GROUP_TYPES = [
 export function CreateGroup() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const queryClient = useQueryClient();
   const { user } = useUser();
+
+  const createGroup = useCreateGroup();
+  const generateInvite = useGenerateInvite();
 
   const [groupName, setGroupName] = useState('');
   const [groupNamePlaceholder, setGroupNamePlaceholder] = useState('Enter group name...');
   const [selectedEmoji, setSelectedEmoji] = useState(GROUP_TYPE_EMOJI['OTHER']);
   const [emojiSheetOpen, setEmojiSheetOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState('TRIP');
+  const [selectedType, setSelectedType] = useState<any>('TRIP');
   const [requireApproval, setRequireApproval] = useState(true);
   const [simplifyDebts, setSimplifyDebts] = useState(false);
   const [inviteSheetOpen, setInviteSheetOpen] = useState(false);
@@ -70,7 +63,7 @@ export function CreateGroup() {
     setIsCreating(true);
     try {
       const currencyCode = user?.settings?.preferences?.defaultCurrency ?? 'INR';
-      const created = await groupsService.createGroup({
+      const created = await createGroup.mutateAsync({
         name: groupName.trim(),
         groupType: selectedType,
         currencyCode,
@@ -81,10 +74,9 @@ export function CreateGroup() {
         },
       });
       setCreatedGroupId(created.id);
-      const invite = await groupsService.generateInvite(created.id);
+      const invite = await generateInvite.mutateAsync(created.id);
       setInviteLink(invite.inviteUrl);
       setInviteSheetOpen(true);
-      queryClient.invalidateQueries({ queryKey: ['home'] });
     } catch {
       toast.error('Failed to create group. Please try again.');
     } finally {

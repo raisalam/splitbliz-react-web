@@ -1,18 +1,19 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, useParams } from 'react-router';
-import { ArrowLeft, Check, LogOut, Receipt, PenLine, Users } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { colors } from '../../constants/colors';
 import { Skeleton } from '../../components/ui/skeleton';
 import { EmptyState } from '../../components/EmptyState';
 import { useActivity } from '../../hooks/useActivity';
+import { GROUP_ACTIVITY_ICON_MAP } from '../../constants/iconography';
 
 interface GroupActivityEvent {
   id: string;
   type: 'EXPENSE' | 'SETTLE' | 'EDIT' | 'JOIN' | 'LEAVE';
   dateKey: string;
   timeLabel: string;
-  
+
   // Content
   memberName: string;
   actionText: string;
@@ -30,7 +31,7 @@ export function GroupActivity() {
     return (
       <div className="min-h-screen bg-white font-sans pb-10">
         <header className="sticky top-0 z-50 bg-white shadow-sm flex items-center px-4 h-16">
-          <button 
+          <button
             onClick={() => navigate(`/group/${groupId}`)}
             className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors hover:bg-[#e0ddf5] mr-3"
             style={{ backgroundColor: colors.primaryFaint }}
@@ -61,7 +62,7 @@ export function GroupActivity() {
     return (
       <div className="min-h-screen bg-white font-sans pb-10">
         <header className="sticky top-0 z-50 bg-white shadow-sm flex items-center px-4 h-16">
-          <button 
+          <button
             onClick={() => navigate(`/group/${groupId}`)}
             className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors hover:bg-[#e0ddf5] mr-3"
             style={{ backgroundColor: colors.primaryFaint }}
@@ -80,13 +81,7 @@ export function GroupActivity() {
   }
 
   const getIconProps = (type: GroupActivityEvent['type']) => {
-    switch (type) {
-      case 'EXPENSE': return { icon: <Receipt className="w-[18px] h-[18px] text-[#6c5ce7]" />, bg: '#ede9ff' };
-      case 'SETTLE': return { icon: <Check className="w-[18px] h-[18px] text-[#0f6e56]" strokeWidth={3} />, bg: colors.successLight };
-      case 'EDIT': return { icon: <PenLine className="w-[18px] h-[18px] text-[#e28a11]" />, bg: '#faeeda' };
-      case 'JOIN': return { icon: <Users className="w-[18px] h-[18px] text-[#2c74c9]" />, bg: '#e6f1fb' };
-      case 'LEAVE': return { icon: <LogOut className="w-[18px] h-[18px] text-[#e24b4a]" />, bg: '#fceaea' };
-    }
+    return GROUP_ACTIVITY_ICON_MAP[type] ?? GROUP_ACTIVITY_ICON_MAP.EXPENSE;
   };
 
   const toEvent = (entry: any): GroupActivityEvent => {
@@ -153,7 +148,8 @@ export function GroupActivity() {
 
   const renderActivityRow = (event: GroupActivityEvent, index: number) => {
     const iconProps = getIconProps(event.type);
-    
+    const Icon = iconProps.Icon;
+
     return (
       <motion.div
         key={event.id}
@@ -163,24 +159,24 @@ export function GroupActivity() {
         className="flex gap-4 px-5 py-4 cursor-default"
         style={{ borderBottom: `0.5px solid ${colors.primaryFaint}` }}
       >
-        <div 
+        <div
           className="w-[32px] h-[32px] flex items-center justify-center shrink-0"
           style={{ backgroundColor: iconProps.bg, borderRadius: '10px' }}
         >
-          {iconProps.icon}
+          <Icon className={iconProps.className} strokeWidth={iconProps.strokeWidth} />
         </div>
-        
+
         <div className="flex-1 pt-0.5 flex items-start justify-between min-w-0">
           <div className="pr-4">
             <p className="text-[14px] leading-[1.3] text-[#3d3a4a] break-words">
               <span className="font-bold text-[#1a1625]">{event.memberName}</span> {event.actionText}
             </p>
             <p className="mt-1 flex items-center gap-1.5" style={{ fontSize: '9px', color: '#b8b4d8', fontWeight: 600 }}>
-              {event.subtitleLabel && <span>{event.subtitleLabel}  · </span>}
+              {event.subtitleLabel && <span>{event.subtitleLabel} - </span>}
               <span>{event.timeLabel}</span>
             </p>
           </div>
-          
+
           {event.type === 'EXPENSE' && event.amount && (
             <div className="font-bold text-[#1a1625] text-[13px] shrink-0 pt-0.5">
               {event.amount}
@@ -202,10 +198,9 @@ export function GroupActivity() {
 
   return (
     <div className="min-h-screen bg-white font-sans pb-10">
-      
       {/* Sticky White Header */}
       <header className="sticky top-0 z-50 bg-white shadow-sm flex items-center px-4 h-16">
-        <button 
+        <button
           onClick={() => navigate(`/group/${groupId}`)}
           className="w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors hover:bg-[#e0ddf5] mr-3"
           style={{ backgroundColor: colors.primaryFaint }}
@@ -237,7 +232,6 @@ export function GroupActivity() {
           ))
         )}
       </div>
-
     </div>
   );
 }

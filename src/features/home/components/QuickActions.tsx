@@ -4,6 +4,7 @@ import { Banknote, Check, ChevronDown, UserPlus, X } from 'lucide-react';
 import { GroupAvatar } from '../../../components/GroupAvatar';
 import { ActionItem, Group } from '../../../types';
 import { GROUP_TYPE_EMOJI } from '../../../constants/app';
+import { DEFAULT_GROUP_EMOJI } from '../../../constants/emoji';
 import { formatCurrency } from '../../../utils/formatCurrency';
 import { CachedAvatar } from '../../../components/CachedAvatar';
 
@@ -50,7 +51,7 @@ export function QuickActions({
                 const avatarUrl = action.fromUser?.resolvedAvatar;
                 const avatarInitial = displayName.charAt(0).toUpperCase();
                 const group = groups.find(g => g.id === action.groupId);
-                const groupEmoji = group ? (GROUP_TYPE_EMOJI[group.groupType] ?? GROUP_TYPE_EMOJI['OTHER']) : '👥';
+                const groupEmoji = group ? (GROUP_TYPE_EMOJI[group.groupType] ?? GROUP_TYPE_EMOJI['OTHER']) : DEFAULT_GROUP_EMOJI;
                 const timeStr = new Date(action.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
                 return (

@@ -1,14 +1,16 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Check, Clock, CreditCard, Users, X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { colors } from '../../constants/colors';
 import { Skeleton } from '../../components/ui/skeleton';
 import { EmptyState } from '../../components/EmptyState';
+import { useMarkAsRead, useMarkAllAsRead } from '../../hooks/useNotificationMutations';
 import { notificationsService } from '../../services';
 import type { Notification } from '../../types';
+import { NOTIFICATION_STYLE_MAP } from '../../constants/iconography';
 
 type NotificationStyle = {
   icon: React.ReactNode;
@@ -29,32 +31,20 @@ function parseNotificationData(data?: string | null): Record<string, string> {
 }
 
 function getNotificationStyle(type: Notification['type']): NotificationStyle {
-  switch (type) {
-    case 'NEW_EXPENSE':
-    case 'EXPENSE_ADDED':
-      return { icon: <CreditCard className="w-4 h-4 text-[#6c5ce7]" />, bg: '#ede9ff' };
-    case 'GROUP_INVITE':
-    case 'MEMBER_JOINED':
-      return { icon: <Users className="w-4 h-4 text-[#2c74c9]" />, bg: '#e6f1fb' };
-    case 'REMINDER':
-      return { icon: <Clock className="w-4 h-4 text-[#e24b4a]" />, bg: '#fceaea' };
-    case 'SETTLEMENT_APPROVED':
-      return { icon: <Check className="w-4 h-4 text-[#0f6e56]" strokeWidth={3} />, bg: colors.successLight };
-    case 'SETTLEMENT_REJECTED':
-      return { icon: <X className="w-4 h-4 text-[#e24b4a]" />, bg: '#fceaea' };
-    case 'SETTLEMENT_REQUEST':
-    case 'SETTLEMENT_RECEIVED':
-    default:
-      return { icon: <Clock className="w-4 h-4 text-[#e28a11]" />, bg: '#faeeda' };
-  }
+  const mapped = NOTIFICATION_STYLE_MAP[type] ?? NOTIFICATION_STYLE_MAP.DEFAULT;
+  const Icon = mapped.Icon;
+  return { icon: <Icon className={mapped.className} strokeWidth={mapped.strokeWidth} />, bg: mapped.bg };
 }
 
 export function Notifications() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const markAsRead = useMarkAsRead();
+  const markAllAsRead = useMarkAllAsRead();
+  
   const { data, isLoading, error } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationsService.getNotifications(),
+    refetchOnMount: 'always',
   });
 
   const notifications = data?.notifications ?? [];
@@ -63,9 +53,7 @@ export function Notifications() {
 
   const markAllRead = async () => {
     try {
-      await notificationsService.markAllAsRead();
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['home'] });
+      await markAllAsRead.mutateAsync();
     } catch {
       toast.error('Failed to mark all as read.');
     }
@@ -74,9 +62,7 @@ export function Notifications() {
   const handleNotificationClick = async (n: Notification) => {
     if (!n.isRead) {
       try {
-        await notificationsService.markAsRead(n.id);
-        queryClient.invalidateQueries({ queryKey: ['notifications'] });
-        queryClient.invalidateQueries({ queryKey: ['home'] });
+        await markAsRead.mutateAsync(n.id);
       } catch {
         toast.error('Failed to mark as read.');
       }

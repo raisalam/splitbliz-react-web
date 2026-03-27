@@ -11,18 +11,33 @@ import { CURRENCY_CONFIG } from '../constants/app';
  * Input: "18000.00", currency: "INR"
  * Output: "₹18,000.00"
  */
-export function formatCurrency(amount: string, currencyCode: string): string {
-  const config = CURRENCY_CONFIG[currencyCode];
-  const symbol = config?.symbol ?? currencyCode;
-
-  // Use Intl for locale-aware formatting
+function formatNumber(amount: string): string {
   const num = Number(amount); // safe — display only, never arithmetic
-  const formatted = new Intl.NumberFormat('en-IN', {
+  let formatted = new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(num);
 
-  return `${symbol}${formatted}`;
+  if (formatted.endsWith('.00')) {
+    formatted = formatted.slice(0, -3);
+  }
+
+  return formatted;
+}
+
+export function formatCurrency(amount: string, currencyCode: string): string {
+  const config = CURRENCY_CONFIG[currencyCode];
+  const symbol = config?.symbol ?? currencyCode;
+  return `${symbol}${formatNumber(amount)}`;
+}
+
+export function formatCurrencyParts(amount: string, currencyCode: string): {
+  symbol: string;
+  amount: string;
+} {
+  const config = CURRENCY_CONFIG[currencyCode];
+  const symbol = config?.symbol ?? currencyCode;
+  return { symbol, amount: formatNumber(amount) };
 }
 
 /**

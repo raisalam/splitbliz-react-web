@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User } from 'lucide-react';
 import brandLogo from '../../assets/brand/logo.png';
 import { colors } from '../../constants/colors';
@@ -10,10 +10,15 @@ import { useUser } from '../../providers/UserContext';
 
 export function SignUp() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const { setUser } = useUser();
   const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    const stateEmail = (location.state as { email?: string } | null)?.email;
+    return stateEmail ?? '';
+  });
+  const isPrefilledEmail = !!((location.state as { email?: string } | null)?.email);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +50,9 @@ export function SignUp() {
   };
 
   const handleGoogleAuth = () => {
-    navigate('/onboarding/profile'); // Google on Sign Up always goes to Screen 4
+    const base = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/v1';
+    const redirectUri = `${window.location.origin}/auth/callback`;
+    window.location.href = `${base}/auth/google?redirectUri=${encodeURIComponent(redirectUri)}`;
   };
 
   return (
@@ -124,10 +131,15 @@ export function SignUp() {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  readOnly={isPrefilledEmail}
                   className="w-full pl-10 pr-4 py-3 text-[13px] font-medium text-[#1a1625] rounded-[9px] outline-none transition-all placeholder:text-[#b8b4d8]"
-                  style={{ backgroundColor: colors.pageBg, border: '1.5px solid #e8e4f8' }}
-                  onFocus={(e) => e.target.style.borderColor = colors.primary}
-                  onBlur={(e) => e.target.style.borderColor = '#e8e4f8'}
+                  style={{
+                    backgroundColor: colors.pageBg,
+                    border: '1.5px solid #e8e4f8',
+                    opacity: isPrefilledEmail ? 0.7 : 1,
+                  }}
+                  onFocus={(e) => { if (!isPrefilledEmail) e.target.style.borderColor = colors.primary; }}
+                  onBlur={(e) => { if (!isPrefilledEmail) e.target.style.borderColor = '#e8e4f8'; }}
                 />
               </div>
             </div>

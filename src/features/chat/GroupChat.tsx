@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { GROUP_TYPE_EMOJI } from '../../constants/app';
 import type { ChatMessage } from '../../types';
 import { useGroupMqtt } from '../../hooks/useGroupMqtt';
+import { useSendMessage } from '../../hooks/useEngagementMutations';
 import { CachedAvatar } from '../../components/CachedAvatar';
 
 function formatDateLabel(dateStr: string): string {
@@ -56,6 +57,8 @@ export function GroupChat() {
     getNextPageParam: (lastPage) => lastPage.pagination?.hasMore ? lastPage.pagination?.nextCursor : undefined,
     enabled: !!groupId,
   });
+
+  const sendMessageMutation = useSendMessage();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
@@ -116,8 +119,10 @@ export function GroupChat() {
     setMessages(prev => [...prev, optimistic]);
     setInputText('');
     try {
-      await engagementService.sendMessage(groupId || '', { content: optimistic.content, clientMessageId });
-      queryClient.invalidateQueries({ queryKey: ['messages', groupId] });
+      await sendMessageMutation.mutateAsync({
+        groupId: groupId || '',
+        data: { content: optimistic.content, clientMessageId }
+      });
     } catch {
       // keep optimistic message; optionally show error
     }
@@ -160,7 +165,7 @@ export function GroupChat() {
         className="flex-1 overflow-y-auto px-4 py-4 space-y-1 max-w-xl mx-auto w-full"
       >
         {isLoading && (
-          <div className="text-center text-sm text-slate-500 mt-10">Loading messagesâ€¦</div>
+          <div className="text-center text-sm text-slate-500 mt-10">Loading messages...</div>
         )}
         {error && (
           <div className="text-center text-sm text-slate-500 mt-10">Failed to load messages.</div>
@@ -187,17 +192,6 @@ export function GroupChat() {
                   </div>
                 )}
 
-                {false ? (
-                  <motion.div
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    className="flex items-center justify-center gap-2 py-2"
-                  >
-                    <div className={`p-1 rounded-full ${msg.systemIcon === 'expense' ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
-                      {msg.systemIcon === 'expense' ? <Receipt className="w-3 h-3" /> : msg.systemIcon === 'settle' ? <Banknote className="w-3 h-3" /> : null}
-                    </div>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{msg.text}</span>
-                  </motion.div>
-                ) : (
                   <motion.div
                     initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                     className={`flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
@@ -234,7 +228,6 @@ export function GroupChat() {
                       </p>
                     </div>
                   </motion.div>
-                )}
               </React.Fragment>
             );
           })

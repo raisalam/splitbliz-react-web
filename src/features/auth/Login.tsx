@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, User, CheckCircle2 } from 'lucide-react';
-import { tokenStore } from '../../services/apiClient';
 import brandLogo from '../../assets/brand/logo.png';
 import { colors } from '../../constants/colors';
 import { authService } from '../../services';
@@ -13,6 +12,7 @@ type AuthState = 'A' | 'B' | 'C';
 
 export function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUser } = useUser();
   
   const [authState, setAuthState] = useState<AuthState>('A');
@@ -35,7 +35,7 @@ export function Login() {
       if (exists) {
         setAuthState('B');
       } else {
-        navigate('/signup');
+        navigate('/signup', { state: { email } });
       }
     } catch (err) {
       setError('Unable to check email. Please try again.');
@@ -98,13 +98,9 @@ export function Login() {
 
   const handleGoogleAuth = (e: React.MouseEvent) => {
     e.preventDefault();
-    // Assuming new user flow for demo purposes of displaying intent picker, otherwise going to Home
-    navigate('/onboarding/profile'); 
-  };
-
-  const handleDevLogin = () => {
-    tokenStore.set('dev-token');
-    navigate('/');
+    const base = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/v1';
+    const redirectUri = `${window.location.origin}/auth/callback`;
+    window.location.href = `${base}/auth/google?redirectUri=${encodeURIComponent(redirectUri)}`;
   };
 
   const handleBack = () => {
@@ -118,6 +114,14 @@ export function Login() {
       navigate('/welcome');
     }
   };
+
+  useEffect(() => {
+    const oauthError = (location.state as { oauthError?: string } | null)?.oauthError;
+    if (oauthError) {
+      setError('Google sign-in failed. Please try again.');
+      navigate('/login', { replace: true, state: null });
+    }
+  }, [location.state, navigate]);
 
   const getPasswordStrength = () => {
     if (password.length === 0) return 0;
@@ -438,21 +442,6 @@ export function Login() {
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Dev-only login */}
-          <div className="mt-6 text-center">
-            <p className="text-[11px] font-semibold" style={{ color: muted }}>
-              Dev-only: temporary test login (remove after backend is live)
-            </p>
-            <button
-              type="button"
-              onClick={handleDevLogin}
-              className="mt-2 text-[13px] font-bold hover:underline"
-              style={{ color: purple }}
-            >
-              Continue with Dev Login
-            </button>
-          </div>
 
         </motion.div>
       </div>

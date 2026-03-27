@@ -1,16 +1,17 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Check } from 'lucide-react';
+import { formatCurrency } from '../../../utils/formatCurrency';
 
 type SettlementConfirmSheetProps = {
-  currencySymbol: string;
+  currencyCode: string;
   numAmount: number;
   toName: string;
   onBack: () => void;
 };
 
 export function SettlementConfirmSheet({
-  currencySymbol,
+  currencyCode,
   numAmount,
   toName,
   onBack
@@ -34,7 +35,7 @@ export function SettlementConfirmSheet({
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-black text-slate-900 dark:text-white">Request Sent</h2>
         <p className="text-lg text-slate-500 dark:text-slate-400">
-          {currencySymbol}{numAmount.toFixed(2)} sent to <span className="font-semibold text-slate-900 dark:text-white">{toName}</span> for approval
+          {formatCurrency(numAmount.toFixed(2), currencyCode)} sent to <span className="font-semibold text-slate-900 dark:text-white">{toName}</span> for approval
         </p>
       </div>
 

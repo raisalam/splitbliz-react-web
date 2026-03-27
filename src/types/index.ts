@@ -91,6 +91,7 @@ export type MqttHintType =
   | 'BALANCE_UPDATED'
   | 'EXPENSE_ADDED'
   | 'SETTLEMENT_UPDATED'
+  | 'NOTIFICATIONS_UPDATED'
   | 'MEMBER_CHANGED';
 
 export type ApiErrorAction =
@@ -240,6 +241,7 @@ export interface ActionItem {
   currencyCode?: CurrencyCode;
   fromUser?: UserReference;
   inviteCode?: string;
+  inviteId?: string;
   createdAt: string;
 }
 
@@ -465,6 +467,12 @@ export interface MqttChatMessage extends ChatMessage {}
 
 /** GET /home — single-call BFF for home screen */
 export interface HomeScreenData {
+  user?: {
+    userId: string;
+    name: string;
+    avatarUrl: string | null;
+    unreadNotificationCount: number;
+  };
   groups: Group[];
   actionItemsPreview: ActionItemsPreview;
   recentActivity: ActivityEntry[];

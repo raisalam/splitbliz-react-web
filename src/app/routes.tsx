@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { Home } from "../features/home/Home";
 import { Splash } from "../features/auth/Splash";
 import { Login } from "../features/auth/Login";
+import { GoogleCallback } from "../features/auth/GoogleCallback";
 import { SignUp } from "../features/auth/SignUp";
 import { ProfileSetup } from "../features/auth/ProfileSetup";
 import { FirstGroup } from "../features/auth/FirstGroup";
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "welcome", Component: Splash },
       { path: "login", Component: Login },
+      { path: "auth/callback", Component: GoogleCallback },
       { path: "signup", element: <SignUp /> },
       {
         element: <ProtectedRoute />,

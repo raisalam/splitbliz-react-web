@@ -3,30 +3,31 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { Pencil, X } from 'lucide-react';
 import { colors } from '../../constants/colors';
+import { authService } from '../../services';
+import { useUser } from '../../providers/UserContext';
+import { toast } from 'sonner';
+import { AVATAR_EMOJI_GRID, DEFAULT_AVATAR_EMOJI } from '../../constants/emoji';
 
-const EMOJI_GRID = [
-  '✈️', '🏠', '🍕', '⚽', '🎉', '💼', '💑', '📂',
-  '🚗', '🏝️', '🗺️', '🏖️', '⛰️', '🏕️', '🚅', '🧳',
-  '🍔', '🍣', '🍷', '☕', '🌮', '🍻', '🍽️', '🍦',
-  '🛋️', '🛒', '🔌', '🛁', '🧹', '💡', '🔑', '📺',
-  '🎈', '🎊', '🎁', '🕺', '🥳', '🎤', '🎶', '🎫',
-  '🏀', '🏈', '🎾', '🏓', '🏸', '🥊', '🏋️', '🏄',
-  '💻', '📊', '📋', '📅', '📞', '🏢', '👔', '📝',
-  '👥', '🤝', '🙌', '💪', '🔥', '✨', '🚀', '🎯',
-];
+const EMOJI_GRID = AVATAR_EMOJI_GRID;
 
 export function ProfileSetup() {
   const navigate = useNavigate();
-  const [avatar, setAvatar] = useState('🙂');
+  const { setUser } = useUser();
+  const [avatar, setAvatar] = useState(DEFAULT_AVATAR_EMOJI);
   const [displayName, setDisplayName] = useState('Aman Sharma');
   const [showEmojiSheet, setShowEmojiSheet] = useState(false);
 
-  const handleUploadPhoto = () => {
-    // Demo implementation
-  };
-
-  const handleContinue = () => {
-    navigate('/onboarding/group');
+  const handleContinue = async () => {
+    try {
+      const updated = await authService.updateProfile({
+        displayName: displayName.trim(),
+        resolvedAvatar: avatar,
+      });
+      setUser(updated);
+      navigate('/onboarding/group');
+    } catch {
+      toast.error('Failed to update profile.');
+    }
   };
 
   const purple = colors.primary;
@@ -36,9 +37,8 @@ export function ProfileSetup() {
 
   return (
     <div className="min-h-screen font-sans relative flex flex-col" style={{ backgroundColor: pageBg }}>
-      
       {/* Mini Progress Header */}
-      <div 
+      <div
         className="px-6 py-5 flex items-center justify-between shadow-sm z-10"
         style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` }}
       >
@@ -53,7 +53,6 @@ export function ProfileSetup() {
 
       {/* Main Body */}
       <div className="flex-1 px-6 pt-10 pb-10 flex flex-col max-w-md w-full mx-auto">
-        
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -79,10 +78,10 @@ export function ProfileSetup() {
             <button
               onClick={() => setShowEmojiSheet(true)}
               className="rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 bg-white shadow-md relative"
-              style={{ 
+              style={{
                 width: '100px',
                 height: '100px',
-                backgroundColor: '#ede9ff', 
+                backgroundColor: '#ede9ff',
                 border: `3px dashed ${colors.primaryLight}`,
               }}
             >
@@ -107,13 +106,7 @@ export function ProfileSetup() {
             >
               Choose emoji
             </button>
-            <button
-              onClick={handleUploadPhoto}
-              className="flex-1 py-4 rounded-[14px] font-bold transition-all active:scale-[0.98] shadow-sm hover:bg-white"
-              style={{ backgroundColor: '#fff', border: `1.5px solid ${cardBorder}`, color: purple, fontSize: '15px' }}
-            >
-              Upload photo
-            </button>
+            <div className="flex-1" />
           </div>
         </motion.div>
 
@@ -150,7 +143,7 @@ export function ProfileSetup() {
             className="w-full py-4 rounded-[14px] font-bold text-base text-white transition-all active:scale-[0.98] shadow-lg shadow-indigo-600/25"
             style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` }}
           >
-            Continue →
+            Continue &rarr;
           </button>
           <button
             onClick={() => navigate('/onboarding/group')}

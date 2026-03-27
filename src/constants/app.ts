@@ -4,16 +4,7 @@
 // =============================================================================
 
 /** Derive group display emoji from groupType. Backend never sends iconEmoji. */
-export const GROUP_TYPE_EMOJI: Record<string, string> = {
-  TRIP: '✈️',
-  HOME: '🏠',
-  FOOD: '🍔',
-  OFFICE: '💼',
-  ENTERTAINMENT: '🎬',
-  SPORTS: '⚽',
-  SHOPPING: '🛍️',
-  OTHER: '👥', // fallback for unknown types
-};
+export { GROUP_TYPE_EMOJI } from './emoji';
 
 /** Plan limits — check client-side before showing create/add UI */
 export const PLAN_LIMITS = {
@@ -35,12 +26,12 @@ export const PLAN_LIMITS = {
 
 /** Currency display config */
 export const CURRENCY_CONFIG: Record<string, { symbol: string; name: string }> = {
-  INR: { symbol: '₹', name: 'Indian Rupee' },
+  INR: { symbol: '\u{20B9}', name: 'Indian Rupee' },
   USD: { symbol: '$', name: 'US Dollar' },
-  AED: { symbol: 'د.إ', name: 'UAE Dirham' },
-  SAR: { symbol: '﷼', name: 'Saudi Riyal' },
-  GBP: { symbol: '£', name: 'British Pound' },
-  EUR: { symbol: '€', name: 'Euro' },
+  AED: { symbol: '\u{062F}.\u{0625}', name: 'UAE Dirham' },
+  SAR: { symbol: '\u{FDFC}', name: 'Saudi Riyal' },
+  GBP: { symbol: '\u{00A3}', name: 'British Pound' },
+  EUR: { symbol: '\u{20AC}', name: 'Euro' },
 };
 
 /** Expense categories — from Core Spec §9.1 */

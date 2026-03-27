@@ -1,19 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { useTheme } from '../../providers/ThemeProvider';
-import {
-  ArrowLeft, Check, X, ChevronRight,
-  Info
-} from 'lucide-react';
-import {
-  MOCK_USER_ID
-} from '../../api/groups';
 import { expensesService, groupsService } from '../../services';
 import { extractApiError } from '../../services/apiClient';
-import { useQueryClient } from '@tanstack/react-query';
+import { useCreateExpense, useUpdateExpense } from '../../hooks/useExpenseMutations';
+import { ChevronRight, Check, X, Info, Receipt, Banknote, ArrowLeft, Search } from 'lucide-react';
 import { useUser } from '../../providers/UserContext';
 import { toast } from 'sonner';
+import { formatCurrency, formatCurrencyParts } from '../../utils/formatCurrency';
 import {
   SplitType, validatePayers, computeSplits, calculateBalances, computeSettlements
 } from '../../utils/expenseCalculator';
@@ -27,14 +22,22 @@ type ActiveSheet = 'NONE' | 'PAYERS' | 'SPLIT_TYPE' | 'MEMBERS' | 'AMOUNT' | 'DE
 export function AddExpense() {
   const { groupId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { theme } = useTheme();
   const { user } = useUser();
-  const queryClient = useQueryClient();
+
+  const createExpense = useCreateExpense();
+  const updateExpense = useUpdateExpense();
+
+  const editExpenseId = searchParams.get('edit');
+  const duplicateExpenseId = searchParams.get('duplicate');
+  const prefillExpenseId = editExpenseId || duplicateExpenseId;
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [group, setGroup] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
+  const [editingVersion, setEditingVersion] = useState<number | null>(null);
 
   // ---- UX Flow State ----
   // step 1: Hero Amount Entry -> step 2: Property List Builder
@@ -48,11 +51,11 @@ export function AddExpense() {
   const [splitType, setSplitType] = useState<SplitType>('EQUAL');
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
   const [customSplits, setCustomSplits] = useState<Record<string, string>>({});
-  const [selectedCategory, setSelectedCategory] = useState('📦 Other');
+  const [selectedCategory, setSelectedCategory] = useState<any>('OTHER');
 
   const descInputRef = useRef<HTMLInputElement>(null);
   const amtInputRef = useRef<HTMLInputElement>(null);
-  const currentUserId = user?.id ?? MOCK_USER_ID;
+  const currentUserId = user?.id ?? '';
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,11 +68,39 @@ export function AddExpense() {
         setMembers(detail.members);
 
         // Setup defaults
-        setSelectedMemberIds(new Set(detail.members.map(mbr => mbr.userPublicId)));
+        setSelectedMemberIds(new Set(detail.members.map(mbr => mbr.userId)));
         const initSplits: Record<string, string> = {};
-        detail.members.forEach(mbr => { initSplits[mbr.userPublicId] = ''; });
+        detail.members.forEach(mbr => { initSplits[mbr.userId] = ''; });
         setCustomSplits(initSplits);
 
+        if (prefillExpenseId) {
+          const expense = await expensesService.getExpense(groupId, prefillExpenseId);
+          setDescription(expense.title ?? '');
+          setAmountStr(expense.amount ?? '');
+          setSplitType((expense.splitType as any) ?? 'EQUAL');
+
+          setSelectedCategory(expense.category ?? 'OTHER');
+
+          const splitsMap: Record<string, string> = {};
+          const splitIds = new Set<string>();
+          expense.splits?.forEach((s) => {
+            splitsMap[s.userId] = s.splitAmount;
+            splitIds.add(s.userId);
+          });
+          if (splitIds.size > 0) {
+            setSelectedMemberIds(splitIds);
+          }
+          setCustomSplits((prev) => ({ ...prev, ...splitsMap }));
+
+          const payerMap: Record<string, string> = {};
+          expense.payers?.forEach((p) => {
+            payerMap[p.userId] = p.paidAmount;
+          });
+          setPayers(payerMap);
+
+          setEditingVersion(expense.version ?? null);
+          setCurrentStep(2);
+        }
       } catch (err) {
         toast.error("Group not found");
         navigate('/');
@@ -78,9 +109,11 @@ export function AddExpense() {
       }
     }
     fetchData();
-  }, [groupId, navigate]);
+  }, [groupId, navigate, prefillExpenseId]);
 
   const numAmount = parseFloat(amountStr) || 0;
+  const currencyCode = group?.currencyCode || 'INR';
+  const currencyParts = formatCurrencyParts(numAmount.toFixed(2), currencyCode);
 
   // Auto-fill Current User as 100% payer when moving to Step 2 for the first time
   useEffect(() => {
@@ -205,6 +238,10 @@ export function AddExpense() {
 
   const handleCreateExpense = async () => {
     if (!groupId || !calculations.isReady) return;
+    if (!currentUserId) {
+      toast.error('Session expired. Please log in again.');
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -236,29 +273,44 @@ export function AddExpense() {
         splitAmount: amt.toFixed(2)
       }));
 
-      const categoryKey = selectedCategory.includes('Travel') ? 'TRAVEL'
-        : selectedCategory.includes('Food') ? 'FOOD'
-        : selectedCategory.includes('Rent') ? 'ACCOMMODATION'
-        : selectedCategory.includes('Fun') ? 'ENTERTAINMENT'
-        : selectedCategory.includes('Shopping') ? 'SHOPPING'
-        : selectedCategory.includes('Utilities') ? 'UTILITIES'
-        : 'OTHER';
+      const categoryKey = selectedCategory || 'OTHER';
 
-      await expensesService.createExpense(groupId, {
-        title: description,
-        amount: formattedAmount,
-        currencyCode: group?.currencyCode || 'INR',
-        category: categoryKey,
-        expenseDate: new Date().toISOString().slice(0, 10),
-        splitType,
-        payers,
-        splits,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
-      queryClient.invalidateQueries({ queryKey: ['home'] });
-      toast.success('Expense added successfully!');
-      navigate(`/group/${groupId}`);
+      if (editExpenseId && !duplicateExpenseId) {
+        if (!editingVersion) {
+          throw new Error('Missing expense version.');
+        }
+        await updateExpense.mutateAsync({
+          groupId,
+          expenseId: editExpenseId,
+          data: {
+            version: editingVersion,
+            title: description,
+            amount: formattedAmount,
+            category: categoryKey,
+            expenseDate: new Date().toISOString().slice(0, 10),
+            payers,
+            splits,
+          }
+        });
+        toast.success('Expense updated successfully!');
+        navigate(`/group/${groupId}/expense/${editExpenseId}`);
+      } else {
+        await createExpense.mutateAsync({
+          groupId,
+          data: {
+            title: description,
+            amount: formattedAmount,
+            currencyCode: currencyCode,
+            category: categoryKey,
+            expenseDate: new Date().toISOString().slice(0, 10),
+            splitType,
+            payers,
+            splits,
+          }
+        });
+        toast.success('Expense added successfully!');
+        navigate(`/group/${groupId}`);
+      }
     } catch (err) {
       const apiErr = extractApiError(err);
       let msg = 'Failed to create expense. Please try again.';
@@ -331,10 +383,10 @@ export function AddExpense() {
             <ExpenseBasicForm
               amountStr={amountStr}
               numAmount={numAmount}
-              currencyCode={group?.currencyCode || 'INR'}
+              currencyCode={currencyCode}
               selectedCategory={selectedCategory}
               onAmountChange={setAmountStr}
-              onSelectCategory={setSelectedCategory}
+              onSelectCategory={(c) => setSelectedCategory(c)}
               onNext={() => setCurrentStep(2)}
             />
           )}
@@ -351,8 +403,8 @@ export function AddExpense() {
               >
                 <span className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 group-hover:text-indigo-500 transition-colors">Total Amount</span>
                 <div className="flex items-center text-6xl font-black tracking-tighter text-slate-900 dark:text-white group-hover:scale-105 transition-transform">
-                  <span className="text-slate-400 mr-1 text-5xl font-medium">{group?.currencyCode === 'INR' ? '₹' : '$'}</span>
-                  {numAmount.toFixed(2)}
+                  <span className="text-slate-400 mr-1 text-5xl font-medium">{currencyParts.symbol}</span>
+                  {currencyParts.amount}
                 </div>
               </div>
 
@@ -405,7 +457,7 @@ export function AddExpense() {
                 className="mt-12 bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/80"
               >
                 {!calculations.payerValidation.isValid ? (
-                  <p className="text-rose-500 font-medium flex items-center gap-2 text-sm"><Info className="w-4 h-4" /> Who paid doesn't total {group?.currencyCode === 'INR' ? '₹' : '$'}{numAmount.toFixed(2)}</p>
+                  <p className="text-rose-500 font-medium flex items-center gap-2 text-sm"><Info className="w-4 h-4" /> Who paid doesn't total {formatCurrency(numAmount.toFixed(2), currencyCode)}</p>
                 ) : !calculations.splitValidation.isValid ? (
                   <p className="text-rose-500 font-medium flex items-center gap-2 text-sm"><Info className="w-4 h-4" /> Validation error in split amounts</p>
                 ) : calculations.settlements.length === 0 ? (
@@ -427,7 +479,7 @@ export function AddExpense() {
                           <span className="text-slate-500 dark:text-slate-400">owes</span>
                           {toM?.avatarUrl && <img src={toM.avatarUrl} className="w-6 h-6 rounded-full object-cover shrink-0" alt="" />}
                           <span className="font-semibold text-slate-900 dark:text-white mr-auto">{toName}</span>
-                          <span className="font-bold text-slate-900 dark:text-white">{group?.currencyCode === 'INR' ? '₹' : '$'}{s.amount.toFixed(2)}</span>
+                          <span className="font-bold text-slate-900 dark:text-white">{formatCurrency(s.amount.toFixed(2), currencyCode)}</span>
                         </li>
                       )
                     })}
@@ -504,7 +556,7 @@ export function AddExpense() {
                     payers={payers}
                     selectedMemberIds={selectedMemberIds}
                     numAmount={numAmount}
-                    currencyCode={group?.currencyCode || 'INR'}
+                    currencyCode={currencyCode}
                     currentUserId={currentUserId}
                     onTogglePayer={togglePayer}
                     onPayerAmountChange={(userId, value) => setPayers(prev => ({ ...prev, [userId]: value }))}
@@ -524,7 +576,7 @@ export function AddExpense() {
                     onSplitTypeChange={handleSplitTypeChange}
                     onCustomSplitChange={(userId, value) => setCustomSplits(prev => ({ ...prev, [userId]: value }))}
                     splitValidation={calculations.splitValidation}
-                    currencyCode={group?.currencyCode || 'INR'}
+                    currencyCode={currencyCode}
                   />
                 )}
 
@@ -564,7 +616,7 @@ export function AddExpense() {
                           </span>
                           {isSelected && numAmount > 0 && (
                             <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                              ₹{shareAmount.toFixed(2)}
+                              {formatCurrency(shareAmount.toFixed(2), currencyCode)}
                             </span>
                           )}
                         </div>
@@ -577,7 +629,7 @@ export function AddExpense() {
                 {activeSheet === 'AMOUNT' && (
                   <div className="flex flex-col items-center justify-center py-8">
                     <div className="flex items-center text-6xl font-black text-slate-900 dark:text-white">
-                      <span className="text-slate-300 mr-2 text-4xl">{group?.currencyCode === 'INR' ? '₹' : '$'}</span>
+                      <span className="text-slate-300 mr-2 text-4xl">{currencyParts.symbol}</span>
                       <input
                         ref={amtInputRef} type="number" value={amountStr} onChange={(e) => setAmountStr(e.target.value)}
                         className="bg-transparent border-none outline-none text-center w-[200px] caret-indigo-500" autoFocus

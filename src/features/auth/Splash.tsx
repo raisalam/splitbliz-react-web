@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { colors } from '../../constants/colors';
+import { SPLASH_FEATURES } from '../../constants/emoji';
 
 import brandLogo from '../../assets/brand/logo.png';
 
@@ -9,12 +10,11 @@ export function Splash() {
   const navigate = useNavigate();
 
   return (
-    <div 
+    <div
       className="min-h-screen flex flex-col justify-between p-8 relative overflow-hidden"
       style={{ background: `linear-gradient(160deg, ${colors.primary}, ${colors.primary}, ${colors.primaryLight})` }}
     >
       <div className="flex-1 flex flex-col justify-center relative z-10 py-12 gap-8">
-        
         {/* Section 1: App Icon */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -22,11 +22,11 @@ export function Splash() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="flex justify-center mb-4"
         >
-          <div 
+          <div
             className="w-[88px] h-[88px] flex items-center justify-center shadow-2xl overflow-hidden p-2"
-            style={{ 
-              borderRadius: '24px', 
-              backgroundColor: colors.white18, 
+            style={{
+              borderRadius: '24px',
+              backgroundColor: colors.white18,
               border: '2px solid rgba(255,255,255,0.35)',
               boxShadow: '0 8px 32px rgba(0,0,0,0.15)'
             }}
@@ -57,11 +57,7 @@ export function Splash() {
           transition={{ duration: 0.5, delay: 0.25 }}
           className="space-y-4 flex flex-col items-center max-w-[280px] mx-auto mb-8"
         >
-          {[
-            { icon: '🧾', text: 'Track group expenses' },
-            { icon: '⚖️', text: 'Auto split & settle up' },
-            { icon: '🔔', text: 'Get notified instantly' },
-          ].map((feature, idx) => (
+          {SPLASH_FEATURES.map((feature, idx) => (
             <motion.div
               key={idx}
               initial={{ opacity: 0, x: -15 }}
@@ -92,13 +88,12 @@ export function Splash() {
             className="w-full py-4 rounded-[16px] bg-white transition-transform active:scale-[0.98] shadow-2xl font-extrabold text-[16px]"
             style={{ color: colors.primary }}
           >
-            Get started →
+            Get started &rarr;
           </button>
           <p className="mt-6 text-center font-medium leading-[1.5] text-[12px]" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            By continuing you agree to our<br />Terms & Privacy Policy
+            By continuing you agree to our<br />Terms and Privacy Policy
           </p>
         </motion.div>
-
       </div>
     </div>
   );

@@ -25,12 +25,14 @@ import { GroupCard } from './components/GroupCard';
 import { RecentActivityList } from './components/RecentActivityList';
 import { HomeFAB } from './components/HomeFAB';
 import { Skeleton } from '../../components/ui/skeleton';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { EmptyState } from '../../components/EmptyState';
 import { useUser } from '../../providers/UserContext';
-import { authService, settlementsService, groupsService } from '../../services';
+import { authService, groupsService, settlementsService } from '../../services';
 import { extractApiError } from '../../services/apiClient';
 import { useHomeData } from '../../hooks/useGroups';
-import { useQueryClient } from '@tanstack/react-query';
+import { useApproveSettlement, useRejectSettlement } from '../../hooks/useSettlementMutations';
+import { useAcceptInvite, useRejectInvite } from '../../hooks/useGroupMutations';
 import { GROUP_TYPE_EMOJI } from '../../constants/app';
 import { formatCurrency, formatBalance } from '../../utils/formatCurrency';
 import type { Group, ActionItem } from '../../types';
@@ -45,19 +47,26 @@ function getNet(group: Group): number {
 export function Home() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const { user, setUser } = useUser();
   const queryClient = useQueryClient();
+  const { user, setUser } = useUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'groups' | 'activity'>('groups');
   const [fabExpanded, setFabExpanded] = useState(false);
   const [actionSheetOrigin, setActionSheetOrigin] = useState<'expense' | 'settle' | null>(null);
   const [pendingSheetOpen, setPendingSheetOpen] = useState(false);
 
+  // Mutation hooks
+  const approveSettlement = useApproveSettlement();
+  const rejectSettlement = useRejectSettlement();
+  const acceptInvite = useAcceptInvite();
+  const rejectInvite = useRejectInvite();
+
   // --- Real API data ---
   const { data, isLoading, error } = useHomeData();
   const groups = data?.groups ?? [];
   const actionItems = data?.actionItemsPreview?.items ?? [];
   const actionItemsTotalCount = data?.actionItemsPreview?.totalCount ?? 0;
+  const unreadNotifications = data?.user?.unreadNotificationCount ?? 0;
   const recentActivity = data?.recentActivity ?? [];
 
   const visibleActions = actionItems.slice(0, MAX_VISIBLE_ACTIONS);
@@ -73,13 +82,12 @@ export function Home() {
       }
       try {
         if (action === 'approve') {
-          await settlementsService.approveSettlement(groupId, referenceId);
+          await approveSettlement.mutateAsync({ groupId, settlementId: referenceId });
           toast.success('Settlement approved!');
         } else {
-          await settlementsService.rejectSettlement(groupId, referenceId);
+          await rejectSettlement.mutateAsync({ groupId, settlementId: referenceId });
           toast('Settlement rejected');
         }
-        queryClient.invalidateQueries({ queryKey: ['home'] });
       } catch (err) {
         const apiErr = extractApiError(err);
         if (apiErr?.code === 'ERR_ALREADY_PROCESSING') {
@@ -89,19 +97,22 @@ export function Home() {
         }
       }
     } else {
-      // GROUP_INVITE — handle via groupsService.joinByInvite
+      // GROUP_INVITE — accept/decline by inviteId
       const item = actionItems.find(a => a.referenceId === referenceId);
-      if (action === 'approve' && item?.inviteCode) {
+      if (action === 'approve' && item?.inviteId) {
         try {
-          await groupsService.joinByInvite(item.inviteCode);
+          await acceptInvite.mutateAsync(item.inviteId);
           toast.success('You joined the group!');
-          queryClient.invalidateQueries({ queryKey: ['home'] });
         } catch {
           toast.error('Failed to join group.');
         }
-      } else if (action === 'reject') {
-        toast.info('Group invitation declined');
-        queryClient.invalidateQueries({ queryKey: ['home'] });
+      } else if (action === 'reject' && item?.inviteId) {
+        try {
+          await rejectInvite.mutateAsync(item.inviteId);
+          toast.info('Group invitation declined');
+        } catch {
+          toast.error('Failed to decline invite.');
+        }
       }
     }
   };
@@ -110,13 +121,12 @@ export function Home() {
     const settlements = actionItems.filter(a => a.type === 'SETTLEMENT_APPROVAL');
     for (const item of settlements) {
       try {
-        await settlementsService.approveSettlement(item.groupId, item.referenceId);
+        await approveSettlement.mutateAsync({ groupId: item.groupId, settlementId: item.referenceId });
       } catch {
         // continue with next
       }
     }
     toast.success(`Approved ${settlements.length} settlements!`);
-    queryClient.invalidateQueries({ queryKey: ['home'] });
   };
 
   const handleLogout = async () => {
@@ -202,7 +212,7 @@ export function Home() {
         onAvatarClick={() => navigate('/profile')}
         onLogout={handleLogout}
         brandLogo={brandLogo}
-        unreadCount={actionItemsTotalCount}
+        unreadCount={unreadNotifications || actionItemsTotalCount}
       />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">

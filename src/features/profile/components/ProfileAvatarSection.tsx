@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Pencil } from 'lucide-react';
 import { colors } from '../../../constants/colors';
+import { CachedAvatar } from '../../../components/CachedAvatar';
 
 type ProfileAvatarSectionProps = {
   displayName: string;
@@ -16,6 +17,10 @@ export function ProfileAvatarSection({
   purple,
   onEdit
 }: ProfileAvatarSectionProps) {
+  const fallbackInitial = displayName?.charAt(0).toUpperCase() || '?';
+  const isUrl = typeof avatar === 'string' && avatar.startsWith('http');
+  const displayValue = avatar || fallbackInitial;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -29,7 +34,16 @@ export function ProfileAvatarSection({
           className="w-[72px] h-[72px] rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 text-3xl font-bold text-white bg-white/20"
           style={{ border: '3px solid rgba(255,255,255,0.5)' }}
         >
-          {avatar.length === 1 && avatar !== 'R' ? avatar : avatar === 'R' ? displayName.charAt(0).toUpperCase() : avatar}
+          {isUrl ? (
+            <CachedAvatar
+              src={avatar}
+              alt={displayName}
+              fallbackInitials={fallbackInitial}
+              className="w-full h-full rounded-full object-cover"
+            />
+          ) : (
+            <span>{displayValue}</span>
+          )}
         </button>
         <button
           onClick={onEdit}

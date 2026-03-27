@@ -11,9 +11,9 @@ import {
   X, AlertCircle, ChevronRight,
   ClipboardList
 } from 'lucide-react';
-import { approveSettlement, rejectSettlement } from '../../api/groups';
-import type { Settlement } from '../../mock/settlements';
+import type { Settlement } from '../../types';
 import { toast } from 'sonner';
+import { useApproveSettlement, useRejectSettlement, useRemindMember } from '../../hooks/useSettlementMutations';
 import { InviteMemberSheet } from '../../components/InviteMemberSheet';
 import { GroupHeader } from './components/GroupHeader';
 import { BalanceSummaryCard } from './components/BalanceSummaryCard';
@@ -23,6 +23,7 @@ import { SettlementRow } from './components/SettlementRow';
 import { Skeleton } from '../../components/ui/skeleton';
 import { EmptyState } from '../../components/EmptyState';
 import { CachedAvatar } from '../../components/CachedAvatar';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 export function GroupDetail() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -48,21 +49,35 @@ export function GroupDetail() {
   const getSettlementsBetween = (fromId: string, toId: string) => {
     if (!settlements) return [];
     return settlements
-      .filter((s: any) => 
+      .filter((s: Settlement) => 
         (s.fromUser?.userId === fromId && s.toUser?.userId === toId) ||
         (s.fromUser?.userId === toId && s.toUser?.userId === fromId)
       )
-      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .sort((a: Settlement, b: Settlement) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   };
 
+  const approveSettlement = useApproveSettlement();
+  const rejectSettlement = useRejectSettlement();
+  const remindMember = useRemindMember();
+
   const handleApprove = async (settlementId: string) => {
-    await approveSettlement(settlementId); // MOCK LEFT FOR NOW, until Write Operations step
-    toast.success('Settlement approved!');
+    if (!groupId) return;
+    try {
+      await approveSettlement.mutateAsync({ groupId, settlementId });
+      toast.success('Settlement approved!');
+    } catch {
+      toast.error('Failed to approve settlement');
+    }
   };
 
   const handleReject = async (settlementId: string) => {
-    await rejectSettlement(settlementId); // MOCK LEFT FOR NOW
-    toast('Settlement rejected');
+    if (!groupId) return;
+    try {
+      await rejectSettlement.mutateAsync({ groupId, settlementId });
+      toast('Settlement rejected');
+    } catch {
+      toast.error('Failed to reject settlement');
+    }
   };
 
   const getMemberName = (userId: string) => {
@@ -200,19 +215,34 @@ export function GroupDetail() {
         {/* Smart Action Banner Priority Logic */}
         {(() => {
           const netAmount = group?.balance?.netAmount ? Number(group.balance.netAmount) : 0;
+          const quickMeta = quickInsight?.cta?.meta ?? {};
+          const quickUserId = quickMeta.userId as string | undefined;
+          const quickAmount = quickMeta.amount as string | undefined;
+          const quickCurrency = (quickMeta.currencyCode as string | undefined) || group.currencyCode;
+
           // Priority 1 — You owe money
           if (netAmount < 0) {
             const amount = Math.abs(netAmount).toFixed(2);
             const topOwed = topYouOwe[0];
             const topAmount = topOwed?.balance?.netAmount ? Math.abs(parseFloat(topOwed.balance.netAmount)).toFixed(2) : amount;
             const oweName = topOwed?.displayName || 'the group';
+            const displayAmount = quickAmount && quickCurrency
+              ? formatCurrency(quickAmount, quickCurrency)
+              : formatCurrency(topAmount, group.currencyCode || 'INR');
             const bannerTitle = topOwed
-              ? `You owe ${currencySymbol}${topAmount} to ${oweName}`
-              : `You owe ${currencySymbol}${amount} to ${oweName}`;
+              ? `You owe ${displayAmount} to ${oweName}`
+              : `You owe ${displayAmount} to ${oweName}`;
 
             return (
               <button
-                onClick={() => navigate(`/group/${groupId}/settle`)}
+                onClick={() => {
+                  if (quickInsight?.cta?.action === 'SETTLE_USER' && quickUserId) {
+                    const settleAmount = quickAmount ?? amount;
+                    navigate(`/group/${groupId}/settle?from=${currentUserId}&to=${quickUserId}&amount=${settleAmount}&currency=${quickCurrency}`);
+                    return;
+                  }
+                  navigate(`/group/${groupId}/settle`);
+                }}
                 className="w-full flex items-center justify-between bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 p-3 sm:p-4 rounded-2xl mb-6 text-left hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
@@ -236,15 +266,30 @@ export function GroupDetail() {
           // Priority 2 — You are owed money
           if (netAmount > 0) {
             const amount = netAmount.toFixed(2);
+            const displayAmount = quickAmount && quickCurrency
+              ? formatCurrency(quickAmount, quickCurrency)
+              : formatCurrency(amount, group.currencyCode || 'INR');
             const bannerTitle = quickInsight?.type === 'YOU_ARE_OWED'
-              ? quickInsight.title
+              ? `You are owed ${displayAmount}`
               : (topOwesYou[0]?.displayName
-                ? `${topOwesYou[0].displayName} owes you ${currencySymbol}${topOwesYou[0].balance?.netAmount ?? amount}`
-                : `You are owed ${currencySymbol}${amount}`);
+                ? `${topOwesYou[0].displayName} owes you ${displayAmount}`
+                : `You are owed ${displayAmount}`);
 
             return (
               <button
-                onClick={() => toast.success('Reminder sent!')}
+                onClick={async () => {
+                  if (quickInsight?.cta?.action === 'REMIND_USER' && quickUserId && groupId) {
+                    try {
+                      await remindMember.mutateAsync({ groupId, toUserId: quickUserId });
+                      toast.success('Reminder sent!');
+                      return;
+                    } catch {
+                      toast.error('Failed to send reminder.');
+                      return;
+                    }
+                  }
+                  toast.success('Reminder sent!');
+                }}
                 className="w-full flex items-center justify-between bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-3 sm:p-4 rounded-2xl mb-6 text-left hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
@@ -379,8 +424,14 @@ export function GroupDetail() {
             currentUserId={currentUserId}
             onShowHistory={() => setShowSettlementHistory(true)}
             onSettle={(memberId, amount) => navigate(`/group/${groupId}/settle?from=${currentUserId}&to=${memberId}&amount=${amount}&currency=${group?.currencyCode || 'INR'}`)}
-            onRemind={(memberName) => {
-              toast.success(`Reminder sent to ${memberName}!`);
+            onRemind={async (memberId) => {
+              if (!groupId) return;
+              try {
+                await remindMember.mutateAsync({ groupId, toUserId: memberId });
+                toast.success('Reminder sent!');
+              } catch {
+                toast.error('Failed to send reminder.');
+              }
             }}
           />
         )}
@@ -510,7 +561,12 @@ export function GroupDetail() {
         )}
       </AnimatePresence>
 
-      <InviteMemberSheet open={inviteSheetOpen} onOpenChange={setInviteSheetOpen} />
+      <InviteMemberSheet
+        open={inviteSheetOpen}
+        onOpenChange={setInviteSheetOpen}
+        groupId={groupId}
+        existingMemberIds={(members || []).map((m: any) => m.userId)}
+      />
 
     </div>
   );

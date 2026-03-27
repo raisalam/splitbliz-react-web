@@ -60,6 +60,7 @@ export function ExpenseList({
               members={members}
               currencySymbol={currencySymbol}
               onClick={() => onExpenseClick(expense.publicId)}
+              currentUserId={currentUserId}
             />
           );
         })}

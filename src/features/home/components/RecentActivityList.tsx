@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Plus, Check, UserPlus, DollarSign, Edit, Trash, Users, Shield, Settings, ArrowUpDown } from 'lucide-react';
 import { ActivityEntry, ActivityEventType } from '../../../types';
+import { RECENT_ACTIVITY_CONFIG } from '../../../constants/iconography';
 
 /** Map event types to icons and display info */
 function getActivityDisplay(entry: ActivityEntry): {
@@ -13,35 +13,16 @@ function getActivityDisplay(entry: ActivityEntry): {
   const meta = entry.metadata;
   const description = meta.title ?? 'Recent activity';
 
-  const map: Record<string, {
-    icon: React.ComponentType<{ className?: string }>;
-    amountType: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
-    bg: string;
-  }> = {
-    EXPENSE_CREATED: { icon: Plus, amountType: 'POSITIVE', bg: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400' },
-    EXPENSE_EDITED: { icon: Edit, amountType: 'NEUTRAL', bg: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400' },
-    EXPENSE_DELETED: { icon: Trash, amountType: 'NEGATIVE', bg: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400' },
-    SETTLEMENT_CREATED: { icon: DollarSign, amountType: 'NEGATIVE', bg: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' },
-    SETTLEMENT_APPROVED: { icon: Check, amountType: 'POSITIVE', bg: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' },
-    SETTLEMENT_REJECTED: { icon: Trash, amountType: 'NEUTRAL', bg: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400' },
-    SETTLEMENT_CANCELLED: { icon: Trash, amountType: 'NEUTRAL', bg: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-    MEMBER_JOINED: { icon: UserPlus, amountType: 'NEUTRAL', bg: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-    MEMBER_REMOVED: { icon: Users, amountType: 'NEUTRAL', bg: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-    MEMBER_ROLE_CHANGED: { icon: Shield, amountType: 'NEUTRAL', bg: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-    GROUP_CREATED: { icon: Plus, amountType: 'NEUTRAL', bg: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400' },
-    GROUP_SETTINGS_UPDATED: { icon: Settings, amountType: 'NEUTRAL', bg: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' },
-  };
-
-  const matched = map[entry.eventType];
+  const matched = RECENT_ACTIVITY_CONFIG[entry.eventType];
   if (matched) {
     return { icon: matched.icon, description, amountType: matched.amountType, bgClass: matched.bg };
   }
 
   return {
-    icon: ArrowUpDown,
+    icon: RECENT_ACTIVITY_CONFIG.DEFAULT.icon,
     description,
-    amountType: 'NEUTRAL',
-    bgClass: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+    amountType: RECENT_ACTIVITY_CONFIG.DEFAULT.amountType,
+    bgClass: RECENT_ACTIVITY_CONFIG.DEFAULT.bg,
   };
 }
 

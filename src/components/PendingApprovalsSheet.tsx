@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { colors } from '../constants/colors';
+import { formatCurrency } from '../utils/formatCurrency';
 import { CachedAvatar } from './CachedAvatar';
 
 export interface PendingApproval {
@@ -34,8 +35,8 @@ export function PendingApprovalsSheet({ isOpen, onClose, approvals, onApprove, o
   if (!isOpen) return null;
 
   const totalAmount = approvals.reduce((sum, a) => sum + parseFloat(a.amount.replace(/,/g, '')), 0);
-  const formattedTotal = totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-  const currencySymbol = approvals[0]?.currencyCode === 'INR' ? '₹' : '$';
+  const currencyCode = approvals[0]?.currencyCode ?? 'INR';
+  const formattedTotal = formatCurrency(totalAmount.toFixed(2), currencyCode);
 
   const handleApproveAllConfirm = async () => {
     setIsProcessing(true);
@@ -95,7 +96,7 @@ export function PendingApprovalsSheet({ isOpen, onClose, approvals, onApprove, o
             {/* Total Bar */}
             <div className="px-6 py-3 flex justify-between items-center z-[71]" style={{ backgroundColor: colors.pageBg, borderBottom: `0.5px solid ${colors.primaryFaint}` }}>
               <span className="font-bold text-[#3d3a4a] text-xs">Total amount</span>
-              <span className="font-bold text-[#1a1625] text-xs" style={{ color: colors.textPrimary }}>{currencySymbol}{formattedTotal}</span>
+              <span className="font-bold text-[#1a1625] text-xs" style={{ color: colors.textPrimary }}>{formattedTotal}</span>
             </div>
 
             {/* List */}
@@ -126,7 +127,9 @@ export function PendingApprovalsSheet({ isOpen, onClose, approvals, onApprove, o
                       </div>
 
                       <div className="flex flex-col items-end gap-2 shrink-0">
-                        <span className="font-bold text-[#1a1625] text-xs" style={{ color: colors.textPrimary }}>{currencySymbol}{approval.amount}</span>
+                        <span className="font-bold text-[#1a1625] text-xs" style={{ color: colors.textPrimary }}>
+                          {formatCurrency(approval.amount, approval.currencyCode)}
+                        </span>
                         
                         {rejectConfirmId === approval.id ? (
                           <div className="flex gap-2">
@@ -178,7 +181,7 @@ export function PendingApprovalsSheet({ isOpen, onClose, approvals, onApprove, o
                     className="absolute bottom-0 left-0 right-0 z-[73] bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.1)] rounded-t-[24px] p-6 pb-10"
                   >
                     <p className="font-bold text-[#1a1625] text-center mb-6" style={{ fontSize: '15px', color: colors.textPrimary }}>
-                      Approve all {approvals.length} payments totalling {currencySymbol}{formattedTotal}?
+                      Approve all {approvals.length} payments totalling {formattedTotal}?
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <button 

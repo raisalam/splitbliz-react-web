@@ -8,10 +8,17 @@ import { MemberManagementSection } from './components/MemberManagementSection';
 import { DangerZoneSection } from './components/DangerZoneSection';
 import { colors } from '../../constants/colors';
 import { GROUP_TYPE_EMOJI } from '../../constants/app';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { groupsService } from '../../services';
+import { useQuery } from '@tanstack/react-query';
 import { useUser } from '../../providers/UserContext';
 import { toast } from 'sonner';
+import {
+  useUpdateGroup,
+  useUpdateMemberRole,
+  useRemoveMember,
+  useLeaveGroup,
+  useDeleteGroup
+} from '../../hooks/useGroupMutations';
+import { groupsService } from '../../services';
 
 const GROUP_TYPES = [
   { id: 'TRIP', label: 'Trip' },
@@ -32,8 +39,13 @@ type BottomSheet = 'NONE' | 'EMOJI' | 'MEMBER_ACTION' | 'DELETE_CONFIRM';
 export function GroupSettings() {
   const navigate = useNavigate();
   const { groupId } = useParams();
-  const queryClient = useQueryClient();
   const { user } = useUser();
+
+  const updateGroup = useUpdateGroup();
+  const updateMemberRole = useUpdateMemberRole();
+  const removeMember = useRemoveMember();
+  const leaveGroup = useLeaveGroup();
+  const deleteGroup = useDeleteGroup();
 
   const { data: group, isLoading: groupLoading, error: groupError } = useQuery({
     queryKey: ['groupSettings', groupId],
@@ -59,7 +71,7 @@ export function GroupSettings() {
 
   const [groupName, setGroupName] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState(GROUP_TYPE_EMOJI['OTHER']);
-  const [selectedType, setSelectedType] = useState('TRIP');
+  const [selectedType, setSelectedType] = useState<any>('TRIP');
   const [splitType, setSplitType] = useState<'EQUAL' | 'PERCENTAGE' | 'FIXED'>('EQUAL');
   const [requireApproval, setRequireApproval] = useState(true);
   const [simplifyDebts, setSimplifyDebts] = useState(false);
@@ -107,19 +119,20 @@ export function GroupSettings() {
   const handleSave = async () => {
     if (!groupId || !group) return;
     try {
-      await groupsService.updateGroup(groupId, {
-        name: groupName,
-        groupType: selectedType,
-        currencyCode: (group as any).currencyCode ?? 'INR',
-        configuration: {
-          defaultSplitType: splitType,
-          requireSettlementApproval: requireApproval,
-          simplifyDebts,
-        },
-        version: (group as any).version ?? 1,
+      await updateGroup.mutateAsync({
+        groupId,
+        data: {
+          name: groupName,
+          groupType: selectedType,
+          currencyCode: (group as any).currencyCode ?? 'INR',
+          configuration: {
+            defaultSplitType: splitType,
+            requireSettlementApproval: requireApproval,
+            simplifyDebts,
+          },
+          version: (group as any).version ?? 1,
+        }
       });
-      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
-      queryClient.invalidateQueries({ queryKey: ['groupSettings', groupId] });
       toast.success('Group settings updated');
     } catch {
       toast.error('Failed to update group');
@@ -130,8 +143,7 @@ export function GroupSettings() {
     if (!groupId || !selectedMember) return;
     const nextRole = selectedMember.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
     try {
-      await groupsService.updateMemberRole(groupId, selectedMember.userId, nextRole);
-      queryClient.invalidateQueries({ queryKey: ['groupMembers', groupId] });
+      await updateMemberRole.mutateAsync({ groupId, userId: selectedMember.userId, role: nextRole });
       setActiveSheet('NONE');
       toast.success('Member role updated');
     } catch {
@@ -142,8 +154,7 @@ export function GroupSettings() {
   const handleRemoveMember = async () => {
     if (!groupId || !selectedMember) return;
     try {
-      await groupsService.removeMember(groupId, selectedMember.userId);
-      queryClient.invalidateQueries({ queryKey: ['groupMembers', groupId] });
+      await removeMember.mutateAsync({ groupId, userId: selectedMember.userId });
       setActiveSheet('NONE');
       toast.success('Member removed');
     } catch {
@@ -154,7 +165,7 @@ export function GroupSettings() {
   const handleLeave = async () => {
     if (!groupId || !currentUserId) return;
     try {
-      await groupsService.removeMember(groupId, currentUserId);
+      await leaveGroup.mutateAsync(groupId);
       navigate('/');
     } catch {
       setLeaveError(true);
@@ -164,7 +175,7 @@ export function GroupSettings() {
   const handleDeleteGroup = async () => {
     if (!groupId) return;
     try {
-      await groupsService.deleteGroup(groupId);
+      await deleteGroup.mutateAsync(groupId);
       navigate('/');
     } catch {
       toast.error('Failed to delete group');
@@ -243,7 +254,7 @@ export function GroupSettings() {
             setActiveSheet('MEMBER_ACTION');
           }}
           getRoleBadge={getRoleBadge}
-          avatarColors={AVATAR_COLORS}
+          avatarColors={[...AVATAR_COLORS]}
           currentUserId={currentUserId}
           mutedLabel={mutedLabel}
           purple={purple}

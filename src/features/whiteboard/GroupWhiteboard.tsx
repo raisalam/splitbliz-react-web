@@ -1,19 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useParams, useNavigate } from 'react-router';
-import { useTheme } from '../../providers/ThemeProvider';
-import { ArrowLeft, Plus, Pin, Trash2, X, Moon, Sun } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, Plus, Pin, Trash2, X } from 'lucide-react';
 import { EmptyState } from '../../components/EmptyState';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { engagementService } from '../../services';
+import { useCreateWhiteboardItem, useUpdateWhiteboardItem, useDeleteWhiteboardItem } from '../../hooks/useEngagementMutations';
+import { WHITEBOARD_CATEGORIES } from '../../constants/emoji';
 
-const CATEGORIES = [
-  { key: 'ALL', label: 'All', emoji: '📋' },
-  { key: 'PAYMENT', label: 'Payment Info', emoji: '💳' },
-  { key: 'RULES', label: 'Rules', emoji: '📌' },
-  { key: 'LINKS', label: 'Links', emoji: '🔗' },
-  { key: 'NOTES', label: 'Notes', emoji: '📝' },
-];
+const CATEGORIES = WHITEBOARD_CATEGORIES;
 
 const CARD_COLORS = [
   'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20',
@@ -24,7 +19,6 @@ const CARD_COLORS = [
   'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/20',
 ];
 
-const COLOR_KEYS = ['amber', 'sky', 'rose', 'emerald', 'violet', 'orange'];
 const COLOR_DOTS = [
   'bg-amber-300', 'bg-sky-300', 'bg-rose-300', 'bg-emerald-300', 'bg-violet-300', 'bg-orange-300'
 ];
@@ -43,13 +37,15 @@ interface Note {
 export function GroupWhiteboard() {
   const { groupId } = useParams();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
-  const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ['whiteboard', groupId],
     queryFn: () => engagementService.getWhiteboardItems(groupId || ''),
     enabled: !!groupId,
   });
+
+  const createItem = useCreateWhiteboardItem();
+  const updateItem = useUpdateWhiteboardItem();
+  const deleteItem = useDeleteWhiteboardItem();
 
   const [noteMeta, setNoteMeta] = useState<Record<string, { category: string; colorIndex: number; pinned: boolean }>>({});
   const [activeCategory, setActiveCategory] = useState('ALL');
@@ -61,7 +57,7 @@ export function GroupWhiteboard() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const notes: Note[] = useMemo(() => {
-    return (data?.items ?? []).map((item, idx) => {
+    return (data?.items ?? []).map((item: any, idx: number) => {
       const meta = noteMeta[item.id];
       return {
         id: item.id,
@@ -91,28 +87,32 @@ export function GroupWhiteboard() {
   };
   const deleteNote = async (id: string) => {
     if (!groupId) return;
-    await engagementService.deleteWhiteboardItem(groupId, id);
-    queryClient.invalidateQueries({ queryKey: ['whiteboard', groupId] });
+    await deleteItem.mutateAsync({ groupId, itemId: id });
   };
   const addNote = async () => {
     if (!newTitle.trim()) return;
     if (!groupId) return;
     if (editingId) {
-      await engagementService.updateWhiteboardItem(groupId, editingId, {
-        title: newTitle,
-        content: newContent,
+      await updateItem.mutateAsync({
+        groupId,
+        itemId: editingId,
+        data: {
+          title: newTitle,
+          content: newContent,
+        }
       });
-      queryClient.invalidateQueries({ queryKey: ['whiteboard', groupId] });
     } else {
-      const created = await engagementService.createWhiteboardItem(groupId, {
-        title: newTitle,
-        content: newContent || undefined,
+      const created = await createItem.mutateAsync({
+        groupId,
+        data: {
+          title: newTitle,
+          content: newContent || undefined,
+        }
       });
       setNoteMeta(prev => ({
         ...prev,
         [created.id]: { category: newCategory, colorIndex: newColorIndex, pinned: false },
       }));
-      queryClient.invalidateQueries({ queryKey: ['whiteboard', groupId] });
     }
     setShowAddSheet(false);
     setNewTitle(''); setNewContent(''); setNewCategory('NOTES'); setNewColorIndex(0);
@@ -128,6 +128,8 @@ export function GroupWhiteboard() {
     setNewColorIndex(0);
   };
 
+  const headerEmoji = CATEGORIES[0]?.emoji ?? '';
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors pb-20">
       {/* Header */}
@@ -138,7 +140,7 @@ export function GroupWhiteboard() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="font-bold text-lg">📋 Whiteboard</h1>
+              <h1 className="font-bold text-lg">{headerEmoji ? `${headerEmoji} ` : ''}Whiteboard</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">{notes.length} notes</p>
             </div>
           </div>
@@ -154,7 +156,7 @@ export function GroupWhiteboard() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
         {isLoading && (
-          <div className="text-center text-sm text-slate-500 py-10">Loading whiteboardâ€¦</div>
+          <div className="text-center text-sm text-slate-500 py-10">Loading whiteboard...</div>
         )}
         {error && (
           <div className="text-center text-sm text-slate-500 py-10">Failed to load whiteboard.</div>
@@ -224,7 +226,7 @@ export function GroupWhiteboard() {
               <div className="flex items-center gap-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/30">
                 <img src={note.author.avatar} alt={note.author.name} className="w-5 h-5 rounded-full" />
                 <span className="text-[10px] text-slate-500 dark:text-slate-500">
-                  {note.author.name} • {new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  {note.author.name} - {new Date(note.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                 </span>
               </div>
             </motion.div>

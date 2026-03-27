@@ -23,6 +23,10 @@ export function useMqttConnection() {
           queryClient.invalidateQueries({ queryKey: ['group', hint.groupId] });
           queryClient.invalidateQueries({ queryKey: ['home'] });
           break;
+        case 'NOTIFICATIONS_UPDATED':
+          queryClient.invalidateQueries({ queryKey: ['notifications'], refetchType: 'all' });
+          queryClient.invalidateQueries({ queryKey: ['home'] });
+          break;
       }
     });
 

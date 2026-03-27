@@ -2,16 +2,9 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, createSearchParams } from 'react-router';
 import { colors } from '../../constants/colors';
+import { FIRST_GROUP_INTENTS } from '../../constants/emoji';
 
-// 6 Intents for Screen 4
-const INTENTS = [
-  { id: 'trip', label: 'A trip', emoji: '✈️', placeholder: "e.g. Bali Trip 2026" },
-  { id: 'home', label: 'Home expenses', emoji: '🏠', placeholder: "e.g. 123 Main St" },
-  { id: 'food', label: 'Food & dining', emoji: '🍕', placeholder: "e.g. Weekend Dinners" },
-  { id: 'event', label: 'An event', emoji: '🎉', placeholder: "e.g. Sarah's Birthday" },
-  { id: 'office', label: 'Office / work', emoji: '💼', placeholder: "e.g. Lunch runs" },
-  { id: 'other', label: 'Something else', emoji: '📂', placeholder: "e.g. Shared Expenses" },
-];
+const INTENTS = FIRST_GROUP_INTENTS;
 
 export function FirstGroup() {
   const navigate = useNavigate();
@@ -21,7 +14,7 @@ export function FirstGroup() {
     if (!selectedIntent) return;
     const intent = INTENTS.find(i => i.id === selectedIntent);
     if (!intent) return;
-    
+
     // Navigate to create group screen with pre-filled details in the URL
     navigate({
       pathname: '/group/new',
@@ -40,9 +33,8 @@ export function FirstGroup() {
 
   return (
     <div className="min-h-screen font-sans relative flex flex-col" style={{ backgroundColor: pageBg }}>
-      
       {/* Mini Progress Header */}
-      <div 
+      <div
         className="px-6 py-5 flex items-center justify-between shadow-sm z-10"
         style={{ background: `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` }}
       >
@@ -57,7 +49,6 @@ export function FirstGroup() {
 
       {/* Main Body */}
       <div className="flex-1 px-6 pt-10 pb-10 flex flex-col max-w-md w-full mx-auto">
-        
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -68,7 +59,7 @@ export function FirstGroup() {
             What are you splitting?
           </h2>
           <p className="font-medium px-4" style={{ fontSize: '15px', color: muted, lineHeight: '1.4' }}>
-            We'll set up your first group — tap to choose
+            We'll set up your first group - tap to choose
           </p>
         </motion.div>
 
@@ -114,23 +105,22 @@ export function FirstGroup() {
             onClick={handleCreate}
             disabled={!selectedIntent}
             className="w-full py-4 rounded-[14px] font-bold text-white text-base transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none"
-            style={{ 
-              background: selectedIntent ? `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` : '#d4d0e8', 
+            style={{
+              background: selectedIntent ? `linear-gradient(135deg, ${purple}, ${colors.primaryLight})` : '#d4d0e8',
               boxShadow: selectedIntent ? `0 8px 24px ${colors.overlay25}` : 'none'
             }}
           >
-            Set up this group →
+            Set up this group &rarr;
           </button>
-          
+
           <button
             onClick={() => navigate('/')}
             className="w-full py-2 font-bold text-center transition-colors hover:text-[#3d3a4a] group"
             style={{ color: muted, fontSize: '14px' }}
           >
-            Skip, go to home <span className="group-hover:translate-x-1 inline-block transition-transform" style={{ color: purple }}>→</span>
+            Skip, go to home <span className="group-hover:translate-x-1 inline-block transition-transform" style={{ color: purple }}>&rarr;</span>
           </button>
         </motion.div>
-
       </div>
     </div>
   );

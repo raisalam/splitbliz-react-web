@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Group } from '../../../types';
 import { formatCurrency } from '../../../utils/formatCurrency';
+import { INSIGHT_EMOJI } from '../../../constants/emoji';
 
 type Insight = {
   emoji: string;
@@ -41,7 +42,7 @@ export function InsightBar({ groups, onNavigate, onSetActionSheetOrigin }: Insig
 
     if (owedGroups.length > 0 && topOwedGroup) {
       list.push({
-        emoji: '💰',
+        emoji: INSIGHT_EMOJI.OWED,
         text: <>You're owed <strong>{formatCurrency(totalOwed.toFixed(2), currency)}</strong> across {owedGroups.length} group{owedGroups.length > 1 ? 's' : ''}. Nudge <strong>{topOwedGroup.name}</strong>?</>,
         bg: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
         actionLabel: 'Nudge',
@@ -50,7 +51,7 @@ export function InsightBar({ groups, onNavigate, onSetActionSheetOrigin }: Insig
     }
     if (oweGroups.length > 0 && topOweGroup) {
       list.push({
-        emoji: '⚡',
+        emoji: INSIGHT_EMOJI.OWE,
         text: <>You owe <strong>{formatCurrency(totalOwe.toFixed(2), currency)}</strong> across {oweGroups.length} group{oweGroups.length > 1 ? 's' : ''}. Settle <strong>{topOweGroup.name}</strong> first?</>,
         bg: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400',
         actionLabel: 'Settle',
@@ -59,7 +60,7 @@ export function InsightBar({ groups, onNavigate, onSetActionSheetOrigin }: Insig
     }
     if (settledGroups.length > 0) {
       list.push({
-        emoji: '🎉',
+        emoji: INSIGHT_EMOJI.SETTLED,
         text: <><strong>{settledGroups.length}</strong> group{settledGroups.length > 1 ? 's' : ''} fully settled! Keep it up.</>,
         bg: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
         actionLabel: 'View',
@@ -68,7 +69,7 @@ export function InsightBar({ groups, onNavigate, onSetActionSheetOrigin }: Insig
     }
     if (list.length === 0) {
       list.push({
-        emoji: '✨',
+        emoji: INSIGHT_EMOJI.CLEAR,
         text: <>All clear! No pending balances.</>,
         bg: 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
         actionLabel: '',

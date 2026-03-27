@@ -1,5 +1,5 @@
 import React from 'react';
-import { colors } from '../constants/colors';
+import { DEFAULT_GROUP_EMOJI } from '../constants/emoji';
 
 type GroupAvatarProps = {
   name: string;
@@ -33,7 +33,7 @@ const colorVariants = [
   { bg: 'bg-fuchsia-100 dark:bg-fuchsia-500/20', border: 'border-fuchsia-200 dark:border-fuchsia-500/30' },
 ];
 
-export function GroupAvatar({ name, emoji = '👥', size = 'md', hasActivity = false }: GroupAvatarProps) {
+export function GroupAvatar({ name, emoji = DEFAULT_GROUP_EMOJI, size = 'md', hasActivity = false }: GroupAvatarProps) {
   const safeName = name || 'Unknown Group';
   const colorIndex = stringToHashIndex(safeName);
   const colors = colorVariants[colorIndex];

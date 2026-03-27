@@ -71,18 +71,28 @@ export const authService = {
   },
 
   async updateProfile(data: Partial<Pick<UserFull, 'displayName' | 'resolvedAvatar'>>): Promise<UserFull> {
-    const res = await apiClient.patch<UserFull>('/users/me', data);
+    const payload = {
+      displayName: data.displayName,
+      avatarEmoji: data.resolvedAvatar ?? undefined,
+    };
+    const res = await apiClient.patch<UserFull>('/users/me', payload);
     return res.data;
   },
 
   async updateSettings(settings: Partial<UserSettings>): Promise<UserFull> {
-    const res = await apiClient.patch<UserFull>('/users/me/settings', settings);
+    const res = await apiClient.patch<UserFull>('/users/me', { settings });
     return res.data;
   },
 
   async getContacts(): Promise<UserContact[]> {
-    const res = await apiClient.get<{ contacts: UserContact[] }>('/users/me/contacts');
-    return res.data.contacts;
+    const res = await apiClient.get<{ items?: Array<{ userId: string; displayName: string; resolvedAvatar: string | null }> }>('/users/me/contacts');
+    const items = res.data.items ?? [];
+    return items.map((u) => ({
+      userId: u.userId,
+      displayName: u.displayName,
+      resolvedAvatar: u.resolvedAvatar ?? null,
+      email: '',
+    }));
   },
 
   async getActionItems(): Promise<ActionItemsPreview> {
@@ -91,10 +101,16 @@ export const authService = {
   },
 
   async searchUsers(query: string): Promise<UserContact[]> {
-    const res = await apiClient.get<{ users: UserContact[] }>('/users/search', {
+    const res = await apiClient.get<{ items?: Array<{ userId: string; displayName: string; resolvedAvatar: string | null }> }>('/users/search', {
       params: { q: query },
     });
-    return res.data.users;
+    const items = res.data.items ?? [];
+    return items.map((u) => ({
+      userId: u.userId,
+      displayName: u.displayName,
+      resolvedAvatar: u.resolvedAvatar ?? null,
+      email: '',
+    }));
   },
 
   async deleteAccount(): Promise<void> {

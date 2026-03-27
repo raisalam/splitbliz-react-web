@@ -48,9 +48,17 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiError>) => {
     if (error.response?.status === 401) {
-      // Session expired — clear token and redirect to login
-      tokenStore.clear();
-      window.location.replace('/login');
+      const url = typeof error.config?.url === 'string' ? error.config.url : '';
+      const isAuthRequest = url.includes('/auth/login')
+        || url.includes('/auth/register')
+        || url.includes('/auth/checkEmail')
+        || url.includes('/auth/google')
+        || url.includes('/auth/facebook');
+      if (!isAuthRequest) {
+        // Session expired — clear token and redirect to login
+        tokenStore.clear();
+        window.location.replace('/login');
+      }
     }
     return Promise.reject(error);
   }

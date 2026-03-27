@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
+import { formatCurrency } from '../../../utils/formatCurrency';
 
 type PaymentMethod = {
   id: string;
@@ -8,7 +9,7 @@ type PaymentMethod = {
 };
 
 type SettlementAmountFormProps = {
-  currencySymbol: string;
+  currencyCode: string;
   numAmount: number;
   paymentMethods: PaymentMethod[];
   paymentMethod: string;
@@ -17,7 +18,7 @@ type SettlementAmountFormProps = {
 };
 
 export function SettlementAmountForm({
-  currencySymbol,
+  currencyCode,
   numAmount,
   paymentMethods,
   paymentMethod,
@@ -29,7 +30,9 @@ export function SettlementAmountForm({
       <div onClick={onAmountClick} className="flex items-center justify-between p-4 px-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
         <span className="text-slate-500 dark:text-slate-400 font-medium text-lg">Amount</span>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold text-slate-900 dark:text-white">{currencySymbol}{numAmount.toFixed(2)}</span>
+          <span className="text-lg font-semibold text-slate-900 dark:text-white">
+            {formatCurrency(numAmount.toFixed(2), currencyCode)}
+          </span>
           <ChevronRight className="w-5 h-5 text-slate-300 dark:text-slate-600" />
         </div>
       </div>

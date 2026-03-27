@@ -2,6 +2,8 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { GroupAvatar } from '../../../components/GroupAvatar';
 import { formatCurrency } from '../../../utils/formatCurrency';
+import { EXPENSE_CATEGORY_EMOJI } from '../../../constants/emoji';
+import { getExpenseBorderClass } from '../../../constants/iconography';
 
 type ExpenseRowProps = {
   expense: any;
@@ -17,13 +19,13 @@ type ExpenseRowProps = {
 
 export function ExpenseRow({ expense, idx, payer, isMe, formattedDate, members, currencySymbol, onClick, currentUserId }: ExpenseRowProps) {
   const totalAmount = parseFloat(expense.amount || '0');
-  
+
   // Real API gives `splits` array. Find my split
   const mySplit = expense.splits?.find((s: any) => s.userId === currentUserId);
   const myShareAmount = mySplit
     ? parseFloat(mySplit.splitAmount)
     : parseFloat(expense.yourShareTotal ?? expense.yourShare ?? '0');
-  
+
   // If I paid, my net is (total - my share). If I didn't pay, my net is (-my share).
   // This is a naive approximation for the list preview.
   const myTotalPaid = expense.payers?.find((p: any) => p.userId === currentUserId)?.paidAmount
@@ -34,17 +36,7 @@ export function ExpenseRow({ expense, idx, payer, isMe, formattedDate, members, 
   if (netForExpense > 0) shareColorClass = 'text-emerald-600 dark:text-emerald-400';
   else if (netForExpense < 0) shareColorClass = 'text-amber-600 dark:text-amber-500';
 
-  const getBorderColor = (e: string) => {
-    switch (e) {
-      case '✈️': return 'border-l-indigo-500';
-      case '🍽️': return 'border-l-orange-500';
-      case '🏠': return 'border-l-emerald-500';
-      case '🚕': return 'border-l-amber-500';
-      case '🍿': return 'border-l-rose-500';
-      default: return 'border-l-slate-300 dark:border-l-slate-700';
-    }
-  };
-  const leftBorderClass = getBorderColor(expense.categoryEmoji || '🛒');
+  const leftBorderClass = getExpenseBorderClass(expense.category);
 
   return (
     <motion.div
@@ -54,12 +46,12 @@ export function ExpenseRow({ expense, idx, payer, isMe, formattedDate, members, 
     >
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <GroupAvatar name={expense.title} emoji={expense.categoryEmoji || '🛒'} size="md" />
+          <GroupAvatar name={expense.title} emoji={expense.categoryEmoji || EXPENSE_CATEGORY_EMOJI.OTHER} size="md" />
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-white leading-tight">{expense.title}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex flex-col sm:flex-row sm:items-center sm:gap-1.5">
               <span>{isMe ? 'You' : payer.displayName} paid {formatCurrency(expense.amount, expense.currencyCode || 'INR')}</span>
-              <span className="hidden sm:inline">•</span>
+              <span className="hidden sm:inline">-</span>
               <span className={`text-[10px] uppercase font-bold tracking-wider ${shareColorClass}`}>
                 Your share: {formatCurrency(myShareAmount.toFixed(2), expense.currencyCode || 'INR')}
               </span>

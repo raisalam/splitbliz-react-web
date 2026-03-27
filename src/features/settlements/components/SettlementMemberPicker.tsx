@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check } from 'lucide-react';
+import { formatCurrency } from '../../../utils/formatCurrency';
 
 type BalanceInfo = { amount: number; direction: 'owe' | 'owed' };
 
@@ -8,7 +9,7 @@ type SettlementMemberPickerProps = {
   mode: 'FROM' | 'TO';
   selectedUserId: string;
   currentUserId: string;
-  currencySymbol: string;
+  currencyCode: string;
   getBalanceWithMember: (memberId: string) => BalanceInfo;
   onSelect: (memberId: string, balanceInfo?: BalanceInfo) => void;
 };
@@ -18,7 +19,7 @@ export function SettlementMemberPicker({
   mode,
   selectedUserId,
   currentUserId,
-  currencySymbol,
+  currencyCode,
   getBalanceWithMember,
   onSelect
 }: SettlementMemberPickerProps) {
@@ -62,7 +63,7 @@ export function SettlementMemberPicker({
                   ? 'text-rose-600 dark:text-rose-400'
                   : 'text-emerald-600 dark:text-emerald-400'
               }`}>
-                {balanceInfo.direction === 'owe' ? 'You owe' : 'Owes you'} {currencySymbol}{balanceInfo.amount.toFixed(2)}
+                {balanceInfo.direction === 'owe' ? 'You owe' : 'Owes you'} {formatCurrency(balanceInfo.amount.toFixed(2), currencyCode)}
               </span>
             )}
             {isSelected && (
