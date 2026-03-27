@@ -20,7 +20,9 @@ export const engagementService = {
     params?: { cursor?: string; limit?: number }
   ): Promise<{ messages: ChatMessage[]; pagination: PaginationResponse }> {
     const res = await apiClient.get(`/groups/${groupId}/messages`, { params });
-    return res.data;
+    const data = res.data ?? {};
+    const messages = data.messages ?? data.items ?? [];
+    return { messages, pagination: data.pagination };
   },
 
   async sendMessage(groupId: string, data: SendMessageRequest): Promise<ChatMessage> {

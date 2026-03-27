@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, Send, Smile } from 'lucide-react';
 import { EmptyState } from '../../components/EmptyState';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { engagementService, groupsService } from '../../services';
 import { useUser } from '../../providers/UserContext';
 import { v4 as uuidv4 } from 'uuid';
@@ -39,9 +39,19 @@ export function GroupChat() {
   const group = groupDetail?.group;
   const emoji = group?.groupType ? GROUP_TYPE_EMOJI[group.groupType] : GROUP_TYPE_EMOJI['OTHER'];
 
-  const { data, isLoading, error } = useQuery({
+  const {
+    data: pagedMessages,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['messages', groupId],
-    queryFn: () => engagementService.getMessages(groupId || ''),
+    queryFn: ({ pageParam }) =>
+      engagementService.getMessages(groupId || '', { cursor: pageParam, limit: 50 }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.pagination?.hasMore ? lastPage.pagination?.nextCursor : undefined,
     enabled: !!groupId,
   });
 
@@ -50,28 +60,25 @@ export function GroupChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (data?.messages) {
-      setMessages(prev => {
-        const existing = new Map(prev.map(m => [m.clientMessageId || m.id, m]));
-        data.messages.forEach((m) => {
-          console.debug('[Chat] message', {
-            id: m.id,
-            clientMessageId: m.clientMessageId,
-            senderId: m.sender?.userId,
-            senderName: m.sender?.displayName,
-            currentUserId,
-          });
-          const key = m.clientMessageId || m.id;
-          existing.set(key, m);
-        });
-        return Array.from(existing.values());
-      });
-    }
-  }, [data?.messages, currentUserId]);
+    if (!pagedMessages?.pages) return;
+    const all = pagedMessages.pages.flatMap((page) => page.messages ?? []);
+    const existing = new Map(all.map(m => [m.clientMessageId || m.id, m]));
+    const merged = Array.from(existing.values());
+    merged.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    setMessages(merged);
+  }, [pagedMessages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages]);
+  }, [messages, isLoading]);
+
+  const handleScroll = () => {
+    const container = scrollRef.current;
+    if (!container || !hasNextPage || isFetchingNextPage) return;
+    if (container.scrollTop <= 80) {
+      fetchNextPage();
+    }
+  };
 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
@@ -124,7 +131,11 @@ export function GroupChat() {
       </header>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-1 max-w-xl mx-auto w-full">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-1 max-w-xl mx-auto w-full"
+      >
         {isLoading && (
           <div className="text-center text-sm text-slate-500 mt-10">Loading messagesâ€¦</div>
         )}
