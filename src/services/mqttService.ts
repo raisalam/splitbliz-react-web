@@ -99,7 +99,6 @@ class MqttService {
         this.hintHandlers.forEach(h => h(payload as MqttHint));
       } else if (topic.endsWith('/messages')) {
         const groupId = topic.split('/')[2];
-        console.log('[MQTT message]', { topic, groupId, payload });
         const normalized = {
           id: payload.messageId ?? payload.id,
           clientMessageId: payload.clientMessageId ?? payload.messageId,
