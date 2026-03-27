@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { GROUP_TYPE_EMOJI } from '../../constants/app';
 import type { ChatMessage } from '../../types';
 import { useGroupMqtt } from '../../hooks/useGroupMqtt';
+import { CachedAvatar } from '../../components/CachedAvatar';
 
 function formatDateLabel(dateStr: string): string {
   const d = new Date(dateStr);
@@ -37,6 +38,7 @@ export function GroupChat() {
     enabled: !!groupId,
   });
   const group = groupDetail?.group;
+  const members = groupDetail?.members ?? [];
   const emoji = group?.groupType ? GROUP_TYPE_EMOJI[group.groupType] : GROUP_TYPE_EMOJI['OTHER'];
 
   const {
@@ -61,12 +63,26 @@ export function GroupChat() {
 
   useEffect(() => {
     if (!pagedMessages?.pages) return;
+    const membersById = new Map(members.map((m: any) => [m.userId, m]));
     const all = pagedMessages.pages.flatMap((page) => page.messages ?? []);
     const existing = new Map(all.map(m => [m.clientMessageId || m.id, m]));
-    const merged = Array.from(existing.values());
+    const merged = Array.from(existing.values()).map((msg) => {
+      const member = membersById.get(msg.sender?.userId);
+      if (!member) return msg;
+      const displayName = msg.sender?.displayName || member.displayName;
+      const resolvedAvatar = msg.sender?.resolvedAvatar || member.resolvedAvatar || member.avatarUrl || null;
+      return {
+        ...msg,
+        sender: {
+          ...msg.sender,
+          displayName,
+          resolvedAvatar,
+        },
+      };
+    });
     merged.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     setMessages(merged);
-  }, [pagedMessages]);
+  }, [pagedMessages, members]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -107,6 +123,11 @@ export function GroupChat() {
 
   // Group messages by date for separators
   let lastDate = '';
+
+  const getInitial = (name?: string | null) => {
+    const trimmed = name?.trim();
+    return trimmed ? trimmed[0].toUpperCase() : '?';
+  };
 
   return (
     <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
@@ -180,7 +201,19 @@ export function GroupChat() {
                     className={`flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
                   >
                     {!isMe && (
-                      <img src={msg.sender?.resolvedAvatar || ''} alt={msg.sender?.displayName} className="w-7 h-7 rounded-full self-end shrink-0" />
+                      msg.sender?.resolvedAvatar && msg.sender.resolvedAvatar.startsWith('http') ? (
+                        <CachedAvatar
+                          src={msg.sender.resolvedAvatar}
+                          alt={msg.sender?.displayName}
+                          className="w-7 h-7 rounded-full self-end shrink-0 object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full self-end shrink-0 flex items-center justify-center text-[11px] font-bold bg-slate-200 text-slate-700">
+                          {msg.sender?.resolvedAvatar && !msg.sender.resolvedAvatar.startsWith('http')
+                            ? msg.sender.resolvedAvatar
+                            : getInitial(msg.sender?.displayName)}
+                        </div>
+                      )
                     )}
                     <div className={`max-w-[75%] ${isMe ? 'order-first' : ''}`}>
                       {!isMe && (
