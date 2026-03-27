@@ -34,6 +34,21 @@ export function ExpenseDetail() {
   const [receiptViewOpen, setReceiptViewOpen] = useState(false);
   const [showAllMembers, setShowAllMembers] = useState(false);
 
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async () => {
+      if (!groupId || !expenseId) {
+        throw new Error('Missing group or expense id');
+      }
+      await expensesService.deleteExpense(groupId, expenseId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['expenses', groupId] });
+      queryClient.invalidateQueries({ queryKey: ['expense', groupId, expenseId] });
+      navigate(-1);
+    },
+  });
+
   if (groupLoading || expenseLoading || !expense) {
     return (
       <div className="min-h-screen font-sans pb-10 flex flex-col" style={{ backgroundColor: colors.pageBg }}>
@@ -92,20 +107,6 @@ export function ExpenseDetail() {
   const visibleParticipants = showAllMembers ? participants : participants.slice(0, 4);
   const hiddenCount = Math.max(0, participants.length - 4);
 
-  const deleteExpenseMutation = useMutation({
-    mutationFn: async () => {
-      if (!groupId || !expenseId) {
-        throw new Error('Missing group or expense id');
-      }
-      await expensesService.deleteExpense(groupId, expenseId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group', groupId] });
-      queryClient.invalidateQueries({ queryKey: ['expenses', groupId] });
-      queryClient.invalidateQueries({ queryKey: ['expense', groupId, expenseId] });
-      navigate(-1);
-    },
-  });
 
   return (
     <div className="min-h-screen font-sans pb-10 flex flex-col" style={{ backgroundColor: colors.pageBg }}>
