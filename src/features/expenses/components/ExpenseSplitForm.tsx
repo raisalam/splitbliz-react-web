@@ -1,8 +1,9 @@
 import React from 'react';
-import { Info } from 'lucide-react';
+import { Info } from '../../../constants/icons';
 import { formatCurrency, formatCurrencyParts } from '../../../utils/formatCurrency';
 import { SplitType } from '../../../utils/expenseCalculator';
 import { SplitTypeToggle } from './SplitTypeToggle';
+import { CachedAvatar } from '../../../components/CachedAvatar';
 
 type ExpenseSplitFormProps = {
   splitType: SplitType;
@@ -28,6 +29,8 @@ export function ExpenseSplitForm({
   currencyCode
 }: ExpenseSplitFormProps) {
   const currencyParts = formatCurrencyParts('0', currencyCode);
+  const getInitial = (name?: string | null) => name?.trim()?.[0]?.toUpperCase() || '?';
+
   return (
     <div className="flex flex-col">
       <SplitTypeToggle value={splitType} onChange={onSplitTypeChange} />
@@ -35,10 +38,25 @@ export function ExpenseSplitForm({
       {splitType !== 'EQUAL' && (
         <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
           <h4 className="font-semibold text-slate-900 dark:text-white mb-2">Adjust Shares</h4>
-          {members.filter(m => selectedMemberIds.has(m.userPublicId)).map(member => (
+          {members.filter(m => selectedMemberIds.has(m.userPublicId)).map(member => {
+            const avatarValue = member.resolvedAvatar || member.avatarUrl || null;
+            const isAvatarUrl = typeof avatarValue === 'string' && avatarValue.startsWith('http');
+            const fallbackInitials = getInitial(member.displayName);
+            return (
             <div key={member.userPublicId} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl">
               <div className="flex items-center gap-3">
-                <img src={member.avatarUrl} alt={member.displayName} className="w-8 h-8 rounded-full" />
+                {isAvatarUrl ? (
+                  <CachedAvatar
+                    src={avatarValue}
+                    alt={member.displayName}
+                    fallbackInitials={fallbackInitials}
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-slate-700 bg-slate-200">
+                    {avatarValue || fallbackInitials}
+                  </div>
+                )}
                 <span className="font-semibold">{member.displayName}</span>
               </div>
               <div className="relative w-32">
@@ -51,7 +69,7 @@ export function ExpenseSplitForm({
                 {splitType === 'PERCENTAGE' && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">%</span>}
               </div>
             </div>
-          ))}
+          )})}
 
           {!splitValidation.isValid && (
             <div className="text-rose-500 text-sm font-medium mt-2 flex items-center gap-1.5"><Info className="w-4 h-4" /> {splitValidation.errorMsg}</div>

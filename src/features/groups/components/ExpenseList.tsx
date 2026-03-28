@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Plus } from 'lucide-react';
+import { Plus } from '../../../constants/icons';
 import { ExpenseRow } from './ExpenseRow';
 
 type ExpenseListProps = {

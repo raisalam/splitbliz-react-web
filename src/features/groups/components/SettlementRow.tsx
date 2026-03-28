@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Clock, X } from 'lucide-react';
+import { Check, Clock, X } from '../../../constants/icons';
 import { formatCurrency } from '../../../utils/formatCurrency';
 
 type SettlementRowProps = {

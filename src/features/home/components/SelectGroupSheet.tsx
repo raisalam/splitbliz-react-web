@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X } from 'lucide-react';
+import { X } from '../../../constants/icons';
 import { GroupListItem } from '../../../components/GroupListItem';
 import type { Group } from '../../../types';
 

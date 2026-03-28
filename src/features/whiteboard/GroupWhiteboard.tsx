@@ -109,10 +109,12 @@ export function GroupWhiteboard() {
           content: newContent || undefined,
         }
       });
-      setNoteMeta(prev => ({
-        ...prev,
-        [created.id]: { category: newCategory, colorIndex: newColorIndex, pinned: false },
-      }));
+      if (created?.id) {
+        setNoteMeta(prev => ({
+          ...prev,
+          [created.id]: { category: newCategory, colorIndex: newColorIndex, pinned: false },
+        }));
+      }
     }
     setShowAddSheet(false);
     setNewTitle(''); setNewContent(''); setNewCategory('NOTES'); setNewColorIndex(0);

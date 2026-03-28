@@ -5,7 +5,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { expensesService, groupsService } from '../../services';
 import { extractApiError } from '../../services/apiClient';
 import { useCreateExpense, useUpdateExpense } from '../../hooks/useExpenseMutations';
-import { ChevronRight, Check, X, Info, Receipt, Banknote, ArrowLeft, Search } from 'lucide-react';
+import { ArrowLeft, Banknote, Check, ChevronRight, Info, Receipt, Search, X } from '../../constants/icons';
 import { useUser } from '../../providers/UserContext';
 import { toast } from 'sonner';
 import { formatCurrency, formatCurrencyParts } from '../../utils/formatCurrency';
@@ -245,6 +245,7 @@ export function AddExpense() {
     setSubmitting(true);
     setSubmitError(null);
     try {
+      const apiSplitType = splitType === 'FIXED' ? 'EXACT' : splitType;
       const total = parseFloat(amountStr);
       if (!Number.isFinite(total) || total <= 0) {
         const msg = 'Amount must be greater than zero.';
@@ -279,35 +280,36 @@ export function AddExpense() {
         if (!editingVersion) {
           throw new Error('Missing expense version.');
         }
-        await updateExpense.mutateAsync({
-          groupId,
-          expenseId: editExpenseId,
-          data: {
-            version: editingVersion,
-            title: description,
-            amount: formattedAmount,
-            category: categoryKey,
-            expenseDate: new Date().toISOString().slice(0, 10),
-            payers,
-            splits,
-          }
-        });
+          await updateExpense.mutateAsync({
+            groupId,
+            expenseId: editExpenseId,
+            data: {
+              version: editingVersion,
+              title: description,
+              amount: formattedAmount,
+              category: categoryKey,
+              expenseDate: new Date().toISOString().slice(0, 10),
+              splitType: apiSplitType,
+              payers,
+              splits,
+            }
+          });
         toast.success('Expense updated successfully!');
         navigate(`/group/${groupId}/expense/${editExpenseId}`);
       } else {
-        await createExpense.mutateAsync({
-          groupId,
-          data: {
-            title: description,
-            amount: formattedAmount,
-            currencyCode: currencyCode,
-            category: categoryKey,
-            expenseDate: new Date().toISOString().slice(0, 10),
-            splitType,
-            payers,
-            splits,
-          }
-        });
+          await createExpense.mutateAsync({
+            groupId,
+            data: {
+              title: description,
+              amount: formattedAmount,
+              currencyCode: currencyCode,
+              category: categoryKey,
+              expenseDate: new Date().toISOString().slice(0, 10),
+              splitType: apiSplitType,
+              payers,
+              splits,
+            }
+          });
         toast.success('Expense added successfully!');
         navigate(`/group/${groupId}`);
       }
@@ -358,6 +360,8 @@ export function AddExpense() {
       </div>
     );
   }
+
+  const getInitial = (name?: string | null) => name?.trim()?.[0]?.toUpperCase() || '?';
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white font-sans overflow-x-hidden relative">
@@ -474,10 +478,26 @@ export function AddExpense() {
                       const toName = toM?.userPublicId === currentUserId ? 'You' : toM?.displayName;
                       return (
                         <li key={idx} className="flex items-center text-[15px] border-l-2 border-slate-200 dark:border-slate-700 pl-3 gap-2">
-                          {fromM?.avatarUrl && <img src={fromM.avatarUrl} className="w-6 h-6 rounded-full object-cover shrink-0" alt="" />}
+                          {fromM && (
+                            fromM.resolvedAvatar && fromM.resolvedAvatar.startsWith('http') ? (
+                              <img src={fromM.resolvedAvatar} className="w-6 h-6 rounded-full object-cover shrink-0" alt="" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-700 bg-slate-200 shrink-0">
+                                {fromM.resolvedAvatar || getInitial(fromM.displayName)}
+                              </div>
+                            )
+                          )}
                           <span className="font-semibold text-slate-900 dark:text-white">{fromName}</span>
                           <span className="text-slate-500 dark:text-slate-400">owes</span>
-                          {toM?.avatarUrl && <img src={toM.avatarUrl} className="w-6 h-6 rounded-full object-cover shrink-0" alt="" />}
+                          {toM && (
+                            toM.resolvedAvatar && toM.resolvedAvatar.startsWith('http') ? (
+                              <img src={toM.resolvedAvatar} className="w-6 h-6 rounded-full object-cover shrink-0" alt="" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-700 bg-slate-200 shrink-0">
+                                {toM.resolvedAvatar || getInitial(toM.displayName)}
+                              </div>
+                            )
+                          )}
                           <span className="font-semibold text-slate-900 dark:text-white mr-auto">{toName}</span>
                           <span className="font-bold text-slate-900 dark:text-white">{formatCurrency(s.amount.toFixed(2), currencyCode)}</span>
                         </li>
@@ -610,7 +630,13 @@ export function AddExpense() {
                           }`}>
                             {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                           </div>
-                          <img src={member.avatarUrl} alt={member.displayName} className={`w-10 h-10 rounded-full object-cover transition-opacity ${!isSelected && 'opacity-40 grayscale'}`} />
+                          {member.resolvedAvatar && member.resolvedAvatar.startsWith('http') ? (
+                            <img src={member.resolvedAvatar} alt={member.displayName} className={`w-10 h-10 rounded-full object-cover transition-opacity ${!isSelected && 'opacity-40 grayscale'}`} />
+                          ) : (
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-slate-700 bg-slate-200 transition-opacity ${!isSelected && 'opacity-40 grayscale'}`}>
+                              {member.resolvedAvatar || getInitial(member.displayName)}
+                            </div>
+                          )}
                           <span className={`font-semibold text-base flex-1 ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
                             {member.displayName} {member.userPublicId === currentUserId && '(You)'}
                           </span>

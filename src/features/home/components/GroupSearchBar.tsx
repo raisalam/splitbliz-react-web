@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search } from '../../../constants/icons';
 
 type GroupSearchBarProps = {
   value: string;

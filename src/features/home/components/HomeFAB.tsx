@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Banknote, Plus, Receipt, Users } from 'lucide-react';
+import { Banknote, Plus, Receipt, Users } from '../../../constants/icons';
 
 type HomeFABProps = {
   expanded: boolean;

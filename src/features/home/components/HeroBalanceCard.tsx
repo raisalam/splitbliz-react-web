@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ArrowDown, ArrowDownLeft, ArrowUp, ArrowUpRight, Wallet } from 'lucide-react';
+import { ArrowDown, ArrowDownLeft, ArrowUp, ArrowUpRight, Wallet } from '../../../constants/icons';
 import { formatCurrency } from '../../../utils/formatCurrency';
 
 type HeroBalanceCardProps = {

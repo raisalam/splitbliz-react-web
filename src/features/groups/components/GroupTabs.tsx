@@ -1,50 +1,50 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { History, Users } from '../../../constants/icons';
+import { Receipt, Users } from '../../../constants/icons';
 
-type HomeTabsProps = {
-  activeTab: 'groups' | 'activity';
-  onChange: (tab: 'groups' | 'activity') => void;
+type GroupTabsProps = {
+  activeTab: 'expenses' | 'members';
+  onChange: (tab: 'expenses' | 'members') => void;
 };
 
-export function HomeTabs({ activeTab, onChange }: HomeTabsProps) {
+export function GroupTabs({ activeTab, onChange }: GroupTabsProps) {
   return (
-    <div className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 mb-6">
+    <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 mb-6 sticky top-16 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-sm z-40 py-2">
       <button
-        onClick={() => onChange('groups')}
+        onClick={() => onChange('expenses')}
         className={`pb-3 text-sm font-medium transition-colors relative ${
-          activeTab === 'groups'
+          activeTab === 'expenses'
             ? 'text-indigo-600 dark:text-indigo-400'
             : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
         }`}
       >
         <div className="flex items-center gap-2">
-          <Users className="w-4 h-4" />
-          Your Groups
+          <Receipt className="w-4 h-4" />
+          Expenses
         </div>
-        {activeTab === 'groups' && (
+        {activeTab === 'expenses' && (
           <motion.div
-            layoutId="activeTab"
+            layoutId="groupTab"
             className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-t-full"
           />
         )}
       </button>
 
       <button
-        onClick={() => onChange('activity')}
+        onClick={() => onChange('members')}
         className={`pb-3 text-sm font-medium transition-colors relative ${
-          activeTab === 'activity'
+          activeTab === 'members'
             ? 'text-indigo-600 dark:text-indigo-400'
             : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
         }`}
       >
         <div className="flex items-center gap-2">
-          <History className="w-4 h-4" />
-          Recent Activity
+          <Users className="w-4 h-4" />
+          Members & Balances
         </div>
-        {activeTab === 'activity' && (
+        {activeTab === 'members' && (
           <motion.div
-            layoutId="activeTab"
+            layoutId="groupTab"
             className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-t-full"
           />
         )}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Check } from 'lucide-react';
+import { Check } from '../../../constants/icons';
 import { MemberBalanceRow } from './MemberBalanceRow';
 import { formatCurrency } from '../../../utils/formatCurrency';
 

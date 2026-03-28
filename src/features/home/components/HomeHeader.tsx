@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Moon, Sun, LogOut } from 'lucide-react';
+import { Bell, LogOut, Moon, Sun } from '../../../constants/icons';
 import { useUser } from '../../../providers/UserContext';
 
 type HomeHeaderProps = {

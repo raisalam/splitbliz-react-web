@@ -1,6 +1,7 @@
 import React from 'react';
-import { Info, Users } from 'lucide-react';
+import { Info, Users } from '../../../constants/icons';
 import { formatCurrency, formatCurrencyParts } from '../../../utils/formatCurrency';
+import { CachedAvatar } from '../../../components/CachedAvatar';
 
 type PayerSelectorProps = {
   members: any[];
@@ -28,16 +29,32 @@ export function PayerSelector({
   numericPayers
 }: PayerSelectorProps) {
   const currencyParts = formatCurrencyParts('0', currencyCode);
+  const getInitial = (name?: string | null) => name?.trim()?.[0]?.toUpperCase() || '?';
+
   return (
     <div className="space-y-3">
       {members.map(member => {
         const isPayer = payers[member.userPublicId] !== undefined;
         const payerVal = payers[member.userPublicId] || '';
         const equalShare = selectedMemberIds.size > 0 ? (numAmount / selectedMemberIds.size) : 0;
+        const avatarValue = member.resolvedAvatar || member.avatarUrl || null;
+        const isAvatarUrl = typeof avatarValue === 'string' && avatarValue.startsWith('http');
+        const fallbackInitials = getInitial(member.displayName);
         return (
           <div key={member.userPublicId} className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${isPayer ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10 dark:border-indigo-500' : 'border-slate-100 dark:border-slate-800'}`}>
             <div onClick={() => onTogglePayer(member.userPublicId)} className="flex items-center gap-3 cursor-pointer flex-1">
-              <img src={member.avatarUrl} alt={member.displayName} className={`w-10 h-10 rounded-full object-cover transition-opacity ${!isPayer && 'opacity-40 grayscale'}`} />
+              {isAvatarUrl ? (
+                <CachedAvatar
+                  src={avatarValue}
+                  alt={member.displayName}
+                  fallbackInitials={fallbackInitials}
+                  className={`w-10 h-10 rounded-full object-cover transition-opacity ${!isPayer && 'opacity-40 grayscale'}`}
+                />
+              ) : (
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-slate-700 bg-slate-200 transition-opacity ${!isPayer && 'opacity-40 grayscale'}`}>
+                  {avatarValue || fallbackInitials}
+                </div>
+              )}
               <div>
                 <span className={`font-semibold text-base block ${isPayer ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
                   {member.displayName} {member.userPublicId === currentUserId && '(You)'}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X } from 'lucide-react';
+import { X } from '../../../constants/icons';
 import type { Settlement } from '../../../types';
 import { EmptyState } from '../../../components/EmptyState';
 import { SettlementRow } from './SettlementRow';
@@ -29,13 +29,17 @@ export function SettlementHistorySheet({
   if (!open) return null;
 
   const history = settlements
-    .filter((s: Settlement) =>
-      (s.fromUser?.userId === fromId && s.toUser?.userId === toId) ||
-      (s.fromUser?.userId === toId && s.toUser?.userId === fromId)
-    )
+    .filter((s: Settlement) => {
+      if (!fromId || !toId) return true;
+      return (
+        (s.fromUser?.userId === fromId && s.toUser?.userId === toId) ||
+        (s.fromUser?.userId === toId && s.toUser?.userId === fromId)
+      );
+    })
     .sort((a: Settlement, b: Settlement) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const otherMemberId = fromId === currentUserId ? toId : fromId;
+  const headerLabel = !fromId || !toId ? 'Group settlements' : `Settlements with ${getMemberName(otherMemberId)}`;
 
   return (
     <AnimatePresence>
@@ -55,7 +59,7 @@ export function SettlementHistorySheet({
               <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6" />
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                  Settlements with {getMemberName(otherMemberId)}
+                  {headerLabel}
                 </h3>
                 <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full">
                   <X className="w-5 h-5" />

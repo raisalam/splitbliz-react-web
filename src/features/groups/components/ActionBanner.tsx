@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, Banknote, ChevronRight } from 'lucide-react';
+import { AlertCircle, Banknote, ChevronRight } from '../../../constants/icons';
 import { toast } from 'sonner';
 import { formatCurrency } from '../../../utils/formatCurrency';
 

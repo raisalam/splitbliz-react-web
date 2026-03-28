@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Search } from 'lucide-react';
+import { Search } from '../../../constants/icons';
 import { EmptyState } from '../../../components/EmptyState';
 import { GroupCard } from './GroupCard';
 import type { Group } from '../../../types';

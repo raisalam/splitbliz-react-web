@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ChevronRight, Pencil } from 'lucide-react';
+import { ChevronRight, Pencil } from '../../../constants/icons';
 import { GroupFeaturesSection } from './GroupFeaturesSection';
 import { colors } from '../../../constants/colors';
 

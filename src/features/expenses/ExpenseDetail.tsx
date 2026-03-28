@@ -5,7 +5,7 @@ import { ArrowLeft, User, Receipt, Banknote, Edit3, Trash2, MoreHorizontal, Plus
 import { colors } from '../../constants/colors';
 import { Skeleton } from '../../components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
-import { groupsService } from '../../services';
+import { expensesService, groupsService } from '../../services';
 import { useUser } from '../../providers/UserContext';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { EXPENSE_ACTION_EMOJI, EXPENSE_CATEGORY_EMOJI, UI_EMOJI } from '../../constants/emoji';

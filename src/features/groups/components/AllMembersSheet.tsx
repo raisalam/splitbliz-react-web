@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, X, Plus } from 'lucide-react';
+import { Plus, Users, X } from '../../../constants/icons';
 import { MemberAvatar } from './MemberAvatar';
 
 type AllMembersSheetProps = {

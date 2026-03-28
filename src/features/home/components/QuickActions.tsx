@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Banknote, Check, ChevronDown, UserPlus, X } from 'lucide-react';
+import { Banknote, Check, ChevronDown, UserPlus, X } from '../../../constants/icons';
 import { GroupAvatar } from '../../../components/GroupAvatar';
 import { ActionItem, Group } from '../../../types';
 import { GROUP_TYPE_EMOJI } from '../../../constants/app';

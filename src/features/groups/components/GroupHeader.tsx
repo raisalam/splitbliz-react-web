@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Moon, Sun, Bell, Settings, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Bell, MessageSquare, Moon, Settings, Sun } from '../../../constants/icons';
 import { GroupAvatar } from '../../../components/GroupAvatar';
 import { GROUP_TYPE_EMOJI } from '../../../constants/app';
 

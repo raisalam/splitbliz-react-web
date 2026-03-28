@@ -1,6 +1,6 @@
 import React from 'react';
 import { colors } from '../../../constants/colors';
-import { MoreHorizontal, UserPlus } from 'lucide-react';
+import { MoreHorizontal, UserPlus } from '../../../constants/icons';
 import { CachedAvatar } from '../../../components/CachedAvatar';
 
 type MemberManagementSectionProps = {

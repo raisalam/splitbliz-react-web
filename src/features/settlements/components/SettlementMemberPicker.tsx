@@ -1,6 +1,7 @@
 import React from 'react';
-import { Check } from 'lucide-react';
+import { Check } from '../../../constants/icons';
 import { formatCurrency } from '../../../utils/formatCurrency';
+import { CachedAvatar } from '../../../components/CachedAvatar';
 
 type BalanceInfo = { amount: number; direction: 'owe' | 'owed' };
 
@@ -23,11 +24,16 @@ export function SettlementMemberPicker({
   getBalanceWithMember,
   onSelect
 }: SettlementMemberPickerProps) {
+  const getInitial = (name?: string | null) => name?.trim()?.[0]?.toUpperCase() || '?';
+
   return (
     <div className="space-y-2 py-2">
       {members.map((member: any) => {
         const isSelected = member.userPublicId === selectedUserId;
         const displayName = member.userPublicId === currentUserId ? `${member.displayName} (You)` : member.displayName;
+        const avatarValue = member.resolvedAvatar || member.avatarUrl || null;
+        const isAvatarUrl = typeof avatarValue === 'string' && avatarValue.startsWith('http');
+        const fallbackInitials = getInitial(member.displayName);
 
         const balanceInfo = mode === 'TO' ? getBalanceWithMember(member.userPublicId) : null;
         const borderColor = balanceInfo
@@ -46,11 +52,18 @@ export function SettlementMemberPicker({
                 : `bg-slate-50 dark:bg-slate-800/50 ${mode === 'TO' ? '' : 'border-2 border-transparent'} hover:bg-slate-100 dark:hover:bg-slate-800`
             }`}
           >
-            <img
-              src={member.avatarUrl}
-              alt={displayName}
-              className="w-10 h-10 rounded-full object-cover"
-            />
+            {isAvatarUrl ? (
+              <CachedAvatar
+                src={avatarValue}
+                alt={displayName}
+                fallbackInitials={fallbackInitials}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-slate-700 bg-slate-200">
+                {avatarValue || fallbackInitials}
+              </div>
+            )}
             <div className="flex-1 text-left">
               <p className="font-semibold text-sm text-slate-900 dark:text-white">{displayName}</p>
               {member.role === 'OWNER' && (
