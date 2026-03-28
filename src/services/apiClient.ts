@@ -16,10 +16,38 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/v1'
 // On app start, restore from sessionStorage (NOT localStorage per Core Spec §2.4).
 const TOKEN_KEY = 'sb_access_token';
 
+interface TokenStoreImpl {
+  get: () => string | null;
+  set: (token: string) => Promise<void>;
+  clear: () => Promise<void>;
+  init?: () => Promise<void>;
+}
+
+let _tokenImpl: TokenStoreImpl = {
+  get: () => sessionStorage.getItem(TOKEN_KEY),
+  set: async (token: string) => { sessionStorage.setItem(TOKEN_KEY, token); },
+  clear: async () => { sessionStorage.removeItem(TOKEN_KEY); },
+};
+
 export const tokenStore = {
-  get: (): string | null => sessionStorage.getItem(TOKEN_KEY),
-  set: (token: string): void => sessionStorage.setItem(TOKEN_KEY, token),
-  clear: (): void => sessionStorage.removeItem(TOKEN_KEY),
+  configure: (impl: TokenStoreImpl) => { _tokenImpl = impl; },
+  get: () => _tokenImpl.get(),
+  set: (token: string): Promise<void> => _tokenImpl.set(token),
+  clear: (): Promise<void> => _tokenImpl.clear(),
+  init: (): Promise<void> => _tokenImpl.init?.() ?? Promise.resolve(),
+};
+
+interface NavigationHandlerImpl {
+  onUnauthorized: () => void;
+}
+
+let _navImpl: NavigationHandlerImpl = {
+  onUnauthorized: () => { window.location.replace('/login'); },
+};
+
+export const navigationHandler = {
+  configure: (impl: NavigationHandlerImpl) => { _navImpl = impl; },
+  onUnauthorized: () => _navImpl.onUnauthorized(),
 };
 
 const apiClient: AxiosInstance = axios.create({
@@ -46,7 +74,7 @@ apiClient.interceptors.request.use(
 // Response interceptor — normalize errors, handle 401 globally
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<ApiError>) => {
+  async (error: AxiosError<ApiError>) => {
     if (error.response?.status === 401) {
       const url = typeof error.config?.url === 'string' ? error.config.url : '';
       const isAuthRequest = url.includes('/auth/login')
@@ -56,8 +84,8 @@ apiClient.interceptors.response.use(
         || url.includes('/auth/facebook');
       if (!isAuthRequest) {
         // Session expired — clear token and redirect to login
-        tokenStore.clear();
-        window.location.replace('/login');
+        await tokenStore.clear();
+        navigationHandler.onUnauthorized();
       }
     }
     return Promise.reject(error);

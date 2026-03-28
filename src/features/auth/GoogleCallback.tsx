@@ -7,18 +7,21 @@ export function GoogleCallback() {
   const [params] = useSearchParams();
 
   useEffect(() => {
-    const accessToken = params.get('accessToken');
-    const error = params.get('error');
-    if (error) {
-      navigate('/login', { replace: true, state: { oauthError: error } });
-      return;
-    }
-    if (accessToken) {
-      tokenStore.set(accessToken);
-      navigate('/', { replace: true });
-      return;
-    }
-    navigate('/login', { replace: true });
+    const run = async () => {
+      const accessToken = params.get('accessToken');
+      const error = params.get('error');
+      if (error) {
+        navigate('/login', { replace: true, state: { oauthError: error } });
+        return;
+      }
+      if (accessToken) {
+        await tokenStore.set(accessToken);
+        navigate('/', { replace: true });
+        return;
+      }
+      navigate('/login', { replace: true });
+    };
+    void run();
   }, [navigate, params]);
 
   return (

@@ -23,7 +23,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
     authService.getMe()
       .then(setUser)
-      .catch(() => tokenStore.clear())
+      .catch(async () => { await tokenStore.clear(); })
       .finally(() => setLoading(false));
   }, []);
 

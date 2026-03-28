@@ -6,6 +6,12 @@ import { tokenStore } from './apiClient';
 type HintHandler = (hint: MqttHint) => void;
 type ChatHandler = (message: MqttChatMessage) => void;
 
+let _mqttUrl = 'ws://localhost:8083/mqtt';
+
+export const mqttConfig = {
+  configure: (url: string) => { _mqttUrl = url; },
+};
+
 class MqttService {
   private client: Paho.Client | null = null;
   private hintHandlers: Set<HintHandler> = new Set();
@@ -13,7 +19,7 @@ class MqttService {
   private subscribedTopics: Set<string> = new Set();
 
   connect(userId: string): void {
-    const url = import.meta.env.VITE_MQTT_URL ?? 'ws://localhost:8083/mqtt';
+    const url = _mqttUrl;
     const clientId = `web_${userId}_${Date.now()}`;
     const token = tokenStore.get();
 

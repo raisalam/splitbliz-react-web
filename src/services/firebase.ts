@@ -1,14 +1,27 @@
-import { initializeApp, getApps } from 'firebase/app';
+import { initializeApp, getApps, type FirebaseOptions } from 'firebase/app';
 import { getRemoteConfig } from 'firebase/remote-config';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+let _firebaseConfig: FirebaseOptions = {
+  apiKey: '',
+  authDomain: '',
+  projectId: '',
+  appId: '',
 };
 
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+export const firebaseSetup = {
+  configure: (config: FirebaseOptions) => { _firebaseConfig = config; },
+};
 
-export const remoteConfig = getRemoteConfig(app);
+let _remoteConfigInstance: ReturnType<typeof getRemoteConfig> | null = null;
+
+export function getFirebaseRemoteConfig() {
+  if (!_remoteConfigInstance) {
+    const app = getApps().length ? getApps()[0] : initializeApp(_firebaseConfig);
+    _remoteConfigInstance = getRemoteConfig(app);
+  }
+  return _remoteConfigInstance;
+}
+
+export const remoteConfig = new Proxy({} as ReturnType<typeof getRemoteConfig>, {
+  get: (_target, prop) => (getFirebaseRemoteConfig() as any)[prop],
+});

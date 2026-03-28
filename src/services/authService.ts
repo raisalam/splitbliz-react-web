@@ -27,7 +27,7 @@ export const authService = {
     const res = await apiClient.post<{ user: UserFull; accessToken: string }>(
       '/auth/login', data
     );
-    tokenStore.set(res.data.accessToken);
+    await tokenStore.set(res.data.accessToken);
     return res.data.user;
   },
 
@@ -35,7 +35,7 @@ export const authService = {
     const res = await apiClient.post<{ user: UserFull; accessToken: string }>(
       '/auth/register', data
     );
-    tokenStore.set(res.data.accessToken);
+    await tokenStore.set(res.data.accessToken);
     return res.data.user;
   },
 
@@ -43,7 +43,7 @@ export const authService = {
     const res = await apiClient.post<{ user: UserFull; accessToken: string }>(
       '/auth/google', data
     );
-    tokenStore.set(res.data.accessToken);
+    await tokenStore.set(res.data.accessToken);
     return res.data.user;
   },
 
@@ -51,13 +51,13 @@ export const authService = {
     const res = await apiClient.post<{ user: UserFull; accessToken: string }>(
       '/auth/facebook', data
     );
-    tokenStore.set(res.data.accessToken);
+    await tokenStore.set(res.data.accessToken);
     return res.data.user;
   },
 
   async logout(): Promise<void> {
     await apiClient.post('/auth/logout').catch(() => {});
-    tokenStore.clear();
+    await tokenStore.clear();
   },
 
   async getMe(): Promise<UserFull> {
@@ -115,6 +115,6 @@ export const authService = {
 
   async deleteAccount(): Promise<void> {
     await apiClient.delete('/users/me');
-    tokenStore.clear();
+    await tokenStore.clear();
   },
 };
